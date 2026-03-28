@@ -1,4 +1,4 @@
-import Defuddle from 'defuddle';
+import Defuddle from 'defuddle/full';
 
 (window as any).extractArticle = async (): Promise<string> => {
     try {
