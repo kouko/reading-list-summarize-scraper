@@ -27,10 +27,10 @@ func KeywordPrompt(summary string, language string, count int) (string, error) {
 // Falls back to English if the requested language is not found.
 func loadBuiltinPromptByPrefix(prefix string, language string) (string, error) {
 	filename := prefix + "-" + language + ".md"
-	data, err := builtin.Prompts.ReadFile(filename)
+	data, err := builtin.FS.ReadFile(filename)
 	if err != nil {
 		// Fallback to English
-		data, err = builtin.Prompts.ReadFile(prefix + "-en.md")
+		data, err = builtin.FS.ReadFile(prefix + "-en.md")
 		if err != nil {
 			return "", fmt.Errorf("loading built-in %s prompt: %w", prefix, err)
 		}
