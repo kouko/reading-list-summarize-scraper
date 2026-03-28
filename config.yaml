@@ -1,0 +1,111 @@
+# ~/.config/rlss/config.yaml
+
+# 輸出目錄
+output_dir: ~/kouko-obsidian-vault/references/
+
+# LLM 設定（與 ytss 完全相同結構）
+llm:
+  provider: "claude-code"              # 單一字串或 list ["claude-code", "gemini-cli"]
+  provider_fallback_strategy:
+    cooldown_seconds: 300
+    failure_threshold: 1
+  ollama:
+    model: "llama3"
+    endpoint: "http://localhost:11434"
+    think: false
+    timeout: 900
+  llamacpp:
+    endpoint: "http://localhost:8080"
+  claude-api:
+    api_key: "${CLAUDE_API_KEY}"
+    model: "claude-sonnet-4-20250514"
+  claude-code:
+    model: "haiku"
+    path: ""
+    timeout: 900
+  gemini-cli:
+    model: "auto"
+    path: ""
+    timeout: 900
+  qwen-code:
+    model: "coder-model"
+    path: ""
+    timeout: 900
+  openai-compat:
+    endpoint: "http://127.0.0.1:8000/v1"
+    model: ""
+    api_key: ""
+    timeout: 900
+
+# 摘要設定（與 ytss 完全相同結構）
+summary:
+  language: "zh-Hant"                  # 內建 prompt 語言（en / zh-Hant / ja）
+  prompt: ""                           # inline prompt（覆蓋內建）
+  summary_prompt_file: ""              # 外部 prompt 檔案（最高優先）
+  max_tokens: 10000
+  keywords:
+    enabled: true
+    language: "en"
+    count: 5
+  mermaid:
+    enabled: true
+
+# Safari 設定
+safari:
+  enabled: true
+  plist_path: ""                       # 空 = ~/Library/Safari/Bookmarks.plist
+
+# Chrome Reading List 設定
+chrome:
+  enabled: true
+  profile: "ReadingList-Auto"          # UI 顯示名稱
+  user_data_dir: ""                    # 空 = 自動偵測
+
+# 萃取設定
+extract:
+  headless: true                       # 預設 headless
+  chrome_profile: "Default"            # 預設萃取用 profile（UI 名稱）
+  user_data_dir: ""
+  timeout: 30s
+  wait_after_load: 2s
+  domain_rules:
+    - domains: ["medium.com"]
+      headed: true
+      chrome_profile: "我的工作帳號"
+    - domains: ["*.substack.com"]
+      headed: true
+      chrome_profile: "Default"
+    - domains: ["github.com"]
+      headed: false
+      chrome_profile: "Profile 2"
+
+# 流水線設定
+pipeline:
+  skip_existing: true
+  dry_run: false
+  delay_min: 3
+  delay_max: 8
+
+# 篩選設定
+filter:
+  unread_only: false
+  since: ""
+  limit: 0
+
+# Watch 模式
+watch:
+  enabled: false
+  interval: 10
+
+# copy_to 設定
+copy_to:
+  enabled: false
+  path: "{output_dir}/by-source/{source}/{domain_dir}"
+  filename: "{date}__{title}__{type}.md"
+  files: ["summary", "content"]
+  overwrite: false
+
+# Obsidian 整合
+obsidian:
+  auto_tags: true
+  wikilinks: true
