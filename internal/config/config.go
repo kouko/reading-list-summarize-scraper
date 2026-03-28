@@ -272,6 +272,7 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			cfg := DefaultConfig()
+			expandPaths(&cfg)
 			return &cfg, nil
 		}
 		return nil, fmt.Errorf("read config: %w", err)
@@ -282,6 +283,12 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
+	expandPaths(&cfg)
+	return &cfg, nil
+}
+
+// expandPaths resolves ~ prefixes and environment variables in all path fields.
+func expandPaths(cfg *Config) {
 	cfg.OutputDir = ExpandPath(cfg.OutputDir)
 	if cfg.Safari.PlistPath != "" {
 		cfg.Safari.PlistPath = ExpandPath(cfg.Safari.PlistPath)
@@ -300,8 +307,6 @@ func Load(path string) (*Config, error) {
 	cfg.LLM.GeminiCLI.Path = ExpandPath(cfg.LLM.GeminiCLI.Path)
 	cfg.LLM.QwenCode.Path = ExpandPath(cfg.LLM.QwenCode.Path)
 	cfg.Summary.SummaryPromptFile = ExpandPath(cfg.Summary.SummaryPromptFile)
-
-	return &cfg, nil
 }
 
 // ExpandPath expands a leading ~ to the user's home directory.

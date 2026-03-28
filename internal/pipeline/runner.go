@@ -109,8 +109,8 @@ func (p *Pipeline) ProcessBatch(items []source.ReadingItem) Stats {
 			slog.Error("item failed", "url", item.URL, "err", err)
 		}
 
-		// Random delay between items (not after the last one).
-		if i < len(items)-1 {
+		// Random delay between items (not after the last one, skip in dry-run).
+		if i < len(items)-1 && !p.dryRun {
 			p.delayBetweenItems()
 		}
 	}
