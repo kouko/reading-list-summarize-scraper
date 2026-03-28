@@ -53,7 +53,17 @@ func (s *SafariSource) Name() string { return "safari" }
 func (s *SafariSource) Fetch() ([]ReadingItem, error) {
 	file, err := os.Open(s.plistPath)
 	if err != nil {
-		return nil, fmt.Errorf("open %s: %w (may need Full Disk Access)", s.plistPath, err)
+		if os.IsPermission(err) {
+			return nil, fmt.Errorf(
+				"cannot read %s: permission denied\n"+
+					"  Safari's Bookmarks.plist requires Full Disk Access.\n"+
+					"  To fix: System Settings > Privacy & Security > Full Disk Access\n"+
+					"  Add your terminal app (Terminal, iTerm2, Warp, etc.)\n"+
+					"  Or run: open \"x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles\"",
+				s.plistPath,
+			)
+		}
+		return nil, fmt.Errorf("open %s: %w", s.plistPath, err)
 	}
 	defer file.Close()
 

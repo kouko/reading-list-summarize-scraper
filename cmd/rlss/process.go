@@ -113,6 +113,10 @@ func loadAndOverrideConfig() (*config.Config, string, error) {
 		cfg.Safari.Enabled = true
 		cfg.Chrome.Enabled = true
 	} else if flagSafari || flagChrome {
+		// When any source flag is explicitly set, disable all first,
+		// then enable only what was requested.
+		cfg.Safari.Enabled = false
+		cfg.Chrome.Enabled = false
 		if flagSafari {
 			cfg.Safari.Enabled = true
 		}

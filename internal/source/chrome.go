@@ -31,7 +31,7 @@ type ChromeSource struct {
 func NewChromeSource(profileDir, userDataDir string, manifest, background []byte) *ChromeSource {
 	if userDataDir == "" {
 		home, _ := os.UserHomeDir()
-		userDataDir = filepath.Join(home, "Library", "Application Support", "Google", "Chrome")
+		userDataDir = filepath.Join(home, ".config", "rlss", "chrome-data")
 	}
 	return &ChromeSource{
 		profileDir:          profileDir,
@@ -44,6 +44,16 @@ func NewChromeSource(profileDir, userDataDir string, manifest, background []byte
 func (c *ChromeSource) Name() string { return "chrome" }
 
 func (c *ChromeSource) Fetch() ([]ReadingItem, error) {
+	// Check if automation profile dir exists; create and hint if not.
+	if _, err := os.Stat(c.userDataDir); os.IsNotExist(err) {
+		if mkErr := os.MkdirAll(c.userDataDir, 0755); mkErr != nil {
+			return nil, fmt.Errorf("create chrome data dir %s: %w", c.userDataDir, mkErr)
+		}
+		slog.Warn("Chrome automation profile not found, creating new one",
+			"path", c.userDataDir,
+			"hint", "Sign in to your Google account in the Chrome window to sync your Reading List, then re-run rlss")
+	}
+
 	// Extract embedded extension to temp dir.
 	extDir, err := c.extractExtension()
 	if err != nil {
