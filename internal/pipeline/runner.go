@@ -216,6 +216,14 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		return nil
 	}
 
+	contentLen := len([]rune(markdown))
+	minLen := p.config.Extract.MinContentLength
+	if minLen > 0 && contentLen < minLen {
+		slog.Warn("content too short, skipping summary",
+			"sha8", sha8, "length", contentLen, "min", minLen)
+		return nil
+	}
+
 	domain := extractDomain(item.URL)
 
 	// Stage 1: Main summary (blocking).

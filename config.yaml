@@ -69,6 +69,7 @@ extract:
   timeout: 30s
   headed_timeout: 60s                  # headed 模式超時（含等待反爬蟲自動通過）
   wait_after_load: 2s
+  min_content_length: 100              # 內容低於此字數時跳過摘要（避免浪費 LLM token）
   headed_on_block: true                # 偵測到 Cloudflare 阻擋時自動切換 headed 模式重試
   domain_rules:
     - domains: ["medium.com"]
