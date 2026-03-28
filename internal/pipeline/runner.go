@@ -75,13 +75,13 @@ func (p *Pipeline) RebuildIndex() {
 // It inserts a random delay between items and respects context cancellation.
 func (p *Pipeline) ProcessBatch(items []source.ReadingItem) Stats {
 	stats := Stats{Start: time.Now()}
-	defer func() { stats.End = time.Now() }()
 
 	for i, item := range items {
 		// Check for shutdown.
 		select {
 		case <-p.ctx.Done():
 			slog.Info("pipeline: shutdown requested, stopping batch")
+			stats.End = time.Now()
 			return stats
 		default:
 		}
@@ -115,6 +115,7 @@ func (p *Pipeline) ProcessBatch(items []source.ReadingItem) Stats {
 		}
 	}
 
+	stats.End = time.Now()
 	return stats
 }
 

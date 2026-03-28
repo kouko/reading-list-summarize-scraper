@@ -42,6 +42,7 @@ func (p *Pool) ExtractURL(rawURL string) (string, error) {
 
 // ExtractURLHeaded forces headed (non-headless) mode for the given URL,
 // using the same profile as resolveForURL would pick.
+// Uses HeadedTimeout (longer) to allow anti-bot challenges to resolve.
 func (p *Pool) ExtractURLHeaded(rawURL string) (string, error) {
 	_, profile := p.resolveForURL(rawURL)
 
@@ -50,7 +51,11 @@ func (p *Pool) ExtractURLHeaded(rawURL string) (string, error) {
 		return "", fmt.Errorf("get browser (headed=true, profile=%q): %w", profile, err)
 	}
 
-	return browser.Extract(rawURL, p.jsCode, p.cfg.Timeout, p.cfg.WaitAfterLoad)
+	timeout := p.cfg.HeadedTimeout
+	if timeout == 0 {
+		timeout = p.cfg.Timeout
+	}
+	return browser.Extract(rawURL, p.jsCode, timeout, p.cfg.WaitAfterLoad)
 }
 
 func (p *Pool) resolveForURL(rawURL string) (bool, string) {

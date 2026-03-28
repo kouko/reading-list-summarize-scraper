@@ -67,6 +67,7 @@ extract:
   chrome_profile: "Default"            # 預設萃取用 profile（UI 名稱）
   user_data_dir: ""
   timeout: 30s
+  headed_timeout: 60s                  # headed 模式超時（含等待反爬蟲自動通過）
   wait_after_load: 2s
   headed_on_block: true                # 偵測到 Cloudflare 阻擋時自動切換 headed 模式重試
   domain_rules:

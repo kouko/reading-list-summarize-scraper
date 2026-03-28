@@ -226,6 +226,7 @@ type ExtractConfig struct {
 	ChromeProfile      string        `yaml:"chrome_profile"`
 	UserDataDir        string        `yaml:"user_data_dir"`
 	Timeout            time.Duration `yaml:"timeout"`
+	HeadedTimeout      time.Duration `yaml:"headed_timeout"`
 	WaitAfterLoad      time.Duration `yaml:"wait_after_load"`
 	DomainRules        []DomainRule  `yaml:"domain_rules"`
 	HeadedOnBlock      bool          `yaml:"headed_on_block"`

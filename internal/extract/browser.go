@@ -6,40 +6,60 @@ import (
 
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+
+	cu "github.com/Davincible/chromedp-undetected"
 )
 
 type Browser struct {
-	allocCtx context.Context
-	cancel   context.CancelFunc
-	headed   bool
-	profile  string
+	ctx     context.Context
+	cancel  context.CancelFunc
+	headed  bool
+	profile string
 }
 
 func NewBrowser(headed bool, profileDir string, userDataDir string) (*Browser, error) {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", !headed),
+	cfg := cu.NewConfig(
+		cu.WithUserDataDir(userDataDir),
+	)
+
+	// Add stealth flags.
+	cfg.ChromeFlags = append(cfg.ChromeFlags,
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
 		chromedp.Flag("disable-gpu", true),
-		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"),
+		chromedp.NoFirstRun,
+		chromedp.NoDefaultBrowserCheck,
 	)
 
 	if profileDir != "" {
-		opts = append(opts, chromedp.Flag("profile-directory", profileDir))
-	}
-	if userDataDir != "" {
-		opts = append(opts, chromedp.UserDataDir(userDataDir))
+		cfg.ChromeFlags = append(cfg.ChromeFlags,
+			chromedp.Flag("profile-directory", profileDir),
+		)
 	}
 
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	if !headed {
+		// On macOS, chromedp-undetected's WithHeadless() uses Xvfb (Linux only).
+		// Fall back to standard headless flag for macOS.
+		cfg.ChromeFlags = append(cfg.ChromeFlags,
+			chromedp.Flag("headless", true),
+		)
+	}
+
+	ctx, cancel, err := cu.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Browser{
-		allocCtx: allocCtx,
-		cancel:   cancel,
-		headed:   headed,
-		profile:  profileDir,
+		ctx:     ctx,
+		cancel:  cancel,
+		headed:  headed,
+		profile: profileDir,
 	}, nil
 }
 
+// Extract navigates to the URL, injects Defuddle JS, and returns extracted Markdown.
 func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, waitAfterLoad time.Duration) (string, error) {
-	ctx, cancel := chromedp.NewContext(b.allocCtx)
+	ctx, cancel := chromedp.NewContext(b.ctx)
 	defer cancel()
 	ctx, cancel = context.WithTimeout(ctx, timeout)
 	defer cancel()

@@ -61,6 +61,7 @@ func DefaultConfig() Config {
 			Headless:      true,
 			ChromeProfile: "Default",
 			Timeout:       30 * time.Second,
+			HeadedTimeout: 60 * time.Second,
 			WaitAfterLoad: 2 * time.Second,
 			HeadedOnBlock: true,
 		},
