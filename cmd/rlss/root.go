@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	pf := rootCmd.PersistentFlags()
-	pf.StringVar(&flagConfigPath, "config", "~/.config/rlss/config.yaml", "config file path")
+	pf.StringVar(&flagConfigPath, "config", "./config.yaml", "config file path")
 	pf.StringVarP(&flagOutputDir, "output", "o", "", "output directory (overrides config)")
 	pf.StringVar(&flagProvider, "provider", "", "LLM provider (overrides config)")
 	pf.BoolVarP(&flagVerbose, "verbose", "v", false, "enable debug logging")
