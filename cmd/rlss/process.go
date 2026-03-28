@@ -165,6 +165,9 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 			var fdaErr *source.FullDiskAccessError
 			if errors.As(err, &fdaErr) {
 				fmt.Fprint(os.Stderr, source.FormatFullDiskAccessBanner(fdaErr.Path))
+				if openErr := source.OpenFullDiskAccessSettings(); openErr != nil {
+					slog.Debug("could not open System Settings", "err", openErr)
+				}
 			} else {
 				slog.Error("source fetch failed", "source", src.Name(), "err", err)
 			}

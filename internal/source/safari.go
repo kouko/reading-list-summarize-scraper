@@ -3,11 +3,14 @@ package source
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
 	"howett.net/plist"
 )
+
+const fdaSettingsURL = "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
 
 // FullDiskAccessError indicates Safari plist cannot be read due to macOS permissions.
 type FullDiskAccessError struct {
@@ -18,8 +21,17 @@ func (e *FullDiskAccessError) Error() string {
 	return fmt.Sprintf("cannot read %s: permission denied (Full Disk Access required)", e.Path)
 }
 
+// osc8Link wraps text in an OSC 8 hyperlink escape sequence.
+// Supported by iTerm2, Warp, GNOME Terminal, Windows Terminal, etc.
+// Terminals that don't support it will just show the display text.
+func osc8Link(url, display string) string {
+	return fmt.Sprintf("\033]8;;%s\033\\%s\033]8;;\033\\", url, display)
+}
+
 // FormatFullDiskAccessBanner returns a prominent multi-language banner for FDA errors.
 func FormatFullDiskAccessBanner(path string) string {
+	settingsLink := osc8Link(fdaSettingsURL, "Open Full Disk Access Settings ↗")
+
 	return "\n" +
 		"╔══════════════════════════════════════════════════════════════════╗\n" +
 		"║  ⚠  Full Disk Access Required                                  ║\n" +
@@ -31,9 +43,7 @@ func FormatFullDiskAccessBanner(path string) string {
 		"║  → System Settings > Privacy & Security > Full Disk Access     ║\n" +
 		"║    Add: Terminal / iTerm2 / Warp / VS Code / your terminal     ║\n" +
 		"║                                                                ║\n" +
-		"║  Or run this command to open the settings directly:            ║\n" +
-		"║  open \"x-apple.systempreferences:com.apple.preference.        ║\n" +
-		"║        security?Privacy_AllFiles\"                              ║\n" +
+		"║  " + settingsLink + "                       ║\n" +
 		"║                                                                ║\n" +
 		"╠══════════════════════════════════════════════════════════════════╣\n" +
 		"║  ⚠  フルディスクアクセスが必要です                             ║\n" +
@@ -56,6 +66,12 @@ func FormatFullDiskAccessBanner(path string) string {
 		"║    加入你的終端機（Terminal / iTerm2 / Warp 等）                ║\n" +
 		"║                                                                ║\n" +
 		"╚══════════════════════════════════════════════════════════════════╝\n"
+}
+
+// OpenFullDiskAccessSettings opens the macOS System Settings to the
+// Full Disk Access pane.
+func OpenFullDiskAccessSettings() error {
+	return exec.Command("open", fdaSettingsURL).Run()
 }
 
 const (
