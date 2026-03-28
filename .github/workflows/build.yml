@@ -1,0 +1,46 @@
+name: Build rlss
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Bundle defuddle.min.js
+        run: npm run build:defuddle
+
+      - name: Check defuddle.min.js freshness
+        run: |
+          if git diff --name-only | grep -q 'embed/defuddle.min.js'; then
+            echo "::warning::embed/defuddle.min.js is outdated. Run 'make update-defuddle' and commit."
+          fi
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run tests
+        run: go test ./... -v
+
+      - name: Build
+        run: go build -ldflags="-s -w" -o rlss ./cmd/rlss/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rlss-${{ runner.os }}-${{ runner.arch }}
+          path: rlss
