@@ -9,6 +9,55 @@ import (
 	"howett.net/plist"
 )
 
+// FullDiskAccessError indicates Safari plist cannot be read due to macOS permissions.
+type FullDiskAccessError struct {
+	Path string
+}
+
+func (e *FullDiskAccessError) Error() string {
+	return fmt.Sprintf("cannot read %s: permission denied (Full Disk Access required)", e.Path)
+}
+
+// FormatFullDiskAccessBanner returns a prominent multi-language banner for FDA errors.
+func FormatFullDiskAccessBanner(path string) string {
+	return "\n" +
+		"╔══════════════════════════════════════════════════════════════════╗\n" +
+		"║  ⚠  Full Disk Access Required                                  ║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║                                                                ║\n" +
+		"║  Safari's Bookmarks.plist is protected by macOS.               ║\n" +
+		"║  Your terminal app needs Full Disk Access to read it.          ║\n" +
+		"║                                                                ║\n" +
+		"║  → System Settings > Privacy & Security > Full Disk Access     ║\n" +
+		"║    Add: Terminal / iTerm2 / Warp / VS Code / your terminal     ║\n" +
+		"║                                                                ║\n" +
+		"║  Or run this command to open the settings directly:            ║\n" +
+		"║  open \"x-apple.systempreferences:com.apple.preference.        ║\n" +
+		"║        security?Privacy_AllFiles\"                              ║\n" +
+		"║                                                                ║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║  ⚠  フルディスクアクセスが必要です                             ║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║                                                                ║\n" +
+		"║  Safari の Bookmarks.plist は macOS により保護されています。    ║\n" +
+		"║  ターミナルアプリにフルディスクアクセスを許可してください。      ║\n" +
+		"║                                                                ║\n" +
+		"║  → システム設定 > プライバシーとセキュリティ >                  ║\n" +
+		"║    フルディスクアクセス → ターミナルアプリを追加                ║\n" +
+		"║                                                                ║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║  ⚠  需要「完整磁碟取用權限」                                   ║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║                                                                ║\n" +
+		"║  Safari 的 Bookmarks.plist 受 macOS 保護。                     ║\n" +
+		"║  請授予終端機 App「完整磁碟取用權限」。                         ║\n" +
+		"║                                                                ║\n" +
+		"║  → 系統設定 > 隱私與安全性 > 完整磁碟取用權限                  ║\n" +
+		"║    加入你的終端機（Terminal / iTerm2 / Warp 等）                ║\n" +
+		"║                                                                ║\n" +
+		"╚══════════════════════════════════════════════════════════════════╝\n"
+}
+
 const (
 	typeLeaf          = "WebBookmarkTypeLeaf"
 	typeList          = "WebBookmarkTypeList"
@@ -54,14 +103,7 @@ func (s *SafariSource) Fetch() ([]ReadingItem, error) {
 	file, err := os.Open(s.plistPath)
 	if err != nil {
 		if os.IsPermission(err) {
-			return nil, fmt.Errorf(
-				"cannot read %s: permission denied\n"+
-					"  Safari's Bookmarks.plist requires Full Disk Access.\n"+
-					"  To fix: System Settings > Privacy & Security > Full Disk Access\n"+
-					"  Add your terminal app (Terminal, iTerm2, Warp, etc.)\n"+
-					"  Or run: open \"x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles\"",
-				s.plistPath,
-			)
+			return nil, &FullDiskAccessError{Path: s.plistPath}
 		}
 		return nil, fmt.Errorf("open %s: %w", s.plistPath, err)
 	}

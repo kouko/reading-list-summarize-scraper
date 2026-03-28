@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -160,7 +162,12 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 	for _, src := range sources {
 		items, err := src.Fetch()
 		if err != nil {
-			slog.Error("source fetch failed", "source", src.Name(), "err", err)
+			var fdaErr *source.FullDiskAccessError
+			if errors.As(err, &fdaErr) {
+				fmt.Fprint(os.Stderr, source.FormatFullDiskAccessBanner(fdaErr.Path))
+			} else {
+				slog.Error("source fetch failed", "source", src.Name(), "err", err)
+			}
 			continue
 		}
 		slog.Info("fetched items", "source", src.Name(), "count", len(items))
