@@ -171,7 +171,7 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		}
 
 		// Write content file.
-		contentFile := output.ContentFilename(item.DateAdded, sha8)
+		contentFile := output.ContentFilename(now, sha8)
 		contentPath := filepath.Join(outDir, contentFile)
 		domain := extractDomain(item.URL)
 
@@ -208,6 +208,7 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		Source:        item.Source,
 		Content:       markdown,
 		ContentLength: len(markdown),
+		Language:      p.config.Summary.Language,
 	})
 	if err != nil {
 		return fmt.Errorf("resolve prompt: %w", err)
@@ -314,7 +315,7 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		return fmt.Errorf("create dir %s: %w", outDir, err)
 	}
 
-	summaryFile := output.SummaryFilename(item.DateAdded, sha8)
+	summaryFile := output.SummaryFilename(now, sha8)
 	summaryPath := filepath.Join(outDir, summaryFile)
 	if err := os.WriteFile(summaryPath, []byte(summaryDoc), 0644); err != nil {
 		return fmt.Errorf("write summary: %w", err)

@@ -108,6 +108,27 @@ func loadAndOverrideConfig() (*config.Config, string, error) {
 		cfg.Pipeline.DryRun = true
 	}
 
+	// Source selection overrides.
+	if flagAll {
+		cfg.Safari.Enabled = true
+		cfg.Chrome.Enabled = true
+	} else if flagSafari || flagChrome {
+		if flagSafari {
+			cfg.Safari.Enabled = true
+		}
+		if flagChrome {
+			cfg.Chrome.Enabled = true
+		}
+	}
+	// If none of --safari, --chrome, --all set, use config defaults.
+
+	if flagForce {
+		cfg.Pipeline.SkipExisting = false
+	}
+	if flagProfile != "" {
+		cfg.Chrome.Profile = flagProfile
+	}
+
 	return cfg, cfgPath, nil
 }
 

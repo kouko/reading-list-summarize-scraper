@@ -15,6 +15,11 @@ var (
 	flagWatch      bool
 	flagDryRun     bool
 	flagNoSummary  bool
+	flagSafari     bool
+	flagChrome     bool
+	flagAll        bool
+	flagForce      bool
+	flagProfile    string
 )
 
 var rootCmd = &cobra.Command{
@@ -29,9 +34,9 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	pf := rootCmd.PersistentFlags()
-	pf.StringVarP(&flagConfigPath, "config", "c", "~/.config/rlss/config.yaml", "config file path")
+	pf.StringVar(&flagConfigPath, "config", "~/.config/rlss/config.yaml", "config file path")
 	pf.StringVarP(&flagOutputDir, "output", "o", "", "output directory (overrides config)")
-	pf.StringVarP(&flagProvider, "provider", "p", "", "LLM provider (overrides config)")
+	pf.StringVar(&flagProvider, "provider", "", "LLM provider (overrides config)")
 	pf.BoolVarP(&flagVerbose, "verbose", "v", false, "enable debug logging")
 	pf.IntVarP(&flagLimit, "limit", "n", 0, "max items to process")
 	pf.StringVar(&flagSince, "since", "", "only items added after this date (YYYY-MM-DD)")
@@ -39,6 +44,11 @@ func init() {
 	pf.BoolVar(&flagWatch, "watch", false, "enable watch mode")
 	pf.BoolVar(&flagDryRun, "dry-run", false, "list items without processing")
 	pf.BoolVar(&flagNoSummary, "no-summary", false, "extract only, skip summarization")
+	pf.BoolVarP(&flagSafari, "safari", "s", false, "process Safari Reading List")
+	pf.BoolVarP(&flagChrome, "chrome", "c", false, "process Chrome Reading List")
+	pf.BoolVarP(&flagAll, "all", "a", false, "process all sources")
+	pf.BoolVar(&flagForce, "force", false, "force reprocess existing items")
+	pf.StringVar(&flagProfile, "profile", "", "Chrome Reading List profile override (UI name)")
 
 	rootCmd.AddCommand(processCmd)
 	rootCmd.AddCommand(listCmd)

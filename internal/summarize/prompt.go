@@ -17,6 +17,7 @@ type PromptVars struct {
 	Source        string
 	Content       string
 	ContentLength int
+	Language      string
 }
 
 // ResolvePrompt resolves the prompt template using a 3-level cascade:
@@ -55,7 +56,11 @@ func loadBuiltinPrompt(language string) (string, error) {
 // SubstituteVars replaces {{variable}} placeholders in a template with values from vars.
 // For inline prompts (those without {{content}}), the content is appended after the prompt.
 func SubstituteVars(template string, vars PromptVars) string {
-	tier := CalculateTier(vars.ContentLength, "en") // default to en for tier calculation
+	lang := vars.Language
+	if lang == "" {
+		lang = "en"
+	}
+	tier := CalculateTier(vars.ContentLength, lang)
 	lengthStr := strconv.Itoa(vars.ContentLength)
 
 	replacer := strings.NewReplacer(
