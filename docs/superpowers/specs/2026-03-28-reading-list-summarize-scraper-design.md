@@ -818,30 +818,179 @@ $ rlss --all --unread --llm claude-code
 
 ## 13. Build Pipeline
 
-### JS Build (esbuild)
+### Overview
 
-```bash
-npx esbuild inject.ts \
-  --bundle --format=iife --global-name=DefuddleExtractor \
-  --platform=browser --target=es2020 --minify \
-  --outfile=embed/defuddle.min.js
+```
+npm install (defuddle + esbuild)
+  → esbuild: inject.ts → embed/defuddle.min.js (IIFE, minified)
+    → go:embed embeds defuddle.min.js into Go binary
+      → go build → rlss binary (~15MB)
 ```
 
-### Go Build
+`embed/defuddle.min.js` is **committed to git** for convenience (users can `go build` without Node.js). However, CI and `make build` always regenerate it from the latest Defuddle source to ensure freshness.
 
-```bash
-go generate ./...                      # triggers esbuild
-go build -ldflags="-s -w" -o rlss ./cmd/rlss/
+### Project Files
+
+```
+reading-list-summarize-scraper/
+├── inject.ts              ← Defuddle 前端膠水碼（import + window.extractArticle）
+├── package.json           ← defuddle + esbuild as devDependencies
+├── package-lock.json      ← 鎖定版本（committed）
+├── embed/
+│   └── defuddle.min.js    ← build artifact（committed for go-build-only users）
+├── embed.go               ← //go:generate + //go:embed 指令
+└── Makefile               ← 自動化入口
 ```
 
-### Makefile Targets
+### Step 1: package.json
+
+```json
+{
+  "private": true,
+  "scripts": {
+    "build:defuddle": "esbuild inject.ts --bundle --format=iife --global-name=DefuddleExtractor --platform=browser --target=es2020 --minify --outfile=embed/defuddle.min.js",
+    "update:defuddle": "npm update defuddle && npm run build:defuddle"
+  },
+  "devDependencies": {
+    "defuddle": "latest",
+    "esbuild": "^0.25.0"
+  }
+}
+```
+
+### Step 2: inject.ts
+
+```typescript
+import { Defuddle } from 'defuddle';
+
+(window as any).extractArticle = async (): Promise<string> => {
+    try {
+        const html = document.documentElement.outerHTML;
+        const df = new Defuddle(html);
+        const result = await df.parse();
+        return result?.content ?? "無法萃取網頁正文。";
+    } catch (e: any) {
+        return "萃取過程發生錯誤：" + e.toString();
+    }
+};
+```
+
+### Step 3: embed.go
+
+```go
+package main
+
+import _ "embed"
+
+//go:generate npm run build:defuddle
+
+//go:embed embed/defuddle.min.js
+var defuddleJS string
+```
+
+### Step 4: Makefile
 
 ```makefile
-build:      js + go build
-js:         esbuild bundle
-generate:   go generate
-clean:      remove build artifacts
+.PHONY: build js clean update-defuddle
+
+# 完整 build：安裝依賴 → 打包 JS → 編譯 Go
+build: js
+	go build -ldflags="-s -w" -o rlss ./cmd/rlss/
+
+# JS 打包（含 npm install）
+js: node_modules
+	npm run build:defuddle
+
+# npm install（package-lock.json 變更時觸發）
+node_modules: package.json package-lock.json
+	npm install
+	@touch node_modules
+
+# 更新 Defuddle 到最新版並重新打包
+update-defuddle:
+	npm update defuddle
+	npm run build:defuddle
+	@echo "Updated defuddle to $$(npm list defuddle --depth=0 | grep defuddle)"
+
+# go generate（觸發 //go:generate npm run build:defuddle）
+generate: node_modules
+	go generate ./...
+
+# 清理
+clean:
+	rm -f rlss embed/defuddle.min.js
+	rm -rf node_modules
 ```
+
+### CI/CD: GitHub Actions
+
+```yaml
+name: Build rlss
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest              # macOS（本工具主要平台）
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Node.js 環境（esbuild + defuddle 打包用）
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # 2. 安裝 JS 依賴 + 打包 defuddle.min.js
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Bundle defuddle.min.js
+        run: npm run build:defuddle
+
+      # 3. 檢查打包結果是否與 committed 版本不同（提醒更新）
+      - name: Check defuddle.min.js freshness
+        run: |
+          if git diff --name-only | grep -q 'embed/defuddle.min.js'; then
+            echo "::warning::embed/defuddle.min.js is outdated. Please run 'make update-defuddle' and commit."
+          fi
+
+      # 4. Go 環境
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      # 5. 編譯 Go Binary（defuddle.min.js 自動被 go:embed 嵌入）
+      - name: Build Go binary
+        run: go build -ldflags="-s -w" -o rlss ./cmd/rlss/
+
+      # 6. 上傳產出物
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rlss-${{ runner.os }}-${{ runner.arch }}
+          path: rlss
+```
+
+### Build Scenarios
+
+| Scenario | Command | Node.js Required | Result |
+|----------|---------|------------------|--------|
+| Quick build（use committed JS） | `go build ./cmd/rlss/` | No | Uses existing `embed/defuddle.min.js` |
+| Full build（regenerate JS） | `make build` | Yes | Reinstall deps + rebuild JS + Go build |
+| Update Defuddle version | `make update-defuddle` | Yes | npm update + rebuild JS |
+| CI build | GitHub Actions | Yes (in CI) | Always regenerate from latest locked version |
+| go generate | `go generate ./...` | Yes | Triggers `npm run build:defuddle` |
+
+### Defuddle Version Management
+
+- `package.json` 中 `defuddle: "latest"` 確保 `npm update` 取得最新版
+- `package-lock.json` committed，確保可重現 build
+- `make update-defuddle` = 更新 + 重新打包（開發者手動觸發）
+- CI 使用 `npm ci`（from lock file），確保一致性
+- CI 額外檢查 committed 的 `defuddle.min.js` 是否過時，發出 warning
 
 ---
 
