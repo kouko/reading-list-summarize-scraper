@@ -222,12 +222,13 @@ type DomainRule struct {
 }
 
 type ExtractConfig struct {
-	Headless      bool          `yaml:"headless"`
-	ChromeProfile string        `yaml:"chrome_profile"`
-	UserDataDir   string        `yaml:"user_data_dir"`
-	Timeout       time.Duration `yaml:"timeout"`
-	WaitAfterLoad time.Duration `yaml:"wait_after_load"`
-	DomainRules   []DomainRule  `yaml:"domain_rules"`
+	Headless           bool          `yaml:"headless"`
+	ChromeProfile      string        `yaml:"chrome_profile"`
+	UserDataDir        string        `yaml:"user_data_dir"`
+	Timeout            time.Duration `yaml:"timeout"`
+	WaitAfterLoad      time.Duration `yaml:"wait_after_load"`
+	DomainRules        []DomainRule  `yaml:"domain_rules"`
+	HeadedOnBlock      bool          `yaml:"headed_on_block"`
 }
 
 type PipelineConfig struct {

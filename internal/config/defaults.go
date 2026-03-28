@@ -62,6 +62,7 @@ func DefaultConfig() Config {
 			ChromeProfile: "Default",
 			Timeout:       30 * time.Second,
 			WaitAfterLoad: 2 * time.Second,
+			HeadedOnBlock: true,
 		},
 		Pipeline: PipelineConfig{
 			SkipExisting: true,

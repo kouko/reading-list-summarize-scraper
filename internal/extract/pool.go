@@ -40,6 +40,19 @@ func (p *Pool) ExtractURL(rawURL string) (string, error) {
 	return browser.Extract(rawURL, p.jsCode, p.cfg.Timeout, p.cfg.WaitAfterLoad)
 }
 
+// ExtractURLHeaded forces headed (non-headless) mode for the given URL,
+// using the same profile as resolveForURL would pick.
+func (p *Pool) ExtractURLHeaded(rawURL string) (string, error) {
+	_, profile := p.resolveForURL(rawURL)
+
+	browser, err := p.getBrowser(true, profile)
+	if err != nil {
+		return "", fmt.Errorf("get browser (headed=true, profile=%q): %w", profile, err)
+	}
+
+	return browser.Extract(rawURL, p.jsCode, p.cfg.Timeout, p.cfg.WaitAfterLoad)
+}
+
 func (p *Pool) resolveForURL(rawURL string) (bool, string) {
 	headed, profileName, matched := MatchDomainRules(rawURL, p.cfg.DomainRules)
 	if !matched {

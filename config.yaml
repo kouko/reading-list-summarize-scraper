@@ -1,7 +1,7 @@
 # ~/.config/rlss/config.yaml
 
 # 輸出目錄
-output_dir: ~/kouko-obsidian-vault/references/
+output_dir: ./rlss-output
 
 # LLM 設定（與 ytss 完全相同結構）
 llm:
@@ -68,6 +68,7 @@ extract:
   user_data_dir: ""
   timeout: 30s
   wait_after_load: 2s
+  headed_on_block: true                # 偵測到 Cloudflare 阻擋時自動切換 headed 模式重試
   domain_rules:
     - domains: ["medium.com"]
       headed: true

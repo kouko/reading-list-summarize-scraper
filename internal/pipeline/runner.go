@@ -168,7 +168,18 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 			return fmt.Errorf("extract %s: empty content (Defuddle returned nothing)", item.URL)
 		}
 		if isBlockedPage(markdown) {
-			return fmt.Errorf("extract %s: blocked by anti-bot protection (Cloudflare/CAPTCHA). Try adding this domain to extract.domain_rules with headed: true", item.URL)
+			if p.config.Extract.HeadedOnBlock {
+				slog.Warn("blocked by anti-bot, retrying with headed mode", "url", item.URL)
+				markdown, err = p.pool.ExtractURLHeaded(item.URL)
+				if err != nil {
+					return fmt.Errorf("extract (headed retry) %s: %w", item.URL, err)
+				}
+				if strings.TrimSpace(markdown) == "" || isBlockedPage(markdown) {
+					return fmt.Errorf("extract %s: still blocked after headed retry", item.URL)
+				}
+			} else {
+				return fmt.Errorf("extract %s: blocked by anti-bot protection (Cloudflare/CAPTCHA). Try setting extract.headed_on_block: true or adding this domain to extract.domain_rules with headed: true", item.URL)
+			}
 		}
 
 		// Create output directory.
