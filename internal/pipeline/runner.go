@@ -167,6 +167,9 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		if strings.TrimSpace(markdown) == "" {
 			return fmt.Errorf("extract %s: empty content (Defuddle returned nothing)", item.URL)
 		}
+		if isBlockedPage(markdown) {
+			return fmt.Errorf("extract %s: blocked by anti-bot protection (Cloudflare/CAPTCHA). Try adding this domain to extract.domain_rules with headed: true", item.URL)
+		}
 
 		// Create output directory.
 		if err := os.MkdirAll(outDir, 0755); err != nil {
@@ -366,6 +369,33 @@ func extractDomain(rawURL string) string {
 		return "unknown"
 	}
 	return u.Hostname()
+}
+
+// isBlockedPage detects anti-bot protection pages (Cloudflare, CAPTCHA, etc.)
+// that were extracted instead of actual content.
+func isBlockedPage(content string) bool {
+	lower := strings.ToLower(content)
+	blockedPatterns := []string{
+		"performing security verification",
+		"security challenge",
+		"checking your browser",
+		"please wait while we verify",
+		"just a moment",
+		"ray id:",
+		"cloudflare",
+		"captcha",
+		"access denied",
+		"please verify you are a human",
+		"bot protection",
+	}
+	matchCount := 0
+	for _, pattern := range blockedPatterns {
+		if strings.Contains(lower, pattern) {
+			matchCount++
+		}
+	}
+	// Require at least 2 matches to avoid false positives
+	return matchCount >= 2
 }
 
 // stripFrontmatter removes YAML frontmatter (--- ... ---) from the beginning of content.
