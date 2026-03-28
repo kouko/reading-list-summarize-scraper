@@ -1,12 +1,12 @@
-import { Defuddle } from 'defuddle';
+import Defuddle from 'defuddle';
 
 (window as any).extractArticle = async (): Promise<string> => {
     try {
-        const html = document.documentElement.outerHTML;
-        const df = new Defuddle(html);
-        const result = await df.parse();
-        return result?.content ?? "";
+        const df = new Defuddle(document);
+        const result = df.parse();
+        return result?.contentMarkdown ?? result?.content ?? "";
     } catch (e: any) {
+        console.error("defuddle extraction error:", e);
         return "";
     }
 };

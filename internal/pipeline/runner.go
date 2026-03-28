@@ -164,6 +164,9 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		if err != nil {
 			return fmt.Errorf("extract %s: %w", item.URL, err)
 		}
+		if strings.TrimSpace(markdown) == "" {
+			return fmt.Errorf("extract %s: empty content (Defuddle returned nothing)", item.URL)
+		}
 
 		// Create output directory.
 		if err := os.MkdirAll(outDir, 0755); err != nil {
