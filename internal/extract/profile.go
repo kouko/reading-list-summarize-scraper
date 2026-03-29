@@ -141,9 +141,43 @@ func IsLocked(userDataDir string) bool {
 	return err == nil
 }
 
-// ForceQuitChrome kills all Chrome processes (macOS).
+// ForceQuitChrome gracefully quits Chrome on macOS, then force-kills if needed.
 func ForceQuitChrome() error {
-	return exec.Command("pkill", "-f", "Google Chrome").Run()
+	// Step 1: Try graceful quit via AppleScript (lets Chrome save state)
+	_ = exec.Command("osascript", "-e", `tell application "Google Chrome" to quit`).Run()
+	time.Sleep(3 * time.Second)
+
+	// Step 2: If still running, force kill
+	if isRunning("Google Chrome") {
+		slog.Warn("Chrome did not quit gracefully, sending SIGKILL")
+		_ = exec.Command("pkill", "-9", "-f", "Google Chrome").Run()
+		time.Sleep(2 * time.Second)
+	}
+
+	return nil
+}
+
+// isRunning checks if a process matching the name is running.
+func isRunning(name string) bool {
+	err := exec.Command("pgrep", "-f", name).Run()
+	return err == nil
+}
+
+// removeStaleLock removes a SingletonLock if Chrome is not actually running.
+func removeStaleLock(userDataDir string) bool {
+	if !IsLocked(userDataDir) {
+		return false
+	}
+	if isRunning("Google Chrome") {
+		return false // Chrome is running, lock is valid
+	}
+	lockPath := filepath.Join(userDataDir, "SingletonLock")
+	if err := os.Remove(lockPath); err != nil {
+		slog.Debug("could not remove stale lock", "path", lockPath, "err", err)
+		return false
+	}
+	slog.Info("removed stale SingletonLock", "path", lockPath)
+	return true
 }
 
 // SmartResolve implements the full resolution logic:
@@ -212,23 +246,30 @@ func (r *ProfileResolver) ensureUnlocked(pi *ProfileInfo, forceQuit bool) (strin
 		return pi.FolderName, pi.UserDataDir, nil
 	}
 
+	// Check for stale lock (Chrome crashed but lock remains)
+	if removeStaleLock(pi.UserDataDir) {
+		return pi.FolderName, pi.UserDataDir, nil
+	}
+
 	if !forceQuit {
 		fmt.Fprint(os.Stderr, FormatLockedBanner(pi.UserDataDir, pi.DisplayName, pi.Email))
 		return pi.FolderName, pi.UserDataDir, fmt.Errorf("user data dir %q is locked by another Chrome instance; set force_quit_chrome: true to kill Chrome automatically", pi.UserDataDir)
 	}
 
 	fmt.Fprint(os.Stderr, FormatForceQuitBanner())
-	if err := ForceQuitChrome(); err != nil {
-		slog.Debug("pkill returned non-zero (may be expected)", "err", err)
-	}
-	time.Sleep(2 * time.Second)
+	ForceQuitChrome()
 
-	if IsLocked(pi.UserDataDir) {
-		return "", "", fmt.Errorf("user data dir %q still locked after force-quit", pi.UserDataDir)
+	// Retry: check lock removal up to 3 times
+	for i := 0; i < 3; i++ {
+		if !IsLocked(pi.UserDataDir) {
+			slog.Info("Chrome lock released, proceeding")
+			return pi.FolderName, pi.UserDataDir, nil
+		}
+		removeStaleLock(pi.UserDataDir)
+		time.Sleep(2 * time.Second)
 	}
 
-	slog.Info("Chrome lock released, proceeding")
-	return pi.FolderName, pi.UserDataDir, nil
+	return "", "", fmt.Errorf("user data dir %q still locked after force-quit (tried 3 times)", pi.UserDataDir)
 }
 
 // FormatLockedBanner returns a prominent banner when all matching profiles are locked.
