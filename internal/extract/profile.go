@@ -147,9 +147,15 @@ func isRunning(name string) bool {
 	return err == nil
 }
 
-// removeStaleLock removes a SingletonLock if Chrome is not actually running.
+// removeStaleLock removes a SingletonLock ONLY from rlss-managed directories.
+// It NEVER touches the system Chrome directory to prevent session corruption.
 func removeStaleLock(userDataDir string) bool {
 	if !IsLocked(userDataDir) {
+		return false
+	}
+	// Safety: only remove locks from rlss-managed directories
+	if !strings.Contains(userDataDir, "rlss") {
+		slog.Debug("skip stale lock removal for non-rlss dir", "dir", userDataDir)
 		return false
 	}
 	if isRunning("Google Chrome") {
@@ -160,7 +166,7 @@ func removeStaleLock(userDataDir string) bool {
 		slog.Debug("could not remove stale lock", "path", lockPath, "err", err)
 		return false
 	}
-	slog.Info("removed stale SingletonLock", "path", lockPath)
+	slog.Info("removed stale SingletonLock (rlss-managed dir)", "path", lockPath)
 	return true
 }
 
