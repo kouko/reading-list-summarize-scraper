@@ -177,6 +177,40 @@ func TestParseKeywords(t *testing.T) {
 	}
 }
 
+func TestValidateMermaidBlocks(t *testing.T) {
+	t.Run("extracts mermaid blocks from LLM output", func(t *testing.T) {
+		input := "#### Flow\n```mermaid\ngraph LR\nA-->B\n```\n\n#### Architecture\n```mermaid\nflowchart TD\nC-->D\n```"
+		blocks := ValidateMermaidBlocks(input)
+		if len(blocks) != 2 {
+			t.Fatalf("got %d blocks, want 2", len(blocks))
+		}
+		if blocks[0].Title != "#### Flow" {
+			t.Errorf("block[0].Title = %q, want %q", blocks[0].Title, "#### Flow")
+		}
+		if !strings.Contains(blocks[0].Code, "A") {
+			t.Errorf("block[0].Code missing expected content: %q", blocks[0].Code)
+		}
+		if blocks[1].Title != "#### Architecture" {
+			t.Errorf("block[1].Title = %q, want %q", blocks[1].Title, "#### Architecture")
+		}
+	})
+
+	t.Run("no blocks returns empty", func(t *testing.T) {
+		blocks := ValidateMermaidBlocks("Just some text without any mermaid.")
+		if len(blocks) != 0 {
+			t.Errorf("got %d blocks, want 0", len(blocks))
+		}
+	})
+
+	t.Run("invalid block skipped", func(t *testing.T) {
+		input := "```mermaid\nsequenceDiagram\nparticipant A\n```"
+		blocks := ValidateMermaidBlocks(input)
+		if len(blocks) != 0 {
+			t.Errorf("invalid block should be skipped, got %d", len(blocks))
+		}
+	})
+}
+
 func TestValidateMermaid(t *testing.T) {
 	tests := []struct {
 		name      string

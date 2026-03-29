@@ -37,3 +37,29 @@ func TestFileIndex(t *testing.T) {
 		t.Error("should not have ffffffff")
 	}
 }
+
+func TestContentPath(t *testing.T) {
+	dir := t.TempDir()
+	domainDir := filepath.Join(dir, "example_com")
+	os.MkdirAll(domainDir, 0755)
+	os.WriteFile(filepath.Join(domainDir, "2026-03-28__a1b2c3d4__content.md"), []byte("content"), 0644)
+	os.WriteFile(filepath.Join(domainDir, "2026-03-28__a1b2c3d4__summary.md"), []byte("summary"), 0644)
+
+	idx := NewFileIndex()
+	idx.Build(dir)
+
+	t.Run("returns correct path for existing content", func(t *testing.T) {
+		got := idx.ContentPath("a1b2c3d4")
+		want := filepath.Join(domainDir, "2026-03-28__a1b2c3d4__content.md")
+		if got != want {
+			t.Errorf("ContentPath() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("returns empty for missing content", func(t *testing.T) {
+		got := idx.ContentPath("ffffffff")
+		if got != "" {
+			t.Errorf("ContentPath() = %q, want empty", got)
+		}
+	})
+}
