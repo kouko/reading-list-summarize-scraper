@@ -42,7 +42,7 @@ summary:
   language: "zh-Hant"                  # 內建 prompt 語言（en / zh-Hant / ja）
   prompt: ""                           # inline prompt（覆蓋內建）
   summary_prompt_file: ""              # 外部 prompt 檔案（最高優先）
-  max_tokens: 10000
+  max_tokens: 30000
   keywords:
     enabled: true
     language: "en"
@@ -58,13 +58,16 @@ safari:
 # Chrome Reading List 設定
 chrome:
   enabled: true
-  profile: "ReadingList-Auto"          # UI 顯示名稱
+  google_account: "kouko.d@gmail.com"  # Google 帳號 email（優先用於 profile 自動偵測）
+  profile: ""                          # UI 顯示名稱（搭配 google_account 或單獨使用）
   user_data_dir: ""                    # 空 = 自動偵測
+  force_quit_chrome: false             # 偵測到 SingletonLock 時是否強制關閉 Chrome
 
 # 萃取設定
 extract:
   headless: true                       # 預設 headless
   chrome_profile: "Default"            # 預設萃取用 profile（UI 名稱）
+  google_account: ""                   # 萃取用 Google 帳號（覆蓋 chrome 區段設定）
   user_data_dir: ""
   timeout: 30s
   headed_timeout: 60s                  # headed 模式超時（含等待反爬蟲自動通過）

@@ -27,7 +27,7 @@ func TestMatchDomainRules(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		headed, profile, matched := MatchDomainRules(tt.url, rules)
+		headed, profile, _, matched := MatchDomainRules(tt.url, rules)
 		if matched != tt.wantMatch {
 			t.Errorf("MatchDomainRules(%q) matched=%v, want %v", tt.url, matched, tt.wantMatch)
 			continue

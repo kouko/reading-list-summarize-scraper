@@ -34,8 +34,11 @@ func runProcess(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Create profile resolver (best-effort, nil on failure).
-	resolver, err := extract.NewProfileResolver(cfg.Extract.UserDataDir)
+	// Create profile resolver scanning multiple userDataDirs (best-effort, nil on failure).
+	resolver, err := extract.NewProfileResolver(
+		config.ExpandPath("~/.config/rlss/chrome-data"),
+		config.ExpandPath("~/Library/Application Support/Google/Chrome"),
+	)
 	if err != nil {
 		slog.Warn("chrome profile resolver unavailable", "err", err)
 	}
@@ -147,13 +150,24 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 	}
 	if cfg.Chrome.Enabled {
 		profileDir := cfg.Chrome.Profile
-		if resolver != nil {
+		userDataDir := cfg.Chrome.UserDataDir
+		if resolver != nil && cfg.Chrome.GoogleAccount != "" {
+			folder, dir, err := resolver.SmartResolve(
+				cfg.Chrome.GoogleAccount, profileDir, userDataDir, cfg.Chrome.ForceQuitChrome,
+			)
+			if err != nil {
+				slog.Warn("smart resolve failed, falling back", "err", err)
+			} else {
+				profileDir = folder
+				userDataDir = dir
+			}
+		} else if resolver != nil && profileDir != "" {
 			if folder, err := resolver.Resolve(profileDir); err == nil {
 				profileDir = folder
 			}
 		}
 		sources = append(sources, source.NewChromeSource(
-			profileDir, cfg.Chrome.UserDataDir,
+			profileDir, userDataDir, cfg.Chrome.GoogleAccount, cfg.Chrome.ForceQuitChrome,
 			rlssembed.ExtensionManifest, rlssembed.ExtensionBackground,
 		))
 	}

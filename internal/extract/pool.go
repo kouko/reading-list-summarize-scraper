@@ -59,13 +59,20 @@ func (p *Pool) ExtractURLHeaded(rawURL string) (string, error) {
 }
 
 func (p *Pool) resolveForURL(rawURL string) (bool, string) {
-	headed, profileName, matched := MatchDomainRules(rawURL, p.cfg.DomainRules)
+	headed, profileName, googleAccount, matched := MatchDomainRules(rawURL, p.cfg.DomainRules)
 	if !matched {
 		headed = !p.cfg.Headless
 		profileName = p.cfg.ChromeProfile
+		googleAccount = p.cfg.GoogleAccount
 	}
 
-	if p.resolver != nil && profileName != "" {
+	// Use SmartResolve if email is available
+	if p.resolver != nil && googleAccount != "" {
+		folder, _, err := p.resolver.SmartResolve(googleAccount, profileName, p.cfg.UserDataDir, false)
+		if err == nil {
+			profileName = folder
+		}
+	} else if p.resolver != nil && profileName != "" {
 		if folder, err := p.resolver.Resolve(profileName); err == nil {
 			profileName = folder
 		}

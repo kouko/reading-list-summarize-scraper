@@ -210,27 +210,31 @@ type SafariConfig struct {
 }
 
 type ChromeConfig struct {
-	Enabled     bool   `yaml:"enabled"`
-	Profile     string `yaml:"profile"`
-	UserDataDir string `yaml:"user_data_dir"`
+	Enabled         bool   `yaml:"enabled"`
+	GoogleAccount   string `yaml:"google_account"`
+	Profile         string `yaml:"profile"`
+	UserDataDir     string `yaml:"user_data_dir"`
+	ForceQuitChrome bool   `yaml:"force_quit_chrome"`
 }
 
 type DomainRule struct {
 	Domains       []string `yaml:"domains"`
 	Headed        bool     `yaml:"headed"`
+	GoogleAccount string   `yaml:"google_account"`
 	ChromeProfile string   `yaml:"chrome_profile"`
 }
 
 type ExtractConfig struct {
-	Headless           bool          `yaml:"headless"`
-	ChromeProfile      string        `yaml:"chrome_profile"`
-	UserDataDir        string        `yaml:"user_data_dir"`
-	Timeout            time.Duration `yaml:"timeout"`
-	HeadedTimeout      time.Duration `yaml:"headed_timeout"`
-	WaitAfterLoad      time.Duration `yaml:"wait_after_load"`
-	MinContentLength   int           `yaml:"min_content_length"`
-	DomainRules        []DomainRule  `yaml:"domain_rules"`
-	HeadedOnBlock      bool          `yaml:"headed_on_block"`
+	Headless         bool          `yaml:"headless"`
+	ChromeProfile    string        `yaml:"chrome_profile"`
+	GoogleAccount    string        `yaml:"google_account"`
+	UserDataDir      string        `yaml:"user_data_dir"`
+	Timeout          time.Duration `yaml:"timeout"`
+	HeadedTimeout    time.Duration `yaml:"headed_timeout"`
+	WaitAfterLoad    time.Duration `yaml:"wait_after_load"`
+	MinContentLength int           `yaml:"min_content_length"`
+	DomainRules      []DomainRule  `yaml:"domain_rules"`
+	HeadedOnBlock    bool          `yaml:"headed_on_block"`
 }
 
 type PipelineConfig struct {

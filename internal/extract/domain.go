@@ -7,10 +7,10 @@ import (
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
 )
 
-func MatchDomainRules(rawURL string, rules []config.DomainRule) (bool, string, bool) {
+func MatchDomainRules(rawURL string, rules []config.DomainRule) (headed bool, profileName string, googleAccount string, matched bool) {
 	u, err := url.Parse(rawURL)
 	if err != nil || u.Host == "" {
-		return false, "", false
+		return false, "", "", false
 	}
 	host := strings.ToLower(u.Hostname())
 
@@ -18,11 +18,11 @@ func MatchDomainRules(rawURL string, rules []config.DomainRule) (bool, string, b
 		for _, pattern := range rule.Domains {
 			pattern = strings.ToLower(pattern)
 			if matchDomain(host, pattern) {
-				return rule.Headed, rule.ChromeProfile, true
+				return rule.Headed, rule.ChromeProfile, rule.GoogleAccount, true
 			}
 		}
 	}
-	return false, "", false
+	return false, "", "", false
 }
 
 func matchDomain(host, pattern string) bool {

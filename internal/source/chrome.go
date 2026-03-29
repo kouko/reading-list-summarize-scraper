@@ -20,6 +20,8 @@ import (
 type ChromeSource struct {
 	profileDir          string // resolved folder name (e.g., "Profile 5")
 	userDataDir         string
+	googleAccount       string
+	forceQuitChrome     bool
 	extensionManifest   []byte
 	extensionBackground []byte
 }
@@ -28,7 +30,7 @@ type ChromeSource struct {
 // are the raw bytes of the extension's manifest.json and background.js files.
 // These should be embedded at the cmd level and passed in, since go:embed only
 // works with relative paths.
-func NewChromeSource(profileDir, userDataDir string, manifest, background []byte) *ChromeSource {
+func NewChromeSource(profileDir, userDataDir, googleAccount string, forceQuitChrome bool, manifest, background []byte) *ChromeSource {
 	if userDataDir == "" {
 		home, _ := os.UserHomeDir()
 		userDataDir = filepath.Join(home, ".config", "rlss", "chrome-data")
@@ -36,6 +38,8 @@ func NewChromeSource(profileDir, userDataDir string, manifest, background []byte
 	return &ChromeSource{
 		profileDir:          profileDir,
 		userDataDir:         userDataDir,
+		googleAccount:       googleAccount,
+		forceQuitChrome:     forceQuitChrome,
 		extensionManifest:   manifest,
 		extensionBackground: background,
 	}
