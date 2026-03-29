@@ -9,9 +9,12 @@ import (
 	"path/filepath"
 	"time"
 
+	cu "github.com/Davincible/chromedp-undetected"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
+
+	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 )
 
 // ChromeSource fetches Chrome's Reading List via a Chrome Extension that uses
@@ -48,13 +51,30 @@ func NewChromeSource(profileDir, userDataDir, googleAccount string, cloneProfile
 func (c *ChromeSource) Name() string { return "chrome" }
 
 func (c *ChromeSource) Fetch() ([]ReadingItem, error) {
-	// Check if automation profile dir exists; create and hint if not.
-	if _, err := os.Stat(c.userDataDir); os.IsNotExist(err) {
-		if mkErr := os.MkdirAll(c.userDataDir, 0755); mkErr != nil {
-			return nil, fmt.Errorf("create chrome data dir %s: %w", c.userDataDir, mkErr)
+	userDataDir := c.userDataDir
+
+	// If locked, try clone_profile fallback.
+	if extract.IsLocked(userDataDir) {
+		if c.cloneProfile {
+			cloneDir, err := extract.CloneProfile(userDataDir, c.profileDir)
+			if err != nil {
+				return nil, fmt.Errorf("clone profile for Chrome Reading List: %w", err)
+			}
+			slog.Info("using cloned profile for Chrome Reading List",
+				"original", userDataDir, "clone", cloneDir)
+			userDataDir = cloneDir
+		} else {
+			return nil, fmt.Errorf("Chrome user data dir %q is locked (SingletonLock); set clone_profile: true", userDataDir)
+		}
+	}
+
+	// Check if profile dir exists; create and hint if not.
+	if _, err := os.Stat(userDataDir); os.IsNotExist(err) {
+		if mkErr := os.MkdirAll(userDataDir, 0755); mkErr != nil {
+			return nil, fmt.Errorf("create chrome data dir %s: %w", userDataDir, mkErr)
 		}
 		slog.Warn("Chrome automation profile not found, creating new one",
-			"path", c.userDataDir,
+			"path", userDataDir,
 			"hint", "Sign in to your Google account in the Chrome window to sync your Reading List, then re-run rlss")
 	}
 
@@ -65,23 +85,29 @@ func (c *ChromeSource) Fetch() ([]ReadingItem, error) {
 	}
 	defer os.RemoveAll(extDir)
 
-	// Launch headed Chrome with extension + profile.
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", false),
+	// Launch headed Chrome with extension + profile using chromedp-undetected.
+	cfg := cu.NewConfig(
+		cu.WithUserDataDir(userDataDir),
+	)
+	cfg.ChromeFlags = append(cfg.ChromeFlags,
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
 		chromedp.Flag("disable-extensions", false),
 		chromedp.Flag("disable-extensions-except", extDir),
 		chromedp.Flag("load-extension", extDir),
-		chromedp.Flag("profile-directory", c.profileDir),
-		chromedp.UserDataDir(c.userDataDir),
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
 	)
+	if c.profileDir != "" {
+		cfg.ChromeFlags = append(cfg.ChromeFlags,
+			chromedp.Flag("profile-directory", c.profileDir),
+		)
+	}
 
-	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	defer allocCancel()
-
-	ctx, ctxCancel := chromedp.NewContext(allocCtx)
-	defer ctxCancel()
+	ctx, cancel, err := cu.New(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("launch chrome: %w", err)
+	}
+	defer cancel()
 
 	ctx, timeoutCancel := context.WithTimeout(ctx, 30*time.Second)
 	defer timeoutCancel()
