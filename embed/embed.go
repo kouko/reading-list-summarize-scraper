@@ -7,9 +7,3 @@ import _ "embed"
 
 //go:embed defuddle.min.js
 var DefuddleJS string
-
-//go:embed extension/manifest.json
-var ExtensionManifest []byte
-
-//go:embed extension/background.js
-var ExtensionBackground []byte
