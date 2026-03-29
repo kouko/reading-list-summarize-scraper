@@ -212,14 +212,12 @@ func (r *ProfileResolver) ensureUnlocked(pi *ProfileInfo, forceQuit bool) (strin
 		return pi.FolderName, pi.UserDataDir, nil
 	}
 
-	slog.Warn("Chrome user data dir is locked (Chrome may be running)",
-		"dir", pi.UserDataDir, "profile", pi.DisplayName)
-
 	if !forceQuit {
-		return pi.FolderName, pi.UserDataDir, fmt.Errorf("user data dir %q is locked by another Chrome instance; set force_quit_chrome=true to kill Chrome automatically", pi.UserDataDir)
+		fmt.Fprint(os.Stderr, FormatLockedBanner(pi.UserDataDir, pi.DisplayName, pi.Email))
+		return pi.FolderName, pi.UserDataDir, fmt.Errorf("user data dir %q is locked by another Chrome instance; set force_quit_chrome: true to kill Chrome automatically", pi.UserDataDir)
 	}
 
-	slog.Warn("force-quitting Chrome to release lock")
+	fmt.Fprint(os.Stderr, FormatForceQuitBanner())
 	if err := ForceQuitChrome(); err != nil {
 		slog.Debug("pkill returned non-zero (may be expected)", "err", err)
 	}
@@ -229,7 +227,63 @@ func (r *ProfileResolver) ensureUnlocked(pi *ProfileInfo, forceQuit bool) (strin
 		return "", "", fmt.Errorf("user data dir %q still locked after force-quit", pi.UserDataDir)
 	}
 
+	slog.Info("Chrome lock released, proceeding")
 	return pi.FolderName, pi.UserDataDir, nil
+}
+
+// FormatLockedBanner returns a prominent banner when all matching profiles are locked.
+func FormatLockedBanner(userDataDir, profileName, email string) string {
+	return "\n" +
+		"╔══════════════════════════════════════════════════════════════════╗\n" +
+		"║  ⚠  Chrome Profile Locked (SingletonLock)                      ║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║                                                                ║\n" +
+		fmt.Sprintf("║  Profile : %-50s  ║\n", profileName) +
+		fmt.Sprintf("║  Account : %-50s  ║\n", email) +
+		fmt.Sprintf("║  DataDir : %-50s  ║\n", truncatePath(userDataDir, 50)) +
+		"║                                                                ║\n" +
+		"║  Chrome is currently running with this user data directory.    ║\n" +
+		"║  rlss cannot access the profile while Chrome holds the lock.   ║\n" +
+		"║                                                                ║\n" +
+		"║  Solutions:                                                    ║\n" +
+		"║  1. Close Chrome, then re-run rlss                            ║\n" +
+		"║  2. Set force_quit_chrome: true in config.yaml                ║\n" +
+		"║  3. Use a dedicated rlss Chrome profile (default setup)       ║\n" +
+		"║                                                                ║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║  Chrome が SingletonLock で使用中のため、                       ║\n" +
+		"║  プロファイルにアクセスできません。                              ║\n" +
+		"║  Chrome を閉じるか、force_quit_chrome: true を設定してください。║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║  Chrome 正在使用此 Profile（SingletonLock），                   ║\n" +
+		"║  rlss 無法存取。請關閉 Chrome 或設定 force_quit_chrome: true。  ║\n" +
+		"╚══════════════════════════════════════════════════════════════════╝\n"
+}
+
+// FormatForceQuitBanner returns a prominent warning when about to force-quit Chrome.
+func FormatForceQuitBanner() string {
+	return "\n" +
+		"╔══════════════════════════════════════════════════════════════════╗\n" +
+		"║  ⚠⚠⚠  Force-Quitting Chrome  ⚠⚠⚠                             ║\n" +
+		"╠══════════════════════════════════════════════════════════════════╣\n" +
+		"║                                                                ║\n" +
+		"║  All Chrome windows will be closed to release the lock.        ║\n" +
+		"║  Unsaved work in Chrome may be lost!                           ║\n" +
+		"║                                                                ║\n" +
+		"║  Chrome の全ウィンドウを強制終了します。                         ║\n" +
+		"║  未保存の作業が失われる可能性があります。                        ║\n" +
+		"║                                                                ║\n" +
+		"║  即將強制關閉所有 Chrome 視窗以釋放鎖定。                       ║\n" +
+		"║  Chrome 中未儲存的工作可能會遺失！                              ║\n" +
+		"║                                                                ║\n" +
+		"╚══════════════════════════════════════════════════════════════════╝\n"
+}
+
+func truncatePath(path string, maxLen int) string {
+	if len(path) <= maxLen {
+		return path
+	}
+	return "..." + path[len(path)-maxLen+3:]
 }
 
 func (r *ProfileResolver) availableNames() string {
