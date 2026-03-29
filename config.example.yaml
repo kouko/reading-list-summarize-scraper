@@ -2,20 +2,20 @@
 # Reading List Summarize Scraper (rlss) — Configuration
 # ============================================================================
 #
-# 預設讀取路徑：./config.yaml（執行 rlss 的目錄下）
-# 可用 --config 指定：rlss --config /path/to/config.yaml
+# Default config path: ./config.yaml (relative to CWD where rlss runs)
+# Override with: rlss --config /path/to/config.yaml
 #
-# 路徑支援 ~/ 展開為使用者家目錄（如 ~/Documents → /Users/you/Documents）
-# 環境變數支援 ${VAR} 語法（僅 claude-api.api_key）
+# Path expansion: ~/ expands to user home directory
+# Environment variables: ${VAR} syntax (only for claude-api.api_key)
 
 # ============================================================================
-# 輸出目錄
+# Output Directory
 # ============================================================================
-# 萃取的內容和摘要檔案會儲存在此目錄下，以 domain 分子目錄：
+# Extracted content and summaries are saved here, organized by domain:
 #   {output_dir}/{domain_dir}/YYYY-MM-DD__{sha8}__summary.md
 #   {output_dir}/{domain_dir}/YYYY-MM-DD__{sha8}__content.md
 #
-# 範例結構：
+# Example structure:
 #   ./rlss-output/
 #   ├── zenn_dev/
 #   │   ├── 2026-03-29__350c2ef4__summary.md
@@ -25,305 +25,316 @@
 output_dir: ./rlss-output
 
 # ============================================================================
-# LLM 設定
+# LLM Settings
 # ============================================================================
-# 與 youtube-summarize-scraper (ytss) 完全相同的結構。
-# 摘要、關鍵字提取、Mermaid 圖表生成都透過 LLM CLI 工具完成。
+# Same structure as youtube-summarize-scraper (ytss).
+# Used for summarization, keyword extraction, and Mermaid diagram generation.
 llm:
 
-  # 使用的 LLM provider。可以是單一字串或 fallback 清單。
-  # 清單中第一個為主要 provider，後續為 fallback（依序嘗試）。
-  # 可用值：ollama, llamacpp, claude-api, claude-code, gemini-cli, qwen-code, openai-compat
+  # LLM provider to use. Can be a single string or a fallback list.
+  # First entry is primary; subsequent entries are tried in order on failure.
+  # Available: ollama, llamacpp, claude-api, claude-code, gemini-cli, qwen-code, openai-compat
   #
-  # 範例（單一）：
+  # Single provider:
   #   provider: "claude-code"
-  # 範例（fallback chain）：
+  # Fallback chain:
   #   provider: ["claude-code", "gemini-cli", "ollama"]
   provider: "claude-code"
 
-  # Fallback 策略設定
+  # Fallback strategy configuration
   provider_fallback_strategy:
-    # Provider 回報 quota/rate limit 錯誤後，等待多少秒才重試該 provider
+    # Seconds to wait before retrying a provider that reported quota/rate limit errors
     cooldown_seconds: 300
-    # 連續多少次 quota 錯誤後，暫時跳過該 provider（circuit breaker 開啟）
+    # Number of consecutive quota errors before skipping a provider (circuit breaker)
     failure_threshold: 1
 
-  # --- Ollama（本地 LLM 伺服器）---
+  # --- Ollama (local LLM server) ---
   ollama:
-    model: "llama3"                      # Ollama 模型名稱（如 llama3, qwen3.5:9b）
-    endpoint: "http://localhost:11434"    # Ollama API 端點
-    think: false                         # 啟用 thinking mode（消耗 4 倍 token）
-    timeout: 900                         # 每次請求超時（秒）
+    model: "llama3"                      # Model name (e.g., llama3, qwen3.5:9b)
+    endpoint: "http://localhost:11434"    # Ollama API endpoint
+    think: false                         # Enable thinking mode (uses 4x tokens)
+    timeout: 900                         # Request timeout in seconds
 
-  # --- llama.cpp（本地推理伺服器）---
+  # --- llama.cpp (local inference server) ---
   llamacpp:
-    endpoint: "http://localhost:8080"     # llama.cpp server 端點
+    endpoint: "http://localhost:8080"     # llama.cpp server endpoint
 
-  # --- Claude API（Anthropic 官方 API）---
+  # --- Claude API (Anthropic official API) ---
   claude-api:
-    api_key: "${CLAUDE_API_KEY}"          # API Key（支援 ${ENV_VAR} 語法）
-    model: "claude-sonnet-4-20250514"     # 模型 ID
+    api_key: "${CLAUDE_API_KEY}"          # API key (supports ${ENV_VAR} syntax)
+    model: "claude-sonnet-4-20250514"     # Model ID
 
   # --- Claude Code CLI ---
   claude-code:
-    model: "haiku"                       # 模型：haiku, sonnet, opus, 或完整 model ID
-    path: ""                             # claude binary 路徑（空 = 搜尋 PATH）
-    timeout: 900                         # 每次請求超時（秒）
+    model: "haiku"                       # Model: haiku, sonnet, opus, or full model ID
+    path: ""                             # Path to claude binary (empty = search PATH)
+    timeout: 900                         # Request timeout in seconds
 
   # --- Gemini CLI ---
   gemini-cli:
-    model: "auto"                        # 模型：auto, pro, flash, flash-lite
-    path: ""                             # gemini binary 路徑（空 = 搜尋 PATH）
+    model: "auto"                        # Model: auto, pro, flash, flash-lite
+    path: ""                             # Path to gemini binary (empty = search PATH)
     timeout: 900
 
   # --- Qwen Code CLI ---
   qwen-code:
-    model: "coder-model"                 # 模型：coder-model (free), qwen3-coder-plus (paid)
-    path: ""                             # qwen binary 路徑（空 = 搜尋 PATH）
+    model: "coder-model"                 # Model: coder-model (free), qwen3-coder-plus (paid)
+    path: ""                             # Path to qwen binary (empty = search PATH)
     timeout: 900
 
-  # --- OpenAI 相容 API（oMLX, LM Studio, vLLM 等）---
+  # --- OpenAI-compatible API (oMLX, LM Studio, vLLM, etc.) ---
   openai-compat:
-    endpoint: "http://127.0.0.1:8000/v1" # API 端點
-    model: ""                            # 模型名稱
-    api_key: ""                          # API Key（選填）
+    endpoint: "http://127.0.0.1:8000/v1" # API endpoint
+    model: ""                            # Model name
+    api_key: ""                          # API key (optional)
     timeout: 900
 
 # ============================================================================
-# 摘要設定
+# Summary Settings
 # ============================================================================
 summary:
 
-  # 內建 prompt 的語言。影響摘要輸出的語言和格式。
-  # 可用值：en, zh-Hant, ja
+  # Language for built-in prompts. Affects summary output language and format.
+  # Available: en, zh-Hant, ja
   language: "zh-Hant"
 
-  # Inline prompt 文字。設定後會覆蓋內建 prompt。
-  # 留空則使用內建 prompt（由 language 決定）。
+  # Inline prompt text. Overrides the built-in prompt when set.
+  # Leave empty to use the built-in prompt (determined by language).
   prompt: ""
 
-  # 外部 prompt 檔案路徑。優先級最高（覆蓋 inline 和內建 prompt）。
-  # 檔案內容會作為 prompt 模板，支援 {{title}}, {{domain}} 等變數。
+  # Path to external prompt file. Highest priority (overrides inline and built-in).
+  # File content is used as a prompt template with variable substitution:
+  #   {{title}}, {{domain}}, {{date_added}}, {{source}},
+  #   {{content_length}}, {{content_tier}}, {{content}}
   summary_prompt_file: ""
 
-  # LLM 回應的最大 token 數
+  # Maximum tokens for LLM response
   max_tokens: 10000
 
-  # 關鍵字提取設定（摘要完成後的第二階段，非阻塞）
+  # Keyword extraction settings (Stage 2, non-blocking — runs after main summary)
   keywords:
-    enabled: true                        # 是否啟用關鍵字提取
-    language: "en"                       # 關鍵字輸出語言（可與摘要語言不同）
-    count: 5                             # 最大關鍵字數量
+    enabled: true                        # Enable keyword extraction
+    language: "en"                       # Output language for keywords (can differ from summary)
+    count: 5                             # Maximum number of keywords to extract
 
-  # Mermaid 圖表生成設定（摘要完成後的第三階段，非阻塞）
+  # Mermaid diagram generation settings (Stage 3, non-blocking)
   mermaid:
-    enabled: true                        # 是否啟用 Mermaid 流程圖生成
+    enabled: true                        # Enable Mermaid flowchart generation
 
 # ============================================================================
-# Safari Reading List 設定
+# Safari Reading List
 # ============================================================================
 safari:
 
-  # 是否啟用 Safari Reading List 來源
-  # 需要 macOS Full Disk Access 權限（系統設定 > 隱私與安全性 > 完整磁碟取用權限）
+  # Enable Safari Reading List as a source.
+  # Requires macOS Full Disk Access permission for the terminal app.
+  # (System Settings > Privacy & Security > Full Disk Access)
   enabled: true
 
-  # Bookmarks.plist 路徑。留空使用預設路徑。
-  # 預設：~/Library/Safari/Bookmarks.plist
+  # Path to Bookmarks.plist. Leave empty for the default location.
+  # Default: ~/Library/Safari/Bookmarks.plist
   plist_path: ""
 
 # ============================================================================
-# Chrome Reading List 設定
+# Chrome Reading List
 # ============================================================================
-# 透過直接讀取 Chrome Sync Data LevelDB 取得 Reading List。
-# 不需要啟動 Chrome、不需要 Extension、不受 SingletonLock 影響。
+# Reads Chrome Reading List directly from the Sync Data LevelDB files.
+# Does NOT require launching Chrome, extensions, or an active Google session.
+# Works even while Chrome is running (copies LevelDB files, skips LOCK).
 chrome:
 
-  # 是否啟用 Chrome Reading List 來源
+  # Enable Chrome Reading List as a source
   enabled: true
 
-  # Google Account email。用於自動找到對應的 Chrome profile。
-  # 程式會掃描所有 Chrome profile 的 Local State，找到 user_name 匹配的 profile。
-  # 留空則依賴 profile 欄位指定。
+  # Google Account email. Used to auto-detect the matching Chrome profile.
+  # The resolver scans all profiles in Local State for a matching user_name field.
+  # Leave empty to rely on the profile field instead.
   google_account: ""
 
-  # Chrome Profile 名稱。可以是 UI 顯示名稱（如 "Personal"）或
-  # 內部資料夾名稱（如 "Default", "Profile 1"）。
+  # Chrome profile name. Can be the UI display name (e.g., "Personal") or
+  # the internal folder name (e.g., "Default", "Profile 1").
   #
-  # 與 google_account 的組合行為：
-  #   google_account + profile 都有值 → 兩者必須匹配同一個 profile
-  #   google_account 有值 + profile 為空 → 自動找匹配 email 的 profile
-  #   google_account 為空 + profile 有值 → 按名稱查找 profile
-  #   兩者都為空 → 使用 "Default" profile
+  # Combined behavior with google_account:
+  #   google_account + profile both set → both must match the same profile
+  #   google_account set + profile empty → auto-find profile matching the email
+  #   google_account empty + profile set → look up profile by name
+  #   both empty → use "Default" profile
   profile: "Default"
 
-  # Chrome User Data 目錄路徑。留空使用系統預設路徑。
-  # macOS 預設：~/Library/Application Support/Google/Chrome
+  # Chrome User Data directory path. Leave empty for the system default.
+  # macOS default: ~/Library/Application Support/Google/Chrome
   user_data_dir: ""
 
-  # 當 profile 的 user-data-dir 被 SingletonLock 鎖定時，
-  # 是否自動複製必要的 profile 檔案到暫存目錄使用。
-  # 此設定僅影響萃取層（如需登入狀態的網頁），Reading List 讀取不受影響。
+  # When the user-data-dir is locked by SingletonLock, automatically clone
+  # essential profile files to a temp directory. This setting only affects
+  # the extraction layer (for pages requiring login state).
+  # Reading List retrieval via LevelDB is NOT affected by SingletonLock.
   clone_profile: true
 
 # ============================================================================
-# 萃取設定
+# Extraction Settings
 # ============================================================================
-# 使用 chromedp-undetected 控制 Chrome 萃取網頁內容。
-# 包含反偵測機制（隱藏 navigator.webdriver、AutomationControlled 等）。
+# Uses chromedp-undetected to control Chrome for web content extraction.
+# Includes anti-detection measures (hides navigator.webdriver, AutomationControlled, etc.).
+# Extracts page content via Defuddle JS injection → clean Markdown output.
 extract:
 
-  # 預設是否使用 headless 模式。
-  # true = 無視窗背景執行（預設）
-  # false = 顯示 Chrome 視窗
+  # Default headless mode for extraction.
+  # true = no browser window (default, faster)
+  # false = show browser window
   headless: true
 
-  # 萃取時使用的 Chrome Profile（UI 名稱或資料夾名稱）。
-  # 影響 Cookie/登入狀態。不同於 chrome.profile（那是 Reading List 用的）。
+  # Chrome profile for extraction (UI name or folder name).
+  # Determines which cookies/login state to use. Separate from chrome.profile
+  # (which is for Reading List retrieval).
   chrome_profile: "Default"
 
-  # 萃取用的 Google Account（選填）。
-  # 可搭配 domain_rules 讓不同網域用不同帳號的登入狀態。
+  # Google Account email for extraction (optional).
+  # Can be combined with domain_rules to use different accounts per domain.
   google_account: ""
 
-  # Chrome User Data 目錄路徑（萃取用）。
-  # 留空使用系統預設路徑。
+  # Chrome User Data directory for extraction.
+  # Leave empty for the system default.
   user_data_dir: ""
 
-  # 每頁萃取超時時間（headless 模式）
+  # Extraction timeout for headless mode
   timeout: 30s
 
-  # headed 模式的超時時間（較長，含等待 Cloudflare 反爬蟲自動通過的時間）
+  # Extraction timeout for headed mode (longer, allows time for anti-bot
+  # challenges to auto-resolve based on profile trust score)
   headed_timeout: 60s
 
-  # 網頁載入後額外等待時間（等待 JavaScript 渲染完成）
+  # Additional wait time after page load (for JavaScript rendering to complete)
   wait_after_load: 2s
 
-  # 萃取的最短內容長度（字元數，使用 rune count 正確計算 CJK）。
-  # 低於此長度的內容仍會儲存為 content.md，但會跳過 LLM 摘要。
-  # 用於過濾登入頁面、錯誤頁面等無意義內容，避免浪費 LLM token。
-  # 設為 0 則不檢查。
+  # Minimum content length (in characters, using rune count for correct CJK).
+  # Content shorter than this is still saved as content.md but LLM summarization
+  # is skipped. Prevents wasting LLM tokens on login pages, error pages, etc.
+  # Set to 0 to disable the check.
   min_content_length: 100
 
-  # 偵測到 Cloudflare/CAPTCHA 阻擋時，是否自動切換為 headed 模式重試。
-  # 偵測規則：內容中包含 2 個以上反爬蟲特徵（如 "cloudflare", "ray id" 等）。
-  # 重試時使用 headed_timeout 作為超時時間。
+  # Auto-retry with headed mode when anti-bot protection is detected.
+  # Detection: content matches 2+ patterns (e.g., "cloudflare", "ray id",
+  # "security verification", "captcha").
+  # Retry uses headed_timeout as the timeout value.
   headed_on_block: true
 
-  # 每個網域的個別萃取規則。
-  # 可指定特定網域使用 headed 模式、特定 Chrome Profile 或 Google Account。
-  # domains 支援精確匹配和 wildcard（*.example.com）。
-  # 精確匹配 "example.com" 同時匹配 example.com 和 *.example.com。
+  # Per-domain extraction rules.
+  # Override headed mode, Chrome profile, or Google Account for specific domains.
+  # Domains support exact match and wildcards (*.example.com).
+  # Exact match "example.com" also matches *.example.com subdomains.
   #
-  # 範例：
+  # Example:
   #   domain_rules:
   #     - domains: ["medium.com"]
-  #       headed: true                   # Medium 需要 headed 模式
-  #       google_account: "work@co.com"  # 使用工作帳號的登入狀態
-  #       chrome_profile: ""             # 空 = 自動從 google_account 找
+  #       headed: true                   # Medium requires headed mode
+  #       google_account: "work@co.com"  # Use work account's login state
+  #       chrome_profile: ""             # Auto-resolve from google_account
   #     - domains: ["*.substack.com"]
   #       headed: true
   #       chrome_profile: "Default"
   #     - domains: ["github.com"]
-  #       headed: false                  # GitHub 可以 headless
-  #       chrome_profile: "Profile 2"    # 但需要特定 profile 的登入狀態
+  #       headed: false                  # GitHub works headless
+  #       chrome_profile: "Profile 2"    # But needs specific profile's cookies
   domain_rules: []
 
 # ============================================================================
-# 流水線設定
+# Pipeline Settings
 # ============================================================================
 pipeline:
 
-  # 是否跳過已處理的 URL（透過檔名中的 SHA8 hash 判斷）。
-  # true = 跳過已存在 summary.md 的項目（預設）
-  # false = 重新處理所有項目
-  # CLI: --force 可覆蓋此設定
+  # Skip URLs that have already been processed (detected by SHA8 hash in filename).
+  # true = skip items with existing summary.md (default)
+  # false = reprocess all items
+  # CLI override: --force
   skip_existing: true
 
-  # Dry run 模式。只列出待處理項目，不實際萃取和摘要。
-  # CLI: --dry-run
+  # Dry run mode. Lists items to be processed without actually extracting or summarizing.
+  # CLI override: --dry-run
   dry_run: false
 
-  # 處理項目之間的隨機延遲（秒）。避免觸發網站 rate limit。
-  # 實際延遲 = delay_min ~ delay_max 之間的隨機值。
-  # dry-run 模式下不延遲。
+  # Random delay between processing items (seconds). Prevents triggering rate limits.
+  # Actual delay = random value between delay_min and delay_max.
+  # Skipped in dry-run mode.
   delay_min: 3
   delay_max: 8
 
 # ============================================================================
-# 篩選設定
+# Filter Settings
 # ============================================================================
 filter:
 
-  # 只處理未讀項目
-  # Safari: ReadingList.DateLastViewed 為空表示未讀
+  # Only process unread items.
+  # Safari: ReadingList.DateLastViewed is zero → unread
   # Chrome: status = UNREAD (0)
-  # CLI: --unread-only
+  # CLI override: --unread-only
   unread_only: false
 
-  # 只處理此日期之後加入的項目（格式：YYYY-MM-DD）
-  # 留空 = 不篩選日期
-  # CLI: --since 2026-03-01
+  # Only process items added after this date (format: YYYY-MM-DD).
+  # Leave empty to disable date filtering.
+  # CLI override: --since 2026-03-01
   since: ""
 
-  # 最大處理數量。0 = 無限制。
-  # CLI: --limit 10 / -n 10
+  # Maximum number of items to process. 0 = unlimited.
+  # CLI override: --limit 10 / -n 10
   limit: 0
 
 # ============================================================================
-# Watch 模式
+# Watch Mode
 # ============================================================================
-# 定期重新掃描 Reading List 並處理新項目。
-# 每輪會重新載入部分設定（filter, watch, llm, summary, pipeline）。
-# SIGINT 在處理中 → 等當前項目完成後停止；在 sleep 中 → 立即退出。
+# Periodically re-scan Reading Lists and process new items.
+# Each iteration reloads: filter, watch, llm, summary, pipeline settings.
+# Signal handling:
+#   SIGINT during processing → finish current item, then stop
+#   SIGINT during sleep → exit immediately
 watch:
 
-  # 是否啟用 watch 模式
-  # CLI: --watch
+  # Enable watch mode
+  # CLI override: --watch
   enabled: false
 
-  # 掃描間隔（分鐘）
+  # Scan interval in minutes
   interval: 10
 
 # ============================================================================
-# copy_to 設定
+# copy_to Settings
 # ============================================================================
-# 處理完成後，將輸出檔案複製到指定路徑。
-# 用於將摘要整理到 Obsidian vault 的特定目錄結構中。
+# After processing, copy output files to a specified location.
+# Useful for organizing summaries into specific Obsidian vault directory structures.
 copy_to:
 
-  # 是否啟用 copy_to
+  # Enable copy_to
   enabled: false
 
-  # 目標目錄路徑模板。支援以下變數：
-  #   {output_dir}  — 設定的 output_dir 值
-  #   {date}        — 處理日期（YYYY-MM-DD）
-  #   {date_added}  — 加入 Reading List 的日期（YYYY-MM-DD）
-  #   {title}       — 網頁標題（display-friendly，已移除不安全字元）
-  #   {sha8}        — URL 的 SHA256 前 8 碼
-  #   {source}      — 來源（safari / chrome / manual）
-  #   {domain}      — 原始網域（example.com）
-  #   {domain_dir}  — 網域目錄名（example_com，. 替換為 _）
-  #   {type}        — 檔案類型（summary / content）
+  # Target directory path template. Supports the following variables:
+  #   {output_dir}  — configured output_dir value
+  #   {date}        — processing date (YYYY-MM-DD)
+  #   {date_added}  — date added to Reading List (YYYY-MM-DD)
+  #   {title}       — page title (display-friendly, unsafe chars removed)
+  #   {sha8}        — first 8 hex chars of URL's SHA256 hash
+  #   {source}      — source type (safari / chrome / manual)
+  #   {domain}      — raw domain (example.com)
+  #   {domain_dir}  — domain directory name (example_com, dots replaced with _)
+  #   {type}        — file type (summary / content)
   path: "{output_dir}/by-source/{source}/{domain_dir}"
 
-  # 目標檔名模板。支援與 path 相同的變數。
+  # Target filename template. Supports the same variables as path.
   filename: "{date}__{title}__{type}.md"
 
-  # 要複製的檔案類型
-  # 可用值：summary, content
+  # Which file types to copy
+  # Available: summary, content
   files: ["summary", "content"]
 
-  # 目標檔案已存在時是否覆蓋
+  # Whether to overwrite existing files at the target location
   overwrite: false
 
 # ============================================================================
-# Obsidian 整合
+# Obsidian Integration
 # ============================================================================
 obsidian:
 
-  # 是否在 frontmatter tags 中加入 LLM 自動生成的關鍵字
+  # Include LLM-generated keywords as tags in frontmatter
   auto_tags: true
 
-  # 是否使用 wikilink 格式（[[筆記名稱]]）
+  # Use wikilink format ([[note name]]) in output
   wikilinks: true
