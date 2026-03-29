@@ -18,8 +18,9 @@ var (
 	flagSafari     bool
 	flagChrome     bool
 	flagAll        bool
-	flagForce      bool
-	flagProfile    string
+	flagForce           bool
+	flagProfile         string
+	flagForceQuitChrome bool
 )
 
 var rootCmd = &cobra.Command{
@@ -49,6 +50,7 @@ func init() {
 	pf.BoolVarP(&flagAll, "all", "a", false, "process all sources")
 	pf.BoolVar(&flagForce, "force", false, "force reprocess existing items")
 	pf.StringVar(&flagProfile, "profile", "", "Chrome Reading List profile override (UI name)")
+	pf.BoolVar(&flagForceQuitChrome, "force-quit-chrome", false, "force-quit Chrome if profile is locked by SingletonLock")
 
 	rootCmd.AddCommand(processCmd)
 	rootCmd.AddCommand(listCmd)

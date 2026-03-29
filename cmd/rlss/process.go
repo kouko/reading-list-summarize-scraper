@@ -137,6 +137,9 @@ func loadAndOverrideConfig() (*config.Config, string, error) {
 	if flagProfile != "" {
 		cfg.Chrome.Profile = flagProfile
 	}
+	if flagForceQuitChrome {
+		cfg.Chrome.ForceQuitChrome = true
+	}
 
 	return cfg, cfgPath, nil
 }
