@@ -154,15 +154,25 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 	if cfg.Chrome.Enabled {
 		profileDir := cfg.Chrome.Profile
 		userDataDir := cfg.Chrome.UserDataDir
+
+		// Resolve profile by Google Account email or display name.
 		if resolver != nil && cfg.Chrome.GoogleAccount != "" {
-			folder, dir, err := resolver.SmartResolve(
-				cfg.Chrome.GoogleAccount, profileDir, userDataDir, cfg.Chrome.CloneProfile,
-			)
-			if err != nil {
-				slog.Warn("smart resolve failed, falling back", "err", err)
+			matches := resolver.ResolveByEmail(cfg.Chrome.GoogleAccount)
+			if len(matches) > 0 {
+				best := matches[0]
+				// Prefer match that also matches profile name (if specified)
+				if profileDir != "" {
+					for _, m := range matches {
+						if m.FolderName == profileDir || m.DisplayName == profileDir {
+							best = m
+							break
+						}
+					}
+				}
+				profileDir = best.FolderName
+				userDataDir = best.UserDataDir
 			} else {
-				profileDir = folder
-				userDataDir = dir
+				slog.Warn("no Chrome profile found for email", "email", cfg.Chrome.GoogleAccount)
 			}
 		} else if resolver != nil && profileDir != "" {
 			if folder, err := resolver.Resolve(profileDir); err == nil {
@@ -170,12 +180,16 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 			}
 		}
 
-		// Use LevelDB direct read (no Chrome launch needed).
-		// Resolve the full profile folder path.
+		// Default Chrome user data dir.
 		if userDataDir == "" {
 			home, _ := os.UserHomeDir()
 			userDataDir = filepath.Join(home, "Library", "Application Support", "Google", "Chrome")
 		}
+		if profileDir == "" {
+			profileDir = "Default"
+		}
+
+		// Read directly from LevelDB (no Chrome launch, no SingletonLock issue).
 		profilePath := filepath.Join(userDataDir, profileDir)
 		sources = append(sources, source.NewChromeLevelDBSource(profilePath))
 	}
