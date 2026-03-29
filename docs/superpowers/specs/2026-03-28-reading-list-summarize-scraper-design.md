@@ -2,8 +2,8 @@
 
 > **Tool name**: `reading-list-summarize-scraper` (binary: `rlss`)
 > **Go module**: `github.com/kouko/reading-list-summarize-scraper`
-> **Date**: 2026-03-28
-> **Status**: Approved
+> **Date**: 2026-03-28 (updated: 2026-03-29)
+> **Status**: Implemented
 
 ---
 
@@ -17,7 +17,7 @@ macOS 的 Safari 和 Chrome Reading List 中累積大量「待讀」文章，但
 |------|------|
 | Language | Go — 靜態編譯、單一 Binary |
 | Environment | macOS，利用本機 Chrome |
-| Extraction | chromedp + esbuild 打包 Defuddle JS 注入（方案 A） |
+| Extraction | chromedp-undetected + esbuild 打包 Defuddle/full JS 注入（方案 A + 反偵測） |
 | Summarization | Agentic CLI fallback chain（claude / gemini / qwen） |
 | Output | Obsidian Flavored Markdown + YAML frontmatter |
 | Naming | `YYYY-MM-DD__<sha8>__summary.md` / `YYYY-MM-DD__<sha8>__content.md` |
@@ -41,9 +41,11 @@ macOS 的 Safari 和 Chrome Reading List 中累積大量「待讀」文章，但
               │
               ▼
 ┌─────────── 萃取層 ───────────┐
-│ chromedp (lazy pool)         │
-│ + Defuddle JS 注入            │
+│ chromedp-undetected          │
+│ + Defuddle/full JS 注入       │
 │ (go:embed defuddle.min.js)   │
+│ + anti-bot: headed_on_block  │
+│ + min_content_length 檢查     │
 └──────────────────────────────┘
               │
               ▼
@@ -182,11 +184,11 @@ reading-list-summarize-scraper/
 | `howett.net/plist` | Safari Bookmarks.plist 解析 |
 | `github.com/chromedp/chromedp` | Chrome CDP 控制 |
 | `github.com/chromedp/cdproto` | CDP 協定（target, runtime, extensions） |
+| `github.com/Davincible/chromedp-undetected` | 反偵測 Chrome 啟動（隱藏 webdriver 屬性） |
 | `github.com/spf13/cobra` | CLI 框架 |
 | `gopkg.in/yaml.v3` | Config YAML |
 | `embed` | 嵌入 JS + Extension（stdlib） |
 | `os/exec` | 呼叫 Agentic CLI（stdlib） |
-| `text/template` | Markdown 模板（stdlib） |
 | `crypto/sha256` | URL hash（stdlib） |
 
 ---
@@ -196,7 +198,7 @@ reading-list-summarize-scraper/
 ### Full config.yaml Structure
 
 ```yaml
-# ~/.config/rlss/config.yaml
+# ./config.yaml (預設讀取 CWD 下的 config.yaml，與 ytss 一致)
 
 # 輸出目錄
 output_dir: ~/kouko-obsidian-vault/references/
@@ -257,7 +259,7 @@ safari:
 chrome:
   enabled: true
   profile: "ReadingList-Auto"          # UI 顯示名稱
-  user_data_dir: ""                    # 空 = 自動偵測
+  user_data_dir: ""                    # 空 = ~/.config/rlss/chrome-data（獨立於執行中的 Chrome）
 
 # 萃取設定
 extract:
@@ -265,7 +267,10 @@ extract:
   chrome_profile: "Default"            # 預設萃取用 profile（UI 名稱）
   user_data_dir: ""
   timeout: 30s
+  headed_timeout: 60s                  # headed 模式超時（含等待反爬蟲自動通過）
   wait_after_load: 2s
+  min_content_length: 100              # 內容低於此字數時跳過摘要（避免浪費 LLM token）
+  headed_on_block: true                # 偵測到 Cloudflare 阻擋時自動切換 headed 模式重試
   domain_rules:
     - domains: ["medium.com"]
       headed: true
@@ -313,7 +318,7 @@ obsidian:
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--config` | | `~/.config/rlss/config.yaml` | Config path |
+| `--config` | | `./config.yaml` | Config path (CWD relative, like ytss) |
 | `--safari` | `-s` | false | Safari Reading List |
 | `--chrome` | `-c` | false | Chrome Reading List |
 | `--all` | `-a` | false | All sources |
@@ -360,7 +365,10 @@ type Source interface {
 - Parse `~/Library/Safari/Bookmarks.plist` using `howett.net/plist`
 - Find `com.apple.ReadingList` folder in top-level Children
 - Extract `URLString`, `URIDictionary["title"]` (fallback to `Title`), `ReadingList.DateAdded`, `ReadingList.DateLastViewed` (zero = unread)
-- Requires Full Disk Access; error message guides user to System Preferences
+- Requires Full Disk Access; on permission error:
+  - Displays prominent ASCII banner with EN/JA/ZH-TW instructions
+  - OSC 8 clickable hyperlink for supported terminals (iTerm2, Warp)
+  - Automatically opens System Settings to Full Disk Access pane
 
 ### Chrome Source
 
@@ -381,6 +389,28 @@ type Source interface {
 
 ## 7. Extraction Layer
 
+### Anti-Bot Stealth (chromedp-undetected)
+
+Browser instances use `github.com/Davincible/chromedp-undetected` instead of raw chromedp:
+- Hides `navigator.webdriver` property
+- Realistic browser fingerprint
+- `--disable-blink-features=AutomationControlled` flag
+- On macOS, falls back to standard headless flag (Xvfb is Linux-only)
+
+### Anti-Bot Retry: `headed_on_block`
+
+When extraction detects Cloudflare/CAPTCHA content (pattern matching with ≥2 hits to avoid false positives), and `extract.headed_on_block: true`:
+1. Automatically retries with headed Chrome (non-headless) using `headed_timeout` (60s)
+2. Profile with existing cookies/history may auto-pass Cloudflare trust check
+3. If still blocked after headed retry, records failure and continues
+
+### Content Validation
+
+After extraction, content is validated:
+- **Empty content** → error, skip item
+- **Anti-bot page detected** → trigger headed retry (if enabled) or error
+- **Content below `min_content_length`** (default 100 chars) → save content.md but skip summarization (avoids wasting LLM tokens on login pages, error pages)
+
 ### Defuddle JS Injection (Option A)
 
 Build pipeline:
@@ -389,22 +419,28 @@ Build pipeline:
 inject.ts → esbuild (IIFE, minify) → defuddle.min.js → go:embed
 ```
 
-**inject.ts**:
+**inject.ts** (uses `defuddle/full` for bundled Turndown markdown converter):
 
 ```typescript
-import { Defuddle } from 'defuddle';
+import Defuddle from 'defuddle/full';
 
-window.extractArticle = async () => {
+(window as any).extractArticle = async (): Promise<string> => {
     try {
-        const html = document.documentElement.outerHTML;
-        const df = new Defuddle(html);
-        const result = await df.parse();
-        return result?.content ?? "無法萃取網頁正文。";
-    } catch (e) {
-        return "萃取過程發生錯誤：" + e.toString();
+        const df = new Defuddle(document, { markdown: true });
+        const result = df.parse();
+        return result?.content ?? "";
+    } catch (e: any) {
+        console.error("defuddle extraction error:", e);
+        return "";
     }
 };
 ```
+
+Key implementation details:
+- `defuddle/full` (not `defuddle`) — includes Turndown for HTML-to-Markdown conversion
+- `{ markdown: true }` — outputs Markdown in `content` field (without this, content is HTML)
+- `new Defuddle(document)` — takes DOM `document` object, not HTML string
+- `parse()` is synchronous (not `parseAsync()`)
 
 **chromedp extraction sequence**:
 
@@ -670,17 +706,20 @@ Path length handling: progressive shortening (title 80→40→20) when path exce
 ### ProcessItem (Single URL)
 
 ```
-Step 1:  sha8 = sha256(url)[:8]
-Step 2:  index.Has(sha8) && !force → skip
-Step 3:  dry_run → print info, return
-Step 4:  Resume detection (content exists, summary missing → skip to Step 9)
-Step 5:  Domain rule matching → (headed, profile)
-Step 6:  pool.GetBrowser() → Navigate → Defuddle JS inject → Markdown
-Step 7:  Create output dir ({output_dir}/{domain_dir}/)
-Step 8:  Write content file
-Step 9:  Summarization (Stage 1 blocking, Stage 2+3 non-blocking)
-Step 10: Assemble + write summary file
-Step 11: ExecuteCopyTo()
+Step 1:   sha8 = sha256(url)[:8]
+Step 2:   index.Has(sha8) && !force → skip
+Step 3:   dry_run → print info, return
+Step 4:   Resume detection (content exists, summary missing → skip to Step 9)
+Step 5:   Domain rule matching → (headed, profile)
+Step 6:   pool.ExtractURL() → Navigate → Defuddle JS inject → Markdown
+Step 6a:  Empty content check → error
+Step 6b:  Anti-bot detection → headed_on_block? → pool.ExtractURLHeaded() retry
+Step 7:   Create output dir ({output_dir}/{domain_dir}/)
+Step 8:   Write content file
+Step 8a:  min_content_length check → skip summarization if too short
+Step 9:   Summarization (Stage 1 blocking, Stage 2+3 non-blocking)
+Step 10:  Assemble + write summary file
+Step 11:  ExecuteCopyTo()
 ```
 
 ### ProcessBatch
@@ -711,9 +750,11 @@ Step 11: ExecuteCopyTo()
 
 | Stage | On Failure | Logging |
 |-------|-----------|---------|
-| Safari plist | Suggest Full Disk Access, skip Safari | slog.Warn |
+| Safari plist | ASCII banner (EN/JA/ZH) + auto-open System Settings + skip Safari | stderr banner |
 | Chrome Extension | Suggest Profile setup, skip Chrome | slog.Warn |
-| Extraction | Record error, skip item | stats.Errors + slog.Error |
+| Extraction (empty) | Record error, skip item | stats.Errors + slog.Error |
+| Extraction (blocked) | Auto-retry with headed mode if headed_on_block, else skip | slog.Warn → slog.Error |
+| Content too short | Save content.md, skip summarization | slog.Warn |
 | Summary Stage 1 | Fallback chain exhausted → skip (content preserved) | stats.Errors + slog.Error |
 | Keywords Stage 2 | Warn, continue without tags | slog.Warn |
 | Mermaid Stage 3 | Warn, continue without diagrams | slog.Warn |
@@ -861,58 +902,52 @@ reading-list-summarize-scraper/
 ### Step 2: inject.ts
 
 ```typescript
-import { Defuddle } from 'defuddle';
+import Defuddle from 'defuddle/full';
 
 (window as any).extractArticle = async (): Promise<string> => {
     try {
-        const html = document.documentElement.outerHTML;
-        const df = new Defuddle(html);
-        const result = await df.parse();
-        return result?.content ?? "無法萃取網頁正文。";
+        const df = new Defuddle(document, { markdown: true });
+        const result = df.parse();
+        return result?.content ?? "";
     } catch (e: any) {
-        return "萃取過程發生錯誤：" + e.toString();
+        console.error("defuddle extraction error:", e);
+        return "";
     }
 };
 ```
 
-### Step 3: embed.go
+Note: Uses `defuddle/full` (not `defuddle`) to include Turndown HTML-to-Markdown converter (~568KB bundle vs ~168KB).
 
-```go
-package main
+### Step 3: embed package
 
-import _ "embed"
-
-//go:generate npm run build:defuddle
-
-//go:embed embed/defuddle.min.js
-var defuddleJS string
-```
+`embed/embed.go` provides `//go:embed` for defuddle.min.js and Chrome Extension files.
+Go's `//go:embed` only allows relative paths, so the embed package lives alongside the assets.
 
 ### Step 4: Makefile
 
 ```makefile
-.PHONY: build js clean update-defuddle
+.PHONY: build js js-quick clean generate
 
-# 完整 build：安裝依賴 → 打包 JS → 編譯 Go
+# 完整 build：強制重裝依賴 → 打包 JS → 編譯 Go
 build: js
 	go build -ldflags="-s -w" -o rlss ./cmd/rlss/
 
-# JS 打包（含 npm install）
-js: node_modules
+# 強制重新安裝 defuddle + 打包（預設）
+js:
+	rm -rf node_modules
+	npm install
+	npm run build:defuddle
+	@echo "Bundled defuddle $$(npm list defuddle --depth=0 | grep defuddle)"
+
+# 快速打包（不重裝，用於開發）
+js-quick: node_modules
 	npm run build:defuddle
 
-# npm install（package-lock.json 變更時觸發）
 node_modules: package.json package-lock.json
 	npm install
 	@touch node_modules
 
-# 更新 Defuddle 到最新版並重新打包
-update-defuddle:
-	npm update defuddle
-	npm run build:defuddle
-	@echo "Updated defuddle to $$(npm list defuddle --depth=0 | grep defuddle)"
-
-# go generate（觸發 //go:generate npm run build:defuddle）
+# go generate
 generate: node_modules
 	go generate ./...
 
@@ -979,8 +1014,8 @@ jobs:
 | Scenario | Command | Node.js Required | Result |
 |----------|---------|------------------|--------|
 | Quick build（use committed JS） | `go build ./cmd/rlss/` | No | Uses existing `embed/defuddle.min.js` |
-| Full build（regenerate JS） | `make build` | Yes | Reinstall deps + rebuild JS + Go build |
-| Update Defuddle version | `make update-defuddle` | Yes | npm update + rebuild JS |
+| Full build（force reinstall + regenerate JS） | `make` / `make build` | Yes | rm node_modules → npm install → esbuild → go build |
+| Dev build（skip reinstall） | `make js-quick && go build ./cmd/rlss/` | Yes | Use existing node_modules, rebundle only |
 | CI build | GitHub Actions | Yes (in CI) | Always regenerate from latest locked version |
 | go generate | `go generate ./...` | Yes | Triggers `npm run build:defuddle` |
 
