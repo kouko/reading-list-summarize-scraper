@@ -29,7 +29,7 @@ macOS 的 Safari 和 Chrome Reading List 中累積大量「待讀」文章，但
 ```
 ┌─────────── 輸入層 ───────────┐
 │ Safari Bookmarks.plist       │──┐
-│ Chrome Extension + CDP       │──┤── 統一 ReadingItem[]
+│ Chrome Sync Data LevelDB     │──┤── 統一 ReadingItem[]
 │ 手動 --url                   │──┘
 └──────────────────────────────┘
               │
@@ -126,10 +126,9 @@ reading-list-summarize-scraper/
 │       └── main.go                    ← CLI 入口（cobra）
 ├── internal/
 │   ├── source/                        ← 輸入層
-│   │   ├── types.go                   ← ReadingItem + Source interface
+│   │   ├── types.go                   ← ReadingItem + Source interface + DeduplicateByURL
 │   │   ├── safari.go                  ← Safari plist 解析（howett.net/plist）
-│   │   ├── chrome_leveldb.go          ← Chrome Reading List（LevelDB 直讀）
-│   │   ├── chrome.go                  ← Chrome Extension + CDP（legacy, 備用）
+│   │   ├── chrome_leveldb.go          ← Chrome Reading List（Sync Data LevelDB 直讀）
 │   │   └── manual.go                  ← --url 手動輸入
 │   │
 │   ├── extract/                       ← 萃取層
@@ -154,11 +153,10 @@ reading-list-summarize-scraper/
 │   │   └── openai_compat.go
 │   │
 │   ├── output/                        ← 輸出層
-│   │   ├── obsidian.go                ← Frontmatter + Markdown 組裝
-│   │   ├── filename.go                ← YYYY-MM-DD__<sha8>__type.md
+│   │   ├── obsidian.go                ← Frontmatter + Markdown 組裝 + Mermaid 插入
+│   │   ├── filename.go                ← SHA8 + DomainDir + YYYY-MM-DD__<sha8>__type.md
 │   │   ├── index.go                   ← 已處理 URL index（by SHA8）
-│   │   ├── template.go                ← Go template 渲染
-│   │   └── copyto.go                  ← copy_to 模板複製
+│   │   └── copyto.go                  ← copy_to 模板展開 + 檔案複製
 │   │
 │   ├── pipeline/                      ← 流水線編排
 │   │   ├── runner.go                  ← ProcessBatch + ProcessItem
@@ -170,10 +168,8 @@ reading-list-summarize-scraper/
 │       └── defaults.go                ← 預設值
 │
 ├── embed/                             ← 嵌入資源
-│   ├── defuddle.min.js                ← esbuild IIFE
-│   └── extension/
-│       ├── manifest.json
-│       └── background.js
+│   ├── embed.go                       ← //go:embed DefuddleJS
+│   └── defuddle.min.js                ← esbuild IIFE（defuddle/full + turndown）
 │
 ├── prompts/                           ← 內建 Prompt 模板
 │   └── builtin/
@@ -190,7 +186,7 @@ reading-list-summarize-scraper/
 ├── inject.ts                          ← Defuddle 前端膠水碼
 ├── package.json                       ← esbuild + defuddle（build 用）
 ├── Makefile
-├── config.yaml                        ← 範例設定檔
+├── config.example.yaml                ← 範例設定檔（含完整註解）
 ├── go.mod
 └── go.sum
 ```
@@ -207,7 +203,7 @@ reading-list-summarize-scraper/
 | `github.com/Davincible/chromedp-undetected` | 反偵測 Chrome 啟動（萃取層） |
 | `github.com/spf13/cobra` | CLI 框架 |
 | `gopkg.in/yaml.v3` | Config YAML |
-| `embed` | 嵌入 JS + Extension（stdlib） |
+| `embed` | 嵌入 Defuddle JS（stdlib） |
 | `os/exec` | 呼叫 Agentic CLI（stdlib） |
 | `crypto/sha256` | URL hash（stdlib） |
 
@@ -408,7 +404,7 @@ Reading List 透過直接讀取 Chrome Sync Data LevelDB 取得，不啟動 Chro
 
 不需要：Chrome 執行、Extension、Google Account session、SingletonLock 處理
 
-Legacy Chrome Extension source（`chrome.go`）保留作為備用，但預設不使用。
+Chrome Extension source（`chrome.go`）已移除。LevelDB 直讀為唯一的 Chrome Reading List 取得方式。
 
 ### Manual Source (`rlss url`)
 
@@ -757,7 +753,7 @@ Step 11:  ExecuteCopyTo()
 ```
 1. Fetch sources
    ├─ --safari → SafariSource.Fetch() (plist, <100ms)
-   ├─ --chrome → ChromeSource.Fetch() (Phase 1: headed Chrome + Extension)
+   ├─ --chrome → ChromeLevelDBSource.Fetch() (LevelDB 直讀，<1s)
    └─ Merge + URL dedup
 2. Filter (--unread / --since / --limit)
 3. Build/rebuild Index
@@ -781,7 +777,7 @@ Step 11:  ExecuteCopyTo()
 | Stage | On Failure | Logging |
 |-------|-----------|---------|
 | Safari plist | ASCII banner (EN/JA/ZH) + auto-open System Settings + skip Safari | stderr banner |
-| Chrome Extension | Suggest Profile setup, skip Chrome | slog.Warn |
+| Chrome LevelDB | Log error, skip Chrome source | slog.Error |
 | Extraction (empty) | Record error, skip item | stats.Errors + slog.Error |
 | Extraction (blocked) | Auto-retry with headed mode if headed_on_block, else skip | slog.Warn → slog.Error |
 | Content too short | Save content.md, skip summarization | slog.Warn |
@@ -950,7 +946,7 @@ Note: Uses `defuddle/full` (not `defuddle`) to include Turndown HTML-to-Markdown
 
 ### Step 3: embed package
 
-`embed/embed.go` provides `//go:embed` for defuddle.min.js and Chrome Extension files.
+`embed/embed.go` provides `//go:embed` for defuddle.min.js.
 Go's `//go:embed` only allows relative paths, so the embed package lives alongside the assets.
 
 ### Step 4: Makefile
