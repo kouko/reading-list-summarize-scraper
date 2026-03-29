@@ -67,20 +67,30 @@ macOS 的 Safari 和 Chrome Reading List 中累積大量「待讀」文章，但
 
 ---
 
-## 3. Chrome Instance Management (Conditional Switch - Option C)
+## 3. Chrome Reading List: LevelDB Direct Read
+
+Chrome Reading List 透過**直接讀取 Sync Data LevelDB** 取得，不需要啟動 Chrome。
 
 ```
-需要 Chrome Reading List？
-  ├─ 是 → Phase 1: 有頭 Chrome + Extension + 專用 Profile
-  │       → 取得 Reading List JSON → 關閉
-  │       → Phase 2: Lazy Pool for extraction
-  └─ 否（Safari-only / --url）
-          → 直接 Lazy Pool for extraction
+Chrome Profile/Sync Data/LevelDB/
+  → 複製到 /tmp（跳過 LOCK 檔案，~1-2MB）
+    → goleveldb ReadOnly 開啟
+      → 掃描 key prefix "reading_list-dt-"
+        → protowire 解碼 ReadingListSpecifics
+          → URL, Title, Status, Timestamps
 ```
 
-### Lazy Pool
+**優勢**（vs 原 Extension + CDP 方案）：
+- 不需要啟動 Chrome（<1s vs ~15s）
+- 無 SingletonLock 問題
+- 無 Extension 載入問題
+- 不需要 Google Account session
 
-每個唯一的 `(headed, profile)` 組合 = 一個 Chrome 實例，lazy 建立：
+詳細技術筆記：[[2026-03-29 Chrome Reading List LevelDB 直讀技術實作筆記]]
+
+### Chrome Instance Management (Extraction Layer)
+
+萃取層仍使用 chromedp-undetected Lazy Pool（與 Reading List 取得無關）：
 
 ```
 URL → 匹配 domain_rules → 得到 (headed, profile)
@@ -92,11 +102,18 @@ URL → 匹配 domain_rules → 得到 (headed, profile)
 
 不匹配任何 rule → 使用預設 `(headless=true, extract.chrome_profile)`。
 
-URL 處理順序維持 Reading List 原始順序，不依 headless/headed 分組。
+### Chrome Profile Resolution
 
-### Chrome Profile Name Resolution
+支援兩種指定方式：
 
-使用者在 config 中寫 Chrome UI 顯示名稱（如 `"我的工作帳號"`），程式啟動時讀取 `~/Library/Application Support/Google/Chrome/Local State` 的 `profile.info_cache`，建立 UI name → folder name（如 `"Profile 3"`）對應表。找不到時報錯並列出可用 profile。同時支援直接寫內部名稱作為 fallback。
+1. **Google Account email**（`chrome.google_account`）：掃描 `Local State` 的 `profile.info_cache` 中 `user_name` 欄位，找到匹配 email 的 profile
+2. **Profile 名稱**（`chrome.profile`）：UI 顯示名稱或內部 folder name
+
+解析優先級：
+- email + profile 都有 → 兩者須匹配
+- email 只有 → 自動找匹配的 profile
+- profile 只有 → 按名稱查找
+- 都沒有 → 使用 Default
 
 ---
 
@@ -111,7 +128,8 @@ reading-list-summarize-scraper/
 │   ├── source/                        ← 輸入層
 │   │   ├── types.go                   ← ReadingItem + Source interface
 │   │   ├── safari.go                  ← Safari plist 解析（howett.net/plist）
-│   │   ├── chrome.go                  ← Chrome CDP + Extension + SW
+│   │   ├── chrome_leveldb.go          ← Chrome Reading List（LevelDB 直讀）
+│   │   ├── chrome.go                  ← Chrome Extension + CDP（legacy, 備用）
 │   │   └── manual.go                  ← --url 手動輸入
 │   │
 │   ├── extract/                       ← 萃取層
@@ -182,9 +200,11 @@ reading-list-summarize-scraper/
 | Package | Purpose |
 |---------|---------|
 | `howett.net/plist` | Safari Bookmarks.plist 解析 |
-| `github.com/chromedp/chromedp` | Chrome CDP 控制 |
-| `github.com/chromedp/cdproto` | CDP 協定（target, runtime, extensions） |
-| `github.com/Davincible/chromedp-undetected` | 反偵測 Chrome 啟動（隱藏 webdriver 屬性） |
+| `github.com/syndtr/goleveldb` | Chrome Sync Data LevelDB 讀取 |
+| `google.golang.org/protobuf` | ReadingListSpecifics protowire 解碼 |
+| `github.com/chromedp/chromedp` | Chrome CDP 控制（萃取層） |
+| `github.com/chromedp/cdproto` | CDP 協定（runtime） |
+| `github.com/Davincible/chromedp-undetected` | 反偵測 Chrome 啟動（萃取層） |
 | `github.com/spf13/cobra` | CLI 框架 |
 | `gopkg.in/yaml.v3` | Config YAML |
 | `embed` | 嵌入 JS + Extension（stdlib） |
@@ -258,13 +278,16 @@ safari:
 # Chrome Reading List 設定
 chrome:
   enabled: true
-  profile: "ReadingList-Auto"          # UI 顯示名稱
-  user_data_dir: ""                    # 空 = ~/.config/rlss/chrome-data（獨立於執行中的 Chrome）
+  google_account: "user@gmail.com"     # Google Account email（自動找對應 profile）
+  profile: ""                          # UI 顯示名稱（搭配 google_account 或單獨使用）
+  user_data_dir: ""                    # 空 = 自動偵測系統 Chrome 路徑
+  clone_profile: true                  # SingletonLock 時複製 profile（僅萃取層備用）
 
 # 萃取設定
 extract:
   headless: true                       # 預設 headless
   chrome_profile: "Default"            # 預設萃取用 profile（UI 名稱）
+  google_account: ""                   # 萃取用 Google Account（per-domain 可覆蓋）
   user_data_dir: ""
   timeout: 30s
   headed_timeout: 60s                  # headed 模式超時（含等待反爬蟲自動通過）
@@ -274,7 +297,8 @@ extract:
   domain_rules:
     - domains: ["medium.com"]
       headed: true
-      chrome_profile: "我的工作帳號"
+      google_account: "work@company.com"
+      chrome_profile: ""
     - domains: ["*.substack.com"]
       headed: true
       chrome_profile: "Default"
@@ -370,15 +394,21 @@ type Source interface {
   - OSC 8 clickable hyperlink for supported terminals (iTerm2, Warp)
   - Automatically opens System Settings to Full Disk Access pane
 
-### Chrome Source
+### Chrome Source (LevelDB Direct Read)
 
-- Phase 1: Launch headed Chrome with `--load-extension` + dedicated profile
-- Navigate to `about:blank` to trigger browser startup
-- `target.GetTargets()` → find `service_worker` target with extension URL
-- `target.AttachToTarget(swTargetID)` → get sessionID
-- `runtime.Evaluate("chrome.readingList.query({})")` in SW context → JSON
-- Parse into `[]ReadingItem`, close Phase 1 Chrome instance
-- Extension embedded via `go:embed` → extracted to temp dir at runtime
+Reading List 透過直接讀取 Chrome Sync Data LevelDB 取得，不啟動 Chrome：
+
+1. 解析 profile（by `google_account` email 或 `profile` name）
+2. 定位 `{userDataDir}/{profile}/Sync Data/LevelDB/`
+3. 複製 LevelDB 檔案到 `/tmp/rlss-leveldb-copy/`（跳過 LOCK，~1-2MB）
+4. `goleveldb` ReadOnly 開啟
+5. 掃描 key prefix `reading_list-dt-` → URL 在 key 中
+6. `protowire` 解碼 value（ReadingListSpecifics protobuf）→ title, status, timestamps
+7. 回傳 `[]ReadingItem`
+
+不需要：Chrome 執行、Extension、Google Account session、SingletonLock 處理
+
+Legacy Chrome Extension source（`chrome.go`）保留作為備用，但預設不使用。
 
 ### Manual Source (`rlss url`)
 
@@ -1034,4 +1064,5 @@ jobs:
 - [[2026-03-28 Reading List 自動摘要工具規劃 — Go chromedp + Defuddle + Agentic CLI]] — Primary planning document
 - [[2026-03-28 macOS Reading List 自動化技術研究 — Safari 與 Chrome 的 Go 實作方案]] — Safari plist + Chrome Extension technical details
 - [[2026-03-28 Go 網頁內容萃取與 Agentic CLI 摘要自動化研究]] — Extraction + CLI summarization architecture
+- [[2026-03-29 Chrome Reading List LevelDB 直讀技術實作筆記]] — Chrome LevelDB 直讀方案的技術實作與業界參考
 - youtube-summarize-scraper — Reference implementation for LLM provider system, fallback chain, config structure, pipeline patterns, watch mode, copy_to, index/skip detection
