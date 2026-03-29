@@ -88,12 +88,11 @@ func (c *ChromeSource) Fetch() ([]ReadingItem, error) {
 	// Launch headed Chrome with extension + profile using chromedp-undetected.
 	cfg := cu.NewConfig(
 		cu.WithUserDataDir(userDataDir),
+		cu.WithExtensions(extDir),
 	)
 	cfg.ChromeFlags = append(cfg.ChromeFlags,
 		chromedp.Flag("disable-blink-features", "AutomationControlled"),
-		chromedp.Flag("disable-extensions", false),
 		chromedp.Flag("disable-extensions-except", extDir),
-		chromedp.Flag("load-extension", extDir),
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
 	)
@@ -154,33 +153,34 @@ func (c *ChromeSource) Fetch() ([]ReadingItem, error) {
 }
 
 // findServiceWorker scans browser targets for the extension's service worker.
+// Retries up to 5 times with 2-second intervals since the SW may take time to register.
 func (c *ChromeSource) findServiceWorker(ctx context.Context) (target.ID, error) {
-	targets, err := chromedp.Targets(ctx)
-	if err != nil {
-		return "", fmt.Errorf("get targets: %w", err)
-	}
+	for attempt := 0; attempt < 5; attempt++ {
+		targets, err := chromedp.Targets(ctx)
+		if err != nil {
+			return "", fmt.Errorf("get targets: %w", err)
+		}
 
-	for _, t := range targets {
-		if t.Type == "service_worker" {
-			slog.Debug("found service worker", "url", t.URL, "id", t.TargetID)
-			return t.TargetID, nil
+		for _, t := range targets {
+			slog.Debug("browser target", "type", t.Type, "url", t.URL, "attempt", attempt+1)
+			if t.Type == "service_worker" {
+				slog.Info("found extension service worker", "url", t.URL, "attempt", attempt+1)
+				return t.TargetID, nil
+			}
+		}
+
+		if attempt < 4 {
+			time.Sleep(2 * time.Second)
 		}
 	}
 
-	// Retry once after a short delay — the SW may still be spinning up.
-	time.Sleep(2 * time.Second)
-	targets, err = chromedp.Targets(ctx)
-	if err != nil {
-		return "", fmt.Errorf("get targets (retry): %w", err)
-	}
+	// Final attempt — list all target types for debugging
+	targets, _ := chromedp.Targets(ctx)
+	var types []string
 	for _, t := range targets {
-		if t.Type == "service_worker" {
-			slog.Debug("found service worker (retry)", "url", t.URL, "id", t.TargetID)
-			return t.TargetID, nil
-		}
+		types = append(types, fmt.Sprintf("%s(%s)", t.Type, t.URL))
 	}
-
-	return "", fmt.Errorf("extension service worker not found among %d targets", len(targets))
+	return "", fmt.Errorf("extension service worker not found after 5 attempts; targets: %v", types)
 }
 
 type chromeEntry struct {
