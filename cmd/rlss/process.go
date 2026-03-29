@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	rlssembed "github.com/kouko/reading-list-summarize-scraper/embed"
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
 	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 	"github.com/kouko/reading-list-summarize-scraper/internal/pipeline"
@@ -169,10 +169,15 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 				profileDir = folder
 			}
 		}
-		sources = append(sources, source.NewChromeSource(
-			profileDir, userDataDir, cfg.Chrome.GoogleAccount, cfg.Chrome.CloneProfile,
-			rlssembed.ExtensionManifest, rlssembed.ExtensionBackground,
-		))
+
+		// Use LevelDB direct read (no Chrome launch needed).
+		// Resolve the full profile folder path.
+		if userDataDir == "" {
+			home, _ := os.UserHomeDir()
+			userDataDir = filepath.Join(home, "Library", "Application Support", "Google", "Chrome")
+		}
+		profilePath := filepath.Join(userDataDir, profileDir)
+		sources = append(sources, source.NewChromeLevelDBSource(profilePath))
 	}
 
 	var allItems []source.ReadingItem
