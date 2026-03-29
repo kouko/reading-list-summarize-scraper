@@ -27,6 +27,12 @@ Manual --url ────────────┘
 
 ## Installation
 
+### Homebrew
+
+```bash
+brew install kouko/tap/rlss
+```
+
 ### From GitHub Release
 
 Download the latest binary from [Releases](https://github.com/kouko/reading-list-summarize-scraper/releases).
@@ -204,9 +210,10 @@ git push origin v0.1.0
 
 The Release workflow will:
 1. Run all tests
-2. Build the binary with the version embedded (`./rlss --version` → `v0.1.0`)
-3. Create a GitHub Release with the binary attached
+2. Build binaries for 4 platforms (darwin/linux × arm64/amd64)
+3. Create a GitHub Release with tarballs + SHA256 checksums
 4. Auto-generate release notes from commits
+5. Update the Homebrew formula in [kouko/homebrew-tap](https://github.com/kouko/homebrew-tap)
 
 ### Versioning
 
@@ -221,7 +228,14 @@ The Release workflow will:
 | Workflow | Trigger | Action |
 |----------|---------|--------|
 | **CI** (`build.yml`) | Push/PR to `main` | Test + compile verification |
-| **Release** (`release.yml`) | Push `v*` tag | Test + build + GitHub Release |
+| **Release** (`release.yml`) | Push `v*` tag | Test + multi-platform build + GitHub Release + Homebrew tap update |
+
+### Setup: Homebrew Tap Token
+
+The release workflow needs a `HOMEBREW_TAP_TOKEN` secret to push to `kouko/homebrew-tap`:
+
+1. Create a [Personal Access Token](https://github.com/settings/tokens) with `repo` scope
+2. Add it as a repository secret: Settings → Secrets → Actions → `HOMEBREW_TAP_TOKEN`
 
 ## License
 
