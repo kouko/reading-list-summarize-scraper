@@ -1,0 +1,340 @@
+# ============================================================================
+# Reading List Summarize Scraper (rlss) — Configuration
+# ============================================================================
+#
+# Default config path: ./config.yaml (relative to CWD where rlss runs)
+# Override with: rlss --config /path/to/config.yaml
+#
+# Path expansion: ~/ expands to user home directory
+# Environment variables: ${VAR} syntax (only for claude-api.api_key)
+
+# ============================================================================
+# Output Directory
+# ============================================================================
+# Extracted content and summaries are saved here, organized by domain:
+#   {output_dir}/{domain_dir}/YYYY-MM-DD__{sha8}__summary.md
+#   {output_dir}/{domain_dir}/YYYY-MM-DD__{sha8}__content.md
+#
+# Example structure:
+#   ./rlss-output/
+#   ├── zenn_dev/
+#   │   ├── 2026-03-29__350c2ef4__summary.md
+#   │   └── 2026-03-29__350c2ef4__content.md
+#   └── dev_classmethod_jp/
+#       └── ...
+output_dir: ./rlss-output
+
+# ============================================================================
+# LLM Settings
+# ============================================================================
+# Same structure as youtube-summarize-scraper (ytss).
+# Used for summarization, keyword extraction, and Mermaid diagram generation.
+llm:
+
+  # LLM provider to use. Can be a single string or a fallback list.
+  # First entry is primary; subsequent entries are tried in order on failure.
+  # Available: ollama, llamacpp, claude-api, claude-code, gemini-cli, qwen-code, openai-compat
+  #
+  # Single provider:
+  #   provider: "claude-code"
+  # Fallback chain:
+  #   provider: ["claude-code", "gemini-cli", "ollama"]
+  provider: "claude-code"
+
+  # Fallback strategy configuration
+  provider_fallback_strategy:
+    # Seconds to wait before retrying a provider that reported quota/rate limit errors
+    cooldown_seconds: 300
+    # Number of consecutive quota errors before skipping a provider (circuit breaker)
+    failure_threshold: 1
+
+  # --- Ollama (local LLM server) ---
+  ollama:
+    model: "llama3"                      # Model name (e.g., llama3, qwen3.5:9b)
+    endpoint: "http://localhost:11434"    # Ollama API endpoint
+    think: false                         # Enable thinking mode (uses 4x tokens)
+    timeout: 900                         # Request timeout in seconds
+
+  # --- llama.cpp (local inference server) ---
+  llamacpp:
+    endpoint: "http://localhost:8080"     # llama.cpp server endpoint
+
+  # --- Claude API (Anthropic official API) ---
+  claude-api:
+    api_key: "${CLAUDE_API_KEY}"          # API key (supports ${ENV_VAR} syntax)
+    model: "claude-sonnet-4-20250514"     # Model ID
+
+  # --- Claude Code CLI ---
+  claude-code:
+    model: "haiku"                       # Model: haiku, sonnet, opus, or full model ID
+    path: ""                             # Path to claude binary (empty = search PATH)
+    timeout: 900                         # Request timeout in seconds
+
+  # --- Gemini CLI ---
+  gemini-cli:
+    model: "auto"                        # Model: auto, pro, flash, flash-lite
+    path: ""                             # Path to gemini binary (empty = search PATH)
+    timeout: 900
+
+  # --- Qwen Code CLI ---
+  qwen-code:
+    model: "coder-model"                 # Model: coder-model (free), qwen3-coder-plus (paid)
+    path: ""                             # Path to qwen binary (empty = search PATH)
+    timeout: 900
+
+  # --- OpenAI-compatible API (oMLX, LM Studio, vLLM, etc.) ---
+  openai-compat:
+    endpoint: "http://127.0.0.1:8000/v1" # API endpoint
+    model: ""                            # Model name
+    api_key: ""                          # API key (optional)
+    timeout: 900
+
+# ============================================================================
+# Summary Settings
+# ============================================================================
+summary:
+
+  # Language for built-in prompts. Affects summary output language and format.
+  # Available: en, zh-Hant, ja
+  language: "zh-Hant"
+
+  # Inline prompt text. Overrides the built-in prompt when set.
+  # Leave empty to use the built-in prompt (determined by language).
+  prompt: ""
+
+  # Path to external prompt file. Highest priority (overrides inline and built-in).
+  # File content is used as a prompt template with variable substitution:
+  #   {{title}}, {{domain}}, {{date_added}}, {{source}},
+  #   {{content_length}}, {{content_tier}}, {{content}}
+  summary_prompt_file: ""
+
+  # Maximum tokens for LLM response
+  max_tokens: 10000
+
+  # Keyword extraction settings (Stage 2, non-blocking — runs after main summary)
+  keywords:
+    enabled: true                        # Enable keyword extraction
+    language: "en"                       # Output language for keywords (can differ from summary)
+    count: 5                             # Maximum number of keywords to extract
+
+  # Mermaid diagram generation settings (Stage 3, non-blocking)
+  mermaid:
+    enabled: true                        # Enable Mermaid flowchart generation
+
+# ============================================================================
+# Safari Reading List
+# ============================================================================
+safari:
+
+  # Enable Safari Reading List as a source.
+  # Requires macOS Full Disk Access permission for the terminal app.
+  # (System Settings > Privacy & Security > Full Disk Access)
+  enabled: true
+
+  # Path to Bookmarks.plist. Leave empty for the default location.
+  # Default: ~/Library/Safari/Bookmarks.plist
+  plist_path: ""
+
+# ============================================================================
+# Chrome Reading List
+# ============================================================================
+# Reads Chrome Reading List directly from the Sync Data LevelDB files.
+# Does NOT require launching Chrome, extensions, or an active Google session.
+# Works even while Chrome is running (copies LevelDB files, skips LOCK).
+chrome:
+
+  # Enable Chrome Reading List as a source
+  enabled: true
+
+  # Google Account email. Used to auto-detect the matching Chrome profile.
+  # The resolver scans all profiles in Local State for a matching user_name field.
+  # Leave empty to rely on the profile field instead.
+  google_account: ""
+
+  # Chrome profile name. Can be the UI display name (e.g., "Personal") or
+  # the internal folder name (e.g., "Default", "Profile 1").
+  #
+  # Combined behavior with google_account:
+  #   google_account + profile both set → both must match the same profile
+  #   google_account set + profile empty → auto-find profile matching the email
+  #   google_account empty + profile set → look up profile by name
+  #   both empty → use "Default" profile
+  profile: "Default"
+
+  # Chrome User Data directory path. Leave empty for the system default.
+  # macOS default: ~/Library/Application Support/Google/Chrome
+  user_data_dir: ""
+
+  # When the user-data-dir is locked by SingletonLock, automatically clone
+  # essential profile files to a temp directory. This setting only affects
+  # the extraction layer (for pages requiring login state).
+  # Reading List retrieval via LevelDB is NOT affected by SingletonLock.
+  clone_profile: true
+
+# ============================================================================
+# Extraction Settings
+# ============================================================================
+# Uses chromedp-undetected to control Chrome for web content extraction.
+# Includes anti-detection measures (hides navigator.webdriver, AutomationControlled, etc.).
+# Extracts page content via Defuddle JS injection → clean Markdown output.
+extract:
+
+  # Default headless mode for extraction.
+  # true = no browser window (default, faster)
+  # false = show browser window
+  headless: true
+
+  # Chrome profile for extraction (UI name or folder name).
+  # Determines which cookies/login state to use. Separate from chrome.profile
+  # (which is for Reading List retrieval).
+  chrome_profile: "Default"
+
+  # Google Account email for extraction (optional).
+  # Can be combined with domain_rules to use different accounts per domain.
+  google_account: ""
+
+  # Chrome User Data directory for extraction.
+  # Leave empty for the system default.
+  user_data_dir: ""
+
+  # Extraction timeout for headless mode
+  timeout: 30s
+
+  # Extraction timeout for headed mode (longer, allows time for anti-bot
+  # challenges to auto-resolve based on profile trust score)
+  headed_timeout: 60s
+
+  # Additional wait time after page load (for JavaScript rendering to complete)
+  wait_after_load: 2s
+
+  # Minimum content length (in characters, using rune count for correct CJK).
+  # Content shorter than this is still saved as content.md but LLM summarization
+  # is skipped. Prevents wasting LLM tokens on login pages, error pages, etc.
+  # Set to 0 to disable the check.
+  min_content_length: 100
+
+  # Auto-retry with headed mode when anti-bot protection is detected.
+  # Detection: content matches 2+ patterns (e.g., "cloudflare", "ray id",
+  # "security verification", "captcha").
+  # Retry uses headed_timeout as the timeout value.
+  headed_on_block: true
+
+  # Per-domain extraction rules.
+  # Override headed mode, Chrome profile, or Google Account for specific domains.
+  # Domains support exact match and wildcards (*.example.com).
+  # Exact match "example.com" also matches *.example.com subdomains.
+  #
+  # Example:
+  #   domain_rules:
+  #     - domains: ["medium.com"]
+  #       headed: true                   # Medium requires headed mode
+  #       google_account: "work@co.com"  # Use work account's login state
+  #       chrome_profile: ""             # Auto-resolve from google_account
+  #     - domains: ["*.substack.com"]
+  #       headed: true
+  #       chrome_profile: "Default"
+  #     - domains: ["github.com"]
+  #       headed: false                  # GitHub works headless
+  #       chrome_profile: "Profile 2"    # But needs specific profile's cookies
+  domain_rules: []
+
+# ============================================================================
+# Pipeline Settings
+# ============================================================================
+pipeline:
+
+  # Skip URLs that have already been processed (detected by SHA8 hash in filename).
+  # true = skip items with existing summary.md (default)
+  # false = reprocess all items
+  # CLI override: --force
+  skip_existing: true
+
+  # Dry run mode. Lists items to be processed without actually extracting or summarizing.
+  # CLI override: --dry-run
+  dry_run: false
+
+  # Random delay between processing items (seconds). Prevents triggering rate limits.
+  # Actual delay = random value between delay_min and delay_max.
+  # Skipped in dry-run mode.
+  delay_min: 3
+  delay_max: 8
+
+# ============================================================================
+# Filter Settings
+# ============================================================================
+filter:
+
+  # Only process unread items.
+  # Safari: ReadingList.DateLastViewed is zero → unread
+  # Chrome: status = UNREAD (0)
+  # CLI override: --unread-only
+  unread_only: false
+
+  # Only process items added after this date (format: YYYY-MM-DD).
+  # Leave empty to disable date filtering.
+  # CLI override: --since 2026-03-01
+  since: ""
+
+  # Maximum number of items to process. 0 = unlimited.
+  # CLI override: --limit 10 / -n 10
+  limit: 0
+
+# ============================================================================
+# Watch Mode
+# ============================================================================
+# Periodically re-scan Reading Lists and process new items.
+# Each iteration reloads: filter, watch, llm, summary, pipeline settings.
+# Signal handling:
+#   SIGINT during processing → finish current item, then stop
+#   SIGINT during sleep → exit immediately
+watch:
+
+  # Enable watch mode
+  # CLI override: --watch
+  enabled: false
+
+  # Scan interval in minutes
+  interval: 10
+
+# ============================================================================
+# copy_to Settings
+# ============================================================================
+# After processing, copy output files to a specified location.
+# Useful for organizing summaries into specific Obsidian vault directory structures.
+copy_to:
+
+  # Enable copy_to
+  enabled: false
+
+  # Target directory path template. Supports the following variables:
+  #   {output_dir}  — configured output_dir value
+  #   {date}        — processing date (YYYY-MM-DD)
+  #   {date_added}  — date added to Reading List (YYYY-MM-DD)
+  #   {title}       — page title (display-friendly, unsafe chars removed)
+  #   {sha8}        — first 8 hex chars of URL's SHA256 hash
+  #   {source}      — source type (safari / chrome / manual)
+  #   {domain}      — raw domain (example.com)
+  #   {domain_dir}  — domain directory name (example_com, dots replaced with _)
+  #   {type}        — file type (summary / content)
+  path: "{output_dir}/by-source/{source}/{domain_dir}"
+
+  # Target filename template. Supports the same variables as path.
+  filename: "{date}__{title}__{type}.md"
+
+  # Which file types to copy
+  # Available: summary, content
+  files: ["summary", "content"]
+
+  # Whether to overwrite existing files at the target location
+  overwrite: false
+
+# ============================================================================
+# Obsidian Integration
+# ============================================================================
+obsidian:
+
+  # Include LLM-generated keywords as tags in frontmatter
+  auto_tags: true
+
+  # Use wikilink format ([[note name]]) in output
+  wikilinks: true

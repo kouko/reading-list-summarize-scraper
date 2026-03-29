@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "build:defuddle": "esbuild inject.ts --bundle --format=iife --global-name=DefuddleExtractor --platform=browser --target=es2020 --minify --outfile=embed/defuddle.min.js",
+    "update:defuddle": "npm update defuddle && npm run build:defuddle"
+  },
+  "devDependencies": {
+    "defuddle": "latest",
+    "esbuild": "^0.25.0"
+  }
+}

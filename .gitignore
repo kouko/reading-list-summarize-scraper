@@ -1,0 +1,18 @@
+# Binary
+/rlss
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Runtime output
+rlss-output/
+
+# User config (use config.example.yaml as template)
+config.yaml
