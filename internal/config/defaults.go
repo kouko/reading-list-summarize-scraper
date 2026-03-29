@@ -53,9 +53,10 @@ func DefaultConfig() Config {
 			Enabled: true,
 		},
 		Chrome: ChromeConfig{
-			Enabled:     true,
-			Profile:     "Default",
-			UserDataDir: "~/.config/rlss/chrome-data",
+			Enabled:      true,
+			Profile:      "Default",
+			UserDataDir:  "~/.config/rlss/chrome-data",
+			CloneProfile: true,
 		},
 		Extract: ExtractConfig{
 			Headless:         true,

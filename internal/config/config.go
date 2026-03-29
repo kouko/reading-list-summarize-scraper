@@ -210,11 +210,11 @@ type SafariConfig struct {
 }
 
 type ChromeConfig struct {
-	Enabled         bool   `yaml:"enabled"`
-	GoogleAccount   string `yaml:"google_account"`
-	Profile         string `yaml:"profile"`
-	UserDataDir     string `yaml:"user_data_dir"`
-	ForceQuitChrome bool   `yaml:"force_quit_chrome"`
+	Enabled       bool   `yaml:"enabled"`
+	GoogleAccount string `yaml:"google_account"`
+	Profile       string `yaml:"profile"`
+	UserDataDir   string `yaml:"user_data_dir"`
+	CloneProfile  bool   `yaml:"clone_profile"`
 }
 
 type DomainRule struct {

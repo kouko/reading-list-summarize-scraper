@@ -309,7 +309,7 @@ func TestSmartResolve_EmailOnly_PreferRlssDir(t *testing.T) {
 	}
 }
 
-func TestSmartResolve_Locked_NoForceQuit(t *testing.T) {
+func TestSmartResolve_Locked_NoClone(t *testing.T) {
 	dir := setupTestDir(t)
 	// Create lock
 	lockPath := filepath.Join(dir, "SingletonLock")
@@ -321,8 +321,61 @@ func TestSmartResolve_Locked_NoForceQuit(t *testing.T) {
 
 	_, _, err := r.SmartResolve("work@company.com", "", "", false)
 	if err == nil {
-		t.Error("expected error when locked without force quit")
+		t.Error("expected error when locked without clone_profile")
 	}
+}
+
+func TestSmartResolve_Locked_WithClone(t *testing.T) {
+	dir := setupTestDir(t)
+
+	// Create profile folder with essential files
+	profileDir := filepath.Join(dir, "Profile 1")
+	os.MkdirAll(profileDir, 0755)
+	os.WriteFile(filepath.Join(profileDir, "Preferences"), []byte(`{"test": true}`), 0644)
+	os.WriteFile(filepath.Join(profileDir, "Cookies"), []byte("cookies"), 0644)
+	syncDir := filepath.Join(profileDir, "Sync Data")
+	os.MkdirAll(syncDir, 0755)
+	os.WriteFile(filepath.Join(syncDir, "SyncData.sqlite3"), []byte("sync"), 0644)
+
+	// Create lock
+	lockPath := filepath.Join(dir, "SingletonLock")
+	if err := os.Symlink("host-123", lockPath); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+
+	r, _ := NewProfileResolver(dir)
+
+	folder, cloneDir, err := r.SmartResolve("work@company.com", "", "", true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if folder != "Profile 1" {
+		t.Errorf("expected Profile 1, got %s", folder)
+	}
+	// Clone dir should be deterministic temp path
+	expectedCloneDir := cloneTempDir("Profile 1")
+	if cloneDir != expectedCloneDir {
+		t.Errorf("expected clone dir %s, got %s", expectedCloneDir, cloneDir)
+	}
+	// Verify cloned files exist
+	if _, err := os.Stat(filepath.Join(cloneDir, "Local State")); err != nil {
+		t.Error("Local State not cloned")
+	}
+	if _, err := os.Stat(filepath.Join(cloneDir, "Profile 1", "Preferences")); err != nil {
+		t.Error("Preferences not cloned")
+	}
+	if _, err := os.Stat(filepath.Join(cloneDir, "Profile 1", "Cookies")); err != nil {
+		t.Error("Cookies not cloned")
+	}
+	if _, err := os.Stat(filepath.Join(cloneDir, "Profile 1", "Sync Data", "SyncData.sqlite3")); err != nil {
+		t.Error("Sync Data not cloned")
+	}
+	// No SingletonLock in clone
+	if IsLocked(cloneDir) {
+		t.Error("clone dir should not have SingletonLock")
+	}
+	// Cleanup
+	os.RemoveAll(cloneDir)
 }
 
 func TestSmartResolve_NoMatchEmail(t *testing.T) {

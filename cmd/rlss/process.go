@@ -137,8 +137,8 @@ func loadAndOverrideConfig() (*config.Config, string, error) {
 	if flagProfile != "" {
 		cfg.Chrome.Profile = flagProfile
 	}
-	if flagForceQuitChrome {
-		cfg.Chrome.ForceQuitChrome = true
+	if flagCloneProfile {
+		cfg.Chrome.CloneProfile = true
 	}
 
 	return cfg, cfgPath, nil
@@ -156,7 +156,7 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 		userDataDir := cfg.Chrome.UserDataDir
 		if resolver != nil && cfg.Chrome.GoogleAccount != "" {
 			folder, dir, err := resolver.SmartResolve(
-				cfg.Chrome.GoogleAccount, profileDir, userDataDir, cfg.Chrome.ForceQuitChrome,
+				cfg.Chrome.GoogleAccount, profileDir, userDataDir, cfg.Chrome.CloneProfile,
 			)
 			if err != nil {
 				slog.Warn("smart resolve failed, falling back", "err", err)
@@ -170,7 +170,7 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 			}
 		}
 		sources = append(sources, source.NewChromeSource(
-			profileDir, userDataDir, cfg.Chrome.GoogleAccount, cfg.Chrome.ForceQuitChrome,
+			profileDir, userDataDir, cfg.Chrome.GoogleAccount, cfg.Chrome.CloneProfile,
 			rlssembed.ExtensionManifest, rlssembed.ExtensionBackground,
 		))
 	}

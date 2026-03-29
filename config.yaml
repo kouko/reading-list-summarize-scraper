@@ -61,7 +61,7 @@ chrome:
   google_account: "kouko.d@gmail.com"  # Google 帳號 email（優先用於 profile 自動偵測）
   profile: ""                          # UI 顯示名稱（搭配 google_account 或單獨使用）
   user_data_dir: ""                    # 空 = 自動偵測
-  force_quit_chrome: false             # 偵測到 SingletonLock 時是否強制關閉 Chrome
+  clone_profile: true                  # SingletonLock 時自動複製 profile 到暫存目錄使用
 
 # 萃取設定
 extract:
