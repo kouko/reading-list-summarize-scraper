@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'       # Triggers on v0.1.0, v1.0.0, v2.3.4-beta, etc.
+
+permissions:
+  contents: write  # Required for creating releases
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Bundle defuddle.min.js
+        run: npm run build:defuddle
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run tests
+        run: go test ./... -v
+
+      - name: Build binary
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          go build -ldflags="-s -w -X main.version=${VERSION}" -o rlss ./cmd/rlss/
+
+      - name: Verify binary
+        run: ./rlss --version
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: rlss
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
