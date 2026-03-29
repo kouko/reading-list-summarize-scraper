@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	cu "github.com/Davincible/chromedp-undetected"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
@@ -85,28 +84,28 @@ func (c *ChromeSource) Fetch() ([]ReadingItem, error) {
 	}
 	defer os.RemoveAll(extDir)
 
-	// Launch headed Chrome with extension + profile using chromedp-undetected.
-	cfg := cu.NewConfig(
-		cu.WithUserDataDir(userDataDir),
-		cu.WithExtensions(extDir),
-	)
-	cfg.ChromeFlags = append(cfg.ChromeFlags,
-		chromedp.Flag("disable-blink-features", "AutomationControlled"),
-		chromedp.Flag("disable-extensions-except", extDir),
+	// Launch headed Chrome with extension + profile.
+	// Use raw chromedp (not chromedp-undetected) because extension loading
+	// requires precise control over Chrome flags. Anti-detection is not
+	// needed here since this is a headed interactive session.
+	opts := []chromedp.ExecAllocatorOption{
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
-	)
+		chromedp.Flag("headless", false),
+		chromedp.Flag("disable-extensions", false),
+		chromedp.Flag("disable-extensions-except", extDir),
+		chromedp.Flag("load-extension", extDir),
+		chromedp.UserDataDir(userDataDir),
+	}
 	if c.profileDir != "" {
-		cfg.ChromeFlags = append(cfg.ChromeFlags,
-			chromedp.Flag("profile-directory", c.profileDir),
-		)
+		opts = append(opts, chromedp.Flag("profile-directory", c.profileDir))
 	}
 
-	ctx, cancel, err := cu.New(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("launch chrome: %w", err)
-	}
-	defer cancel()
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer allocCancel()
+
+	ctx, ctxCancel := chromedp.NewContext(allocCtx)
+	defer ctxCancel()
 
 	ctx, timeoutCancel := context.WithTimeout(ctx, 30*time.Second)
 	defer timeoutCancel()
