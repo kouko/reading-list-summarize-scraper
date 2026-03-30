@@ -111,6 +111,12 @@ summary:
   # Maximum tokens for LLM response
   max_tokens: 10000
 
+  # Embed original article content at the end of the summary file.
+  # When enabled, the extracted markdown is appended after the summary,
+  # separated by horizontal rules. The __content.md file is still generated.
+  # CLI override: --embed-content
+  embed_content: false
+
   # Keyword extraction settings (Stage 2, non-blocking — runs after main summary)
   keywords:
     enabled: true                        # Enable keyword extraction

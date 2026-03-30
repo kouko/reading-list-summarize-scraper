@@ -140,6 +140,9 @@ func loadAndOverrideConfig() (*config.Config, string, error) {
 	if flagCloneProfile {
 		cfg.Chrome.CloneProfile = true
 	}
+	if rootCmd.PersistentFlags().Changed("embed-content") {
+		cfg.Summary.EmbedContent = flagEmbedContent
+	}
 
 	return cfg, cfgPath, nil
 }

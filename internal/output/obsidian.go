@@ -20,6 +20,8 @@ type SummaryParams struct {
 	SummaryText   string
 	Keywords      []string
 	MermaidBlocks []MermaidBlock
+	EmbedContent  string // Original article markdown; empty = not embedded.
+	Language      string // Used for embed content heading language.
 }
 
 type MermaidBlock struct {
@@ -55,6 +57,7 @@ func AssembleSummary(p SummaryParams) string {
 	b.WriteString(fmt.Sprintf("llm_model: %q\n", p.LLMModel))
 	b.WriteString(fmt.Sprintf("content_length: %d\n", p.ContentLength))
 	b.WriteString(fmt.Sprintf("content_tier: %q\n", p.ContentTier))
+	b.WriteString(fmt.Sprintf("embed_content: %t\n", p.EmbedContent != ""))
 	b.WriteString("tags:\n")
 	b.WriteString("  - reading-list\n")
 	b.WriteString("  - auto-summary\n")
@@ -80,6 +83,15 @@ func AssembleSummary(p SummaryParams) string {
 	b.WriteString(body)
 	b.WriteString("\n")
 
+	// Embed original content if provided.
+	if p.EmbedContent != "" {
+		b.WriteString("\n\n---\n\n")
+		b.WriteString(embedContentHeading(p.Language))
+		b.WriteString("\n\n---\n\n")
+		b.WriteString(p.EmbedContent)
+		b.WriteString("\n")
+	}
+
 	return b.String()
 }
 
@@ -101,6 +113,17 @@ func AssembleContent(p ContentParams) string {
 	b.WriteString("\n")
 
 	return b.String()
+}
+
+func embedContentHeading(lang string) string {
+	switch lang {
+	case "zh-Hant":
+		return "## 原文內容"
+	case "ja":
+		return "## 原文"
+	default:
+		return "## Original Content"
+	}
 }
 
 func sourceDisplayName(source string) string {

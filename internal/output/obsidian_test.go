@@ -109,6 +109,105 @@ func TestInsertMermaidBlocks(t *testing.T) {
 	})
 }
 
+func TestAssembleSummary_EmbedContent(t *testing.T) {
+	base := SummaryParams{
+		Title:         "Test Article",
+		URL:           "https://example.com/test",
+		Domain:        "example.com",
+		Source:        "safari",
+		DateAdded:     time.Date(2026, 3, 25, 0, 0, 0, 0, time.UTC),
+		ProcessedDate: time.Date(2026, 3, 28, 0, 0, 0, 0, time.UTC),
+		LLMProvider:   "claude-code",
+		LLMModel:      "haiku",
+		ContentLength: 3200,
+		ContentTier:   "中篇",
+		SummaryText:   "### 概述\n\nSummary text here.",
+	}
+
+	t.Run("no embed when empty", func(t *testing.T) {
+		p := base
+		p.EmbedContent = ""
+		result := AssembleSummary(p)
+		if strings.Contains(result, "原文內容") || strings.Contains(result, "Original Content") {
+			t.Error("should not contain embed heading when EmbedContent is empty")
+		}
+		if !strings.Contains(result, "embed_content: false") {
+			t.Error("frontmatter should have embed_content: false")
+		}
+	})
+
+	t.Run("embed zh-Hant", func(t *testing.T) {
+		p := base
+		p.EmbedContent = "# 原始文章\n\n這是原文。"
+		p.Language = "zh-Hant"
+		result := AssembleSummary(p)
+		if !strings.Contains(result, "## 原文內容") {
+			t.Error("missing zh-Hant embed heading")
+		}
+		if !strings.Contains(result, "這是原文。") {
+			t.Error("missing embedded content")
+		}
+		if !strings.Contains(result, "embed_content: true") {
+			t.Error("frontmatter should have embed_content: true")
+		}
+	})
+
+	t.Run("embed ja", func(t *testing.T) {
+		p := base
+		p.EmbedContent = "# 元の記事\n\nこれは原文です。"
+		p.Language = "ja"
+		result := AssembleSummary(p)
+		if !strings.Contains(result, "## 原文") {
+			t.Error("missing ja embed heading")
+		}
+		// Ensure it's exactly "## 原文" not "## 原文內容"
+		if strings.Contains(result, "## 原文內容") {
+			t.Error("should use ja heading, not zh-Hant")
+		}
+	})
+
+	t.Run("embed en", func(t *testing.T) {
+		p := base
+		p.EmbedContent = "# Original Article\n\nThis is the content."
+		p.Language = "en"
+		result := AssembleSummary(p)
+		if !strings.Contains(result, "## Original Content") {
+			t.Error("missing en embed heading")
+		}
+	})
+
+	t.Run("separator structure", func(t *testing.T) {
+		p := base
+		p.EmbedContent = "Article content."
+		p.Language = "en"
+		result := AssembleSummary(p)
+		// Verify: two blank lines before first ---, heading, then --- before content
+		expected := "\n\n\n---\n\n## Original Content\n\n---\n\nArticle content.\n"
+		if !strings.Contains(result, expected) {
+			t.Errorf("unexpected separator structure, got:\n%s", result)
+		}
+	})
+}
+
+func TestEmbedContentHeading(t *testing.T) {
+	tests := []struct {
+		lang string
+		want string
+	}{
+		{"zh-Hant", "## 原文內容"},
+		{"ja", "## 原文"},
+		{"en", "## Original Content"},
+		{"", "## Original Content"},
+		{"fr", "## Original Content"},
+	}
+	for _, tt := range tests {
+		got := embedContentHeading(tt.lang)
+		if got != tt.want {
+			t.Errorf("embedContentHeading(%q) = %q, want %q", tt.lang, got, tt.want)
+		}
+	}
+}
+
 func TestAssembleContent(t *testing.T) {
 	params := ContentParams{
 		Title:         "Test Article",

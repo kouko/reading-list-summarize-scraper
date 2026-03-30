@@ -21,6 +21,7 @@ var (
 	flagForce        bool
 	flagProfile      string
 	flagCloneProfile bool
+	flagEmbedContent bool
 )
 
 var rootCmd = &cobra.Command{
@@ -51,6 +52,7 @@ func init() {
 	pf.BoolVar(&flagForce, "force", false, "force reprocess existing items")
 	pf.StringVar(&flagProfile, "profile", "", "Chrome Reading List profile override (UI name)")
 	pf.BoolVar(&flagCloneProfile, "clone-profile", false, "clone Chrome profile if locked by SingletonLock")
+	pf.BoolVar(&flagEmbedContent, "embed-content", false, "embed original article content in summary file")
 
 	rootCmd.AddCommand(processCmd)
 	rootCmd.AddCommand(listCmd)

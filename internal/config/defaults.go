@@ -38,8 +38,9 @@ func DefaultConfig() Config {
 			},
 		},
 		Summary: SummaryConfig{
-			Language:  "zh-Hant",
-			MaxTokens: 10000,
+			Language:     "zh-Hant",
+			MaxTokens:    10000,
+			EmbedContent: false,
 			Keywords: KeywordsConfig{
 				Enabled:  true,
 				Language: "en",

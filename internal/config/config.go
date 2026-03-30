@@ -190,6 +190,7 @@ type SummaryConfig struct {
 	Prompt            string         `yaml:"prompt"`
 	SummaryPromptFile string         `yaml:"summary_prompt_file"`
 	MaxTokens         int            `yaml:"max_tokens"`
+	EmbedContent      bool           `yaml:"embed_content"`
 	Keywords          KeywordsConfig `yaml:"keywords"`
 	Mermaid           MermaidConfig  `yaml:"mermaid"`
 }
