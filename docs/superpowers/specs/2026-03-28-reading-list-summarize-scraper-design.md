@@ -2,7 +2,7 @@
 
 > **Tool name**: `reading-list-summarize-scraper` (binary: `rlss`)
 > **Go module**: `github.com/kouko/reading-list-summarize-scraper`
-> **Date**: 2026-03-28 (updated: 2026-03-29)
+> **Date**: 2026-03-28 (updated: 2026-03-30)
 > **Status**: Implemented
 
 ---
@@ -259,6 +259,7 @@ summary:
   prompt: ""                           # inline prompt（覆蓋內建）
   summary_prompt_file: ""              # 外部 prompt 檔案（最高優先）
   max_tokens: 10000
+  embed_content: false                 # 在 summary 末尾嵌入原文（__content.md 仍照常產生）
   keywords:
     enabled: true
     language: "en"
@@ -350,6 +351,7 @@ obsidian:
 | `--profile` | | config | Chrome RL profile (UI name) |
 | `--dry-run` | | false | List only |
 | `--force` | | false | Reprocess existing |
+| `--embed-content` | | false | Embed original article content in summary file |
 | `--watch` | `-w` | false | Watch mode |
 | `--interval` | | config | Watch interval (minutes) |
 | `--verbose` | `-v` | false | Debug logging |
@@ -618,6 +620,7 @@ llm_provider: "claude-code"
 llm_model: "haiku"
 content_length: 3200
 content_tier: "中篇"
+embed_content: false
 tags:
   - reading-list
   - auto-summary
@@ -651,7 +654,32 @@ tags:
 (key takeaways)
 ```
 
-No `# Title` heading (frontmatter already has title). No inline original text excerpt (separate content file).
+No `# Title` heading (frontmatter already has title).
+
+### Embed Content (Optional)
+
+When `summary.embed_content: true` (or `--embed-content`), the original article markdown is appended at the end of the summary file. The `__content.md` file is still generated independently.
+
+```markdown
+(summary body ends here)
+
+
+---
+
+## 原文內容
+
+---
+
+(full extracted markdown content)
+```
+
+Heading is language-aware based on `summary.language`:
+
+| Language | Heading |
+|----------|---------|
+| `zh-Hant` | `## 原文內容` |
+| `ja` | `## 原文` |
+| `en` (default) | `## Original Content` |
 
 ### Content File
 

@@ -321,6 +321,11 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 	// ── 6. Assemble + write summary ──
 	contentTier := summarize.CalculateTier(len(markdown), p.config.Summary.Language)
 
+	var embedContent string
+	if p.config.Summary.EmbedContent {
+		embedContent = markdown
+	}
+
 	summaryDoc := output.AssembleSummary(output.SummaryParams{
 		Title:         item.Title,
 		URL:           item.URL,
@@ -335,6 +340,8 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		SummaryText:   summaryText,
 		Keywords:      keywords,
 		MermaidBlocks: mermaidBlocks,
+		EmbedContent:  embedContent,
+		Language:      p.config.Summary.Language,
 	})
 
 	if err := os.MkdirAll(outDir, 0755); err != nil {
