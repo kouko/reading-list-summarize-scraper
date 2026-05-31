@@ -71,7 +71,11 @@ func AssembleSummary(p SummaryParams) string {
 	b.WriteString(fmt.Sprintf("> - **原始網址**：[%s](%s)\n", p.Domain, p.URL))
 	b.WriteString(fmt.Sprintf("> - **加入日期**：%s\n", p.DateAdded.Format("2006-01-02")))
 	b.WriteString(fmt.Sprintf("> - **來源**：%s Reading List\n", sourceDisplayName(p.Source)))
-	b.WriteString(fmt.Sprintf("> - **摘要工具**：%s (%s)\n", p.LLMProvider, p.LLMModel))
+	if p.LLMModel != "" {
+		b.WriteString(fmt.Sprintf("> - **摘要工具**：%s (%s)\n", p.LLMProvider, p.LLMModel))
+	} else {
+		b.WriteString(fmt.Sprintf("> - **摘要工具**：%s\n", p.LLMProvider))
+	}
 	b.WriteString(fmt.Sprintf("> - **處理日期**：%s\n", p.ProcessedDate.Format("2006-01-02")))
 	b.WriteString("\n---\n\n")
 
