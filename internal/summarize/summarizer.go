@@ -135,6 +135,15 @@ func newSingleProvider(name string, cfg config.LLMConfig) (Summarizer, error) {
 			binaryPath: cfg.QwenCode.Path,
 			timeout:    qwenTimeout,
 		}, nil
+	case "antigravity-cli":
+		timeout := time.Duration(cfg.AntigravityCLI.Timeout) * time.Second
+		if timeout == 0 {
+			timeout = 15 * time.Minute
+		}
+		return &AntigravityCLISummarizer{
+			binaryPath: cfg.AntigravityCLI.Path,
+			timeout:    timeout,
+		}, nil
 	case "openai-compat":
 		timeout := time.Duration(cfg.OpenAICompat.Timeout) * time.Second
 		if timeout == 0 {
