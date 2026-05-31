@@ -82,6 +82,15 @@ llm:
     path: ""                             # Path to qwen binary (empty = search PATH)
     timeout: 900
 
+  # --- Antigravity CLI ---
+  # Requires the `agy` binary (Antigravity CLI — the successor to Gemini CLI;
+  # individual Gemini CLI access ends 2026-06-18).
+  # NOTE: `model` is NOT supported — agy headless has no model-selection flag,
+  # so unlike other providers there is no `model:` key here.
+  antigravity-cli:
+    path: ""                             # Path to agy binary (empty = search PATH)
+    timeout: 900                         # Request timeout in seconds
+
   # --- OpenAI-compatible API (oMLX, LM Studio, vLLM, etc.) ---
   openai-compat:
     endpoint: "http://127.0.0.1:8000/v1" # API endpoint
