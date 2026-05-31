@@ -196,7 +196,7 @@ Reads directly from Chrome's Sync Data LevelDB files. **No special permissions n
 | `make js-quick` | Rebuild JS only (skip npm reinstall) |
 | `go build -o rlss ./cmd/rlss/` | Quick Go build using committed defuddle.min.js |
 | `make clean` | Remove binary, JS bundle, node_modules |
-| `go test ./...` | Run all tests (108 tests) |
+| `go test ./...` | Run all tests |
 
 ## Release
 

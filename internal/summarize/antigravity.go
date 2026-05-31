@@ -58,6 +58,10 @@ func (a *AntigravityCLISummarizer) Summarize(text string, opts SummarizeOptions)
 		minutes = 1
 	}
 
+	// combinedPrompt is passed BOTH as the -p value and via stdin (below): agy
+	// reads stdin as additional context while -p carries the instruction, so
+	// the long prompt survives even if it would exceed -p's arg limits. This
+	// duplication is intentional (verified: brief §Boundary), not redundant.
 	// agy has no -m/-o/--approval-mode/MCP flags (verified: brief §Boundary).
 	args := []string{"-p", combinedPrompt, "--print-timeout", fmt.Sprintf("%dm", minutes)}
 	cmd := exec.CommandContext(ctx, binary, args...)
