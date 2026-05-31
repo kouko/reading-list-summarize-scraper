@@ -13,7 +13,7 @@ Manual --url ────────────┘
 - **Safari Reading List**: Direct plist parsing, Full Disk Access guidance
 - **Chrome Reading List**: LevelDB direct read — no Chrome launch needed, <1s
 - **Content Extraction**: chromedp-undetected (anti-bot stealth) + Defuddle Markdown output
-- **LLM Summarization**: 7 providers with fallback chain + circuit breaker
+- **LLM Summarization**: 8 providers with fallback chain + circuit breaker
 - **Obsidian Output**: YAML frontmatter, keywords, Mermaid diagrams
 - **Watch Mode**: Periodic re-scan for new items
 
@@ -29,7 +29,7 @@ Manual --url ────────────┘
 > individual Google AI Pro/Ultra and free accounts on **2026-06-18**. The
 > `antigravity-cli` provider (binary `agy`) is its successor for those
 > accounts. Paid Gemini API keys and enterprise licenses keep `gemini-cli`
-> working.
+> working. Source: [Google Developers Blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/).
 
 ## Installation
 
