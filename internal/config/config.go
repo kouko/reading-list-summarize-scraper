@@ -123,6 +123,7 @@ type LLMConfig struct {
 	ClaudeCode               ClaudeCodeConfig       `yaml:"claude-code"`
 	GeminiCLI                GeminiCLIConfig        `yaml:"gemini-cli"`
 	QwenCode                 QwenCodeConfig         `yaml:"qwen-code"`
+	AntigravityCLI           AntigravityCLIConfig   `yaml:"antigravity-cli"`
 	OpenAICompat             OpenAICompatConfig     `yaml:"openai-compat"`
 }
 
@@ -157,6 +158,13 @@ type GeminiCLIConfig struct {
 type QwenCodeConfig struct {
 	Model   string `yaml:"model"`   // e.g. "coder-model" (free tier), "qwen3-coder-plus" (paid)
 	Path    string `yaml:"path"`    // Path to qwen binary (default: search in PATH)
+	Timeout int    `yaml:"timeout"` // Seconds per LLM request (default: 900)
+}
+
+type AntigravityCLIConfig struct {
+	// NO Model field: agy headless (v1.0.3) has no model-selection flag
+	// (locked design decision, brief #2).
+	Path    string `yaml:"path"`    // Path to agy binary (default: search in PATH)
 	Timeout int    `yaml:"timeout"` // Seconds per LLM request (default: 900)
 }
 
@@ -314,6 +322,7 @@ func expandPaths(cfg *Config) {
 	cfg.LLM.ClaudeCode.Path = ExpandPath(cfg.LLM.ClaudeCode.Path)
 	cfg.LLM.GeminiCLI.Path = ExpandPath(cfg.LLM.GeminiCLI.Path)
 	cfg.LLM.QwenCode.Path = ExpandPath(cfg.LLM.QwenCode.Path)
+	cfg.LLM.AntigravityCLI.Path = ExpandPath(cfg.LLM.AntigravityCLI.Path)
 	cfg.Summary.SummaryPromptFile = ExpandPath(cfg.Summary.SummaryPromptFile)
 }
 
