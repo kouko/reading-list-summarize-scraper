@@ -50,8 +50,10 @@ func (a *AntigravityCLISummarizer) Summarize(text string, opts SummarizeOptions)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// agy expects --print-timeout in whole minutes; round up to at least 1.
-	minutes := int(timeout / time.Minute)
+	// agy expects --print-timeout in whole minutes. Round UP so agy's budget
+	// always covers the Go context deadline (a sub-minute timeout like 90s must
+	// not truncate to 1m and make agy abort before ctx fires).
+	minutes := int((timeout + time.Minute - 1) / time.Minute)
 	if minutes < 1 {
 		minutes = 1
 	}
@@ -75,7 +77,13 @@ func (a *AntigravityCLISummarizer) Summarize(text string, opts SummarizeOptions)
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		baseErr := fmt.Errorf("antigravity-cli: execution failed: %w\nstderr: %s", err, stderr.String())
+		// agy is agent-first and may write its failure reason to stdout; fall
+		// back to stdout when stderr is empty (mirrors claude_code.go).
+		errMsg := stderr.String()
+		if errMsg == "" {
+			errMsg = stdout.String()
+		}
+		baseErr := fmt.Errorf("antigravity-cli: execution failed: %w\noutput: %s", err, errMsg)
 		if isQuotaMessage(stderr.String() + "\n" + stdout.String()) {
 			return SummarizeResult{}, &QuotaError{Provider: "antigravity-cli", Err: baseErr}
 		}

@@ -33,7 +33,7 @@ llm:
 
   # LLM provider to use. Can be a single string or a fallback list.
   # First entry is primary; subsequent entries are tried in order on failure.
-  # Available: ollama, llamacpp, claude-api, claude-code, gemini-cli, qwen-code, openai-compat
+  # Available: ollama, llamacpp, claude-api, claude-code, gemini-cli, qwen-code, openai-compat, antigravity-cli
   #
   # Single provider:
   #   provider: "claude-code"
