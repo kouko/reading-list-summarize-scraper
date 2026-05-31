@@ -34,6 +34,13 @@ func TestStripSourceInjection(t *testing.T) {
 			want:  "開頭結尾繼續寫",
 		},
 		{
+			// Pins the intentional broad match: 來源 prefix triggers removal
+			// even without a colon, since agy emits both （來源：…） and （來源…）.
+			name:  "note without colon removed",
+			input: "結論（來源x.com）",
+			want:  "結論",
+		},
+		{
 			name:  "empty string",
 			input: "",
 			want:  "",
@@ -47,4 +54,8 @@ func TestStripSourceInjection(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAntigravityCLI_InterfaceConformance(t *testing.T) {
+	var _ Summarizer = (*AntigravityCLISummarizer)(nil)
 }
