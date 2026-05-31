@@ -1,8 +1,14 @@
 package summarize
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // sourceInjectionRe matches （來源：…） tail-notes that the Antigravity CLI (agy)
@@ -15,4 +21,70 @@ var sourceInjectionRe = regexp.MustCompile(`(?s)（來源.*?）`)
 func stripSourceInjection(s string) string {
 	result := sourceInjectionRe.ReplaceAllString(s, "")
 	return strings.TrimSpace(result)
+}
+
+// AntigravityCLISummarizer invokes the Antigravity CLI (agy) in headless mode.
+// Prompt is passed via stdin and via -p. agy headless cannot select or report
+// a model, so Model is always empty.
+type AntigravityCLISummarizer struct {
+	binaryPath string
+	timeout    time.Duration
+}
+
+func (a *AntigravityCLISummarizer) Summarize(text string, opts SummarizeOptions) (SummarizeResult, error) {
+	combinedPrompt := resolvePrompt(text, opts)
+
+	binary := a.binaryPath
+	if binary == "" {
+		var err error
+		binary, err = exec.LookPath("agy")
+		if err != nil {
+			return SummarizeResult{}, fmt.Errorf("antigravity-cli: binary not found in PATH: %w", err)
+		}
+	}
+
+	timeout := a.timeout
+	if timeout == 0 {
+		timeout = 15 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// agy expects --print-timeout in whole minutes; round up to at least 1.
+	minutes := int(timeout / time.Minute)
+	if minutes < 1 {
+		minutes = 1
+	}
+
+	// agy has no -m/-o/--approval-mode/MCP flags (verified: brief §Boundary).
+	args := []string{"-p", combinedPrompt, "--print-timeout", fmt.Sprintf("%dm", minutes)}
+	cmd := exec.CommandContext(ctx, binary, args...)
+
+	// Isolate side effects: agy writes .antigravitycli/ into its cwd. Point it
+	// at a per-call temp dir so the user's working directory stays clean.
+	tmpDir, err := os.MkdirTemp("", "rlss-agy-*")
+	if err != nil {
+		return SummarizeResult{}, fmt.Errorf("antigravity-cli: failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+	cmd.Dir = tmpDir
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdin = strings.NewReader(combinedPrompt)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		baseErr := fmt.Errorf("antigravity-cli: execution failed: %w\nstderr: %s", err, stderr.String())
+		if isQuotaMessage(stderr.String() + "\n" + stdout.String()) {
+			return SummarizeResult{}, &QuotaError{Provider: "antigravity-cli", Err: baseErr}
+		}
+		return SummarizeResult{}, baseErr
+	}
+
+	return SummarizeResult{
+		Text:     stripSourceInjection(StripThinkingTags(strings.TrimSpace(stdout.String()))),
+		Provider: "antigravity-cli",
+		Model:    "",
+	}, nil
 }
