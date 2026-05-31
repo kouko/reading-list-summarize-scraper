@@ -21,9 +21,15 @@ Manual --url ────────────┘
 
 - macOS
 - Google Chrome (for content extraction)
-- One of: `claude`, `gemini`, `qwen`, or local LLM (for summarization)
+- One of: `claude`, `gemini`, `agy` (Antigravity CLI), `qwen`, or local LLM (for summarization)
 - Go 1.23+ (for building from source)
 - Node.js 22+ (for rebuilding Defuddle JS bundle)
+
+> **Gemini CLI sunset (2026-06-18)**: Google's `gemini-cli` stops serving
+> individual Google AI Pro/Ultra and free accounts on **2026-06-18**. The
+> `antigravity-cli` provider (binary `agy`) is its successor for those
+> accounts. Paid Gemini API keys and enterprise licenses keep `gemini-cli`
+> working.
 
 ## Installation
 
