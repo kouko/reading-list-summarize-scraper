@@ -39,7 +39,7 @@ func TestNewSingleProvider_AllProviders(t *testing.T) {
 		},
 	}
 
-	providers := []string{"ollama", "llamacpp", "claude-api", "claude-code", "gemini-cli", "qwen-code", "openai-compat"}
+	providers := []string{"ollama", "llamacpp", "claude-api", "claude-code", "gemini-cli", "qwen-code", "openai-compat", "antigravity-cli"}
 	for _, name := range providers {
 		s, err := newSingleProvider(name, cfg)
 		if err != nil {
