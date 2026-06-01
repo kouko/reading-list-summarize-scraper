@@ -16,3 +16,6 @@ rlss-output/
 
 # User config (use config.example.yaml as template)
 config.yaml
+
+# Antigravity CLI (agy) per-directory artifact
+.antigravitycli/
