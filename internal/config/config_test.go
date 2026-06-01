@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -78,6 +79,43 @@ pipeline:
 	}
 	if cfg.Pipeline.DryRun != true {
 		t.Error("Pipeline.DryRun should be true")
+	}
+}
+
+func TestLoad_AntigravityCLIConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfgFile := filepath.Join(tmpDir, "config.yaml")
+
+	content := `output_dir: /tmp/test-output
+llm:
+  provider: antigravity-cli
+  antigravity-cli:
+    path: "~/bin/agy"
+    timeout: 600
+`
+	if err := os.WriteFile(cfgFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(cfgFile)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	if cfg.LLM.AntigravityCLI.Timeout != 600 {
+		t.Errorf("AntigravityCLI.Timeout = %d, want 600", cfg.LLM.AntigravityCLI.Timeout)
+	}
+
+	// Path must be tilde-expanded to an absolute path.
+	if strings.HasPrefix(cfg.LLM.AntigravityCLI.Path, "~") {
+		t.Errorf("AntigravityCLI.Path = %q, want tilde-expanded (no leading ~)", cfg.LLM.AntigravityCLI.Path)
+	}
+	home, err := os.UserHomeDir()
+	if err == nil {
+		want := filepath.Join(home, "bin/agy")
+		if cfg.LLM.AntigravityCLI.Path != want {
+			t.Errorf("AntigravityCLI.Path = %q, want %q", cfg.LLM.AntigravityCLI.Path, want)
+		}
 	}
 }
 

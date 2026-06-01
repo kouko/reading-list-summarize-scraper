@@ -13,7 +13,7 @@ Manual --url ────────────┘
 - **Safari Reading List**: Direct plist parsing, Full Disk Access guidance
 - **Chrome Reading List**: LevelDB direct read — no Chrome launch needed, <1s
 - **Content Extraction**: chromedp-undetected (anti-bot stealth) + Defuddle Markdown output
-- **LLM Summarization**: 7 providers with fallback chain + circuit breaker
+- **LLM Summarization**: 8 providers with fallback chain + circuit breaker
 - **Obsidian Output**: YAML frontmatter, keywords, Mermaid diagrams
 - **Watch Mode**: Periodic re-scan for new items
 
@@ -21,9 +21,15 @@ Manual --url ────────────┘
 
 - macOS
 - Google Chrome (for content extraction)
-- One of: `claude`, `gemini`, `qwen`, or local LLM (for summarization)
+- One of: `claude`, `gemini`, `agy` (Antigravity CLI), `qwen`, or local LLM (for summarization)
 - Go 1.23+ (for building from source)
 - Node.js 22+ (for rebuilding Defuddle JS bundle)
+
+> **Gemini CLI sunset (2026-06-18)**: Google's `gemini-cli` stops serving
+> individual Google AI Pro/Ultra and free accounts on **2026-06-18**. The
+> `antigravity-cli` provider (binary `agy`) is its successor for those
+> accounts. Paid Gemini API keys and enterprise licenses keep `gemini-cli`
+> working. Source: [Google Developers Blog](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/).
 
 ## Installation
 
@@ -190,7 +196,7 @@ Reads directly from Chrome's Sync Data LevelDB files. **No special permissions n
 | `make js-quick` | Rebuild JS only (skip npm reinstall) |
 | `go build -o rlss ./cmd/rlss/` | Quick Go build using committed defuddle.min.js |
 | `make clean` | Remove binary, JS bundle, node_modules |
-| `go test ./...` | Run all tests (108 tests) |
+| `go test ./...` | Run all tests |
 
 ## Release
 

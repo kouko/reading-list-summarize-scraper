@@ -33,7 +33,7 @@ llm:
 
   # LLM provider to use. Can be a single string or a fallback list.
   # First entry is primary; subsequent entries are tried in order on failure.
-  # Available: ollama, llamacpp, claude-api, claude-code, gemini-cli, qwen-code, openai-compat
+  # Available: ollama, llamacpp, claude-api, claude-code, gemini-cli, qwen-code, openai-compat, antigravity-cli
   #
   # Single provider:
   #   provider: "claude-code"
@@ -81,6 +81,15 @@ llm:
     model: "coder-model"                 # Model: coder-model (free), qwen3-coder-plus (paid)
     path: ""                             # Path to qwen binary (empty = search PATH)
     timeout: 900
+
+  # --- Antigravity CLI ---
+  # Requires the `agy` binary (Antigravity CLI — the successor to Gemini CLI;
+  # individual Gemini CLI access ends 2026-06-18).
+  # NOTE: `model` is NOT supported — agy headless has no model-selection flag,
+  # so unlike other providers there is no `model:` key here.
+  antigravity-cli:
+    path: ""                             # Path to agy binary (empty = search PATH)
+    timeout: 900                         # Request timeout in seconds
 
   # --- OpenAI-compatible API (oMLX, LM Studio, vLLM, etc.) ---
   openai-compat:

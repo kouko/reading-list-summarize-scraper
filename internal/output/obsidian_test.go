@@ -41,6 +41,46 @@ func TestAssembleSummary(t *testing.T) {
 	}
 }
 
+func TestAssembleSummary_EmptyModelNoParens(t *testing.T) {
+	base := SummaryParams{
+		Title:         "Test Article",
+		URL:           "https://example.com/test",
+		Domain:        "example.com",
+		Source:        "safari",
+		DateAdded:     time.Date(2026, 3, 25, 0, 0, 0, 0, time.UTC),
+		ProcessedDate: time.Date(2026, 3, 28, 0, 0, 0, 0, time.UTC),
+		ContentLength: 3200,
+		ContentTier:   "中篇",
+		SummaryText:   "### 概述\n\nSummary text here.",
+	}
+
+	t.Run("empty model renders provider without parens", func(t *testing.T) {
+		p := base
+		p.LLMProvider = "antigravity-cli"
+		p.LLMModel = ""
+		result := AssembleSummary(p)
+		if !strings.Contains(result, "**摘要工具**：antigravity-cli\n") {
+			t.Errorf("should render provider alone, got:\n%s", result)
+		}
+		if strings.Contains(result, "antigravity-cli ()") {
+			t.Error("should not render empty parens when model is empty")
+		}
+		if strings.Contains(result, "antigravity-cli \n") {
+			t.Error("should not leave a trailing space when model is empty")
+		}
+	})
+
+	t.Run("non-empty model still renders provider (model)", func(t *testing.T) {
+		p := base
+		p.LLMProvider = "claude-code"
+		p.LLMModel = "haiku"
+		result := AssembleSummary(p)
+		if !strings.Contains(result, "**摘要工具**：claude-code (haiku)\n") {
+			t.Errorf("should render provider (model), got:\n%s", result)
+		}
+	})
+}
+
 func TestSourceDisplayName(t *testing.T) {
 	tests := []struct {
 		input string
