@@ -340,7 +340,8 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 				return
 			}
 			result, err := p.summarizer.Summarize(summaryText, summarize.SummarizeOptions{
-				Prompt: prompt,
+				Prompt:     prompt,
+				AllowEmpty: true, // keywords can legitimately be empty
 			})
 			if err != nil {
 				kwErr = err
@@ -361,7 +362,8 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 				return
 			}
 			result, err := p.summarizer.Summarize(summaryText, summarize.SummarizeOptions{
-				Prompt: prompt,
+				Prompt:     prompt,
+				AllowEmpty: true, // a summary may legitimately need no diagram
 			})
 			if err != nil {
 				mermaidErr = err

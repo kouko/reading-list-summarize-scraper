@@ -82,6 +82,43 @@ pipeline:
 	}
 }
 
+func TestLoad_FallbackStrategy(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfgFile := filepath.Join(tmpDir, "config.yaml")
+
+	content := `output_dir: /tmp/test-output
+llm:
+  provider: gemini-cli
+  provider_fallback_strategy:
+    cooldown_seconds: 600
+    failure_threshold: 3
+    rate_limit_cooldown_seconds: 90
+    empty_response_threshold: 5
+`
+	if err := os.WriteFile(cfgFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(cfgFile)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	s := cfg.LLM.ProviderFallbackStrategy
+	if s.CooldownSeconds != 600 {
+		t.Errorf("CooldownSeconds = %d, want 600", s.CooldownSeconds)
+	}
+	if s.FailureThreshold != 3 {
+		t.Errorf("FailureThreshold = %d, want 3", s.FailureThreshold)
+	}
+	if s.RateLimitCooldownSeconds != 90 {
+		t.Errorf("RateLimitCooldownSeconds = %d, want 90", s.RateLimitCooldownSeconds)
+	}
+	if s.EmptyResponseThreshold != 5 {
+		t.Errorf("EmptyResponseThreshold = %d, want 5", s.EmptyResponseThreshold)
+	}
+}
+
 func TestLoad_AntigravityCLIConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfgFile := filepath.Join(tmpDir, "config.yaml")

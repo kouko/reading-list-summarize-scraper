@@ -46,13 +46,19 @@ func (f *FallbackSummarizer) Summarize(text string, opts SummarizeOptions) (Summ
 			// empty stdout/stderr when its quota is exhausted, giving no error
 			// and no message to classify as a QuotaError. Treat the empty
 			// response itself as this provider failing so the chain fails over
-			// instead of returning a blank summary. Use RecordInconclusive (not
-			// RecordQuotaFailure): "empty" cannot be proven to equal "quota"
-			// (a healthy provider may legitimately return empty), so it must not
-			// open the circuit against an otherwise-healthy provider.
-			p.breaker.RecordInconclusive()
+			// instead of returning a blank summary.
+			//
+			// A single empty cannot be proven to equal "quota" (a healthy
+			// provider may legitimately return empty), so RecordEmptyResponse
+			// does NOT open the circuit on the first empty — only after a
+			// persistent consecutive-empty streak. And an empty on a stage
+			// where empty can be legitimate (opts.AllowEmpty — keywords/mermaid)
+			// still fails over but must not count toward opening the circuit.
+			if !opts.AllowEmpty {
+				p.breaker.RecordEmptyResponse()
+			}
 			slog.Warn("provider returned an empty response, trying fallback",
-				"provider", p.name)
+				"provider", p.name, "counted", !opts.AllowEmpty)
 			lastErr = fmt.Errorf("%s: empty response", p.name)
 			continue
 		}
