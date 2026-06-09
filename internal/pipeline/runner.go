@@ -25,6 +25,23 @@ var errSkipped = fmt.Errorf("skipped")
 // IsSkipped reports whether the error indicates the item was skipped.
 func IsSkipped(err error) bool { return err == errSkipped }
 
+// emptyResponseError builds the stage-1 "empty response" error, naming the
+// provider/model that returned empty text so the failure identifies the actual
+// LLM backend used (an empty response counts as success to the fallback chain,
+// so summaryResult still carries the provider that answered).
+func emptyResponseError(stage, provider, model string) error {
+	return fmt.Errorf("%s: LLM returned empty response from provider %q (model %q) — if using a thinking model (e.g., Qwen3.5), ensure think mode is disabled or increase max_tokens", stage, provider, model)
+}
+
+// validateSummaryText returns a named empty-response error when the LLM
+// produced no usable (non-whitespace) summary, else nil.
+func validateSummaryText(summaryText, provider, model string) error {
+	if strings.TrimSpace(summaryText) == "" {
+		return emptyResponseError("stage 1", provider, model)
+	}
+	return nil
+}
+
 // errPartial is a sentinel signaling that an item was partially processed:
 // its content was extracted and saved but summarization failed (e.g. all LLM
 // providers out of quota). It is wrapped with the underlying cause via %w, so
@@ -291,6 +308,17 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		return fmt.Errorf("%w: summarize: %v", errPartial, err)
 	}
 	summaryText := summarize.StripThinkingTags(summaryResult.Text)
+	if err := validateSummaryText(summaryText, summaryResult.Provider, summaryResult.Model); err != nil {
+		// Content was already written above; an empty summary is resumable, so
+		// mark partial rather than writing out an empty summary file.
+		return fmt.Errorf("%w: %v", errPartial, err)
+	}
+	slog.Info("summary stage 1 complete",
+		"sha8", sha8,
+		"provider", summaryResult.Provider,
+		"model", summaryResult.Model,
+		"bytes", len(summaryText),
+	)
 
 	// Stage 2 & 3: Keywords and Mermaid (concurrent, non-blocking).
 	var (
