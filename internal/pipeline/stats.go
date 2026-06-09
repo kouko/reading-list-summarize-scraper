@@ -17,6 +17,12 @@ type ItemError struct {
 type Stats struct {
 	Success int
 	Skipped int
+	// Partial counts items whose content was extracted and saved but whose
+	// summarization failed (e.g. all LLM providers out of quota). These are
+	// not lost: a later run resumes summarization from the saved content.
+	// Kept separate from Success (the summary is missing) and from Failed
+	// (the extracted content is usable).
+	Partial int
 	Failed  int
 	Errors  []ItemError
 	Start   time.Time
@@ -29,12 +35,13 @@ func (s *Stats) Duration() time.Duration { return s.End.Sub(s.Start) }
 // Report returns a human-readable summary of the batch results.
 func (s *Stats) Report() string {
 	var b strings.Builder
-	total := s.Success + s.Skipped + s.Failed
+	total := s.Success + s.Skipped + s.Partial + s.Failed
 
 	b.WriteString(fmt.Sprintf("Pipeline completed in %s\n", s.Duration().Round(time.Second)))
 	b.WriteString(fmt.Sprintf("  Total:   %d\n", total))
 	b.WriteString(fmt.Sprintf("  Success: %d\n", s.Success))
 	b.WriteString(fmt.Sprintf("  Skipped: %d\n", s.Skipped))
+	b.WriteString(fmt.Sprintf("  Partial: %d\n", s.Partial))
 	b.WriteString(fmt.Sprintf("  Failed:  %d\n", s.Failed))
 
 	if len(s.Errors) > 0 {

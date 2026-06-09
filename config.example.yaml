@@ -43,10 +43,13 @@ llm:
 
   # Fallback strategy configuration
   provider_fallback_strategy:
-    # Seconds to wait before retrying a provider that reported quota/rate limit errors
+    # Seconds to wait before retrying a provider that exhausted its quota
     cooldown_seconds: 300
     # Number of consecutive quota errors before skipping a provider (circuit breaker)
     failure_threshold: 1
+    # Shorter cooldown for transient rate-limit errors (HTTP 429/529) when the
+    # server gives no Retry-After hint. A server-advised Retry-After always wins.
+    rate_limit_cooldown_seconds: 60
 
   # --- Ollama (local LLM server) ---
   ollama:
