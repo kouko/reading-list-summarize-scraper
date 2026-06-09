@@ -110,8 +110,12 @@ func (p ProviderList) Equal(other ProviderList) bool {
 
 // FallbackStrategyConfig controls how the provider fallback chain behaves.
 type FallbackStrategyConfig struct {
-	CooldownSeconds  int `yaml:"cooldown_seconds"`  // Seconds before retrying a failed provider (default: 300)
-	FailureThreshold int `yaml:"failure_threshold"`  // Quota errors before skipping a provider (default: 1)
+	CooldownSeconds  int `yaml:"cooldown_seconds"`  // Seconds before retrying an exhausted provider (default: 300)
+	FailureThreshold int `yaml:"failure_threshold"` // Quota errors before skipping a provider (default: 1)
+	// RateLimitCooldownSeconds is the shorter cooldown for transient rate-limit
+	// errors (HTTP 429/529, "too many requests") when the server gives no
+	// Retry-After hint (default: 60). A server-advised Retry-After always wins.
+	RateLimitCooldownSeconds int `yaml:"rate_limit_cooldown_seconds"`
 }
 
 type LLMConfig struct {

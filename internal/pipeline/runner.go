@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -23,6 +24,41 @@ var errSkipped = fmt.Errorf("skipped")
 
 // IsSkipped reports whether the error indicates the item was skipped.
 func IsSkipped(err error) bool { return err == errSkipped }
+
+// errPartial is a sentinel signaling that an item was partially processed:
+// its content was extracted and saved but summarization failed (e.g. all LLM
+// providers out of quota). It is wrapped with the underlying cause via %w, so
+// detection uses errors.Is rather than equality.
+var errPartial = errors.New("partial: content extracted but summarization failed")
+
+// IsPartial reports whether err is (or wraps) the partial sentinel.
+func IsPartial(err error) bool { return errors.Is(err, errPartial) }
+
+// resultBucket classifies a single item's processing outcome for Stats.
+type resultBucket int
+
+const (
+	bucketSuccess resultBucket = iota
+	bucketSkipped
+	bucketPartial
+	bucketFailed
+)
+
+// classifyResult maps a ProcessItem return value to its stats bucket.
+// Order matters: skipped and partial are sentinels checked before the
+// catch-all failed bucket.
+func classifyResult(err error) resultBucket {
+	switch {
+	case err == nil:
+		return bucketSuccess
+	case IsSkipped(err):
+		return bucketSkipped
+	case IsPartial(err):
+		return bucketPartial
+	default:
+		return bucketFailed
+	}
+}
 
 // Pipeline orchestrates extraction, summarization, and output for reading list items.
 type Pipeline struct {
@@ -94,12 +130,17 @@ func (p *Pipeline) ProcessBatch(items []source.ReadingItem) Stats {
 		)
 
 		err := p.ProcessItem(item)
-		switch {
-		case err == nil:
+		switch classifyResult(err) {
+		case bucketSuccess:
 			stats.Success++
-		case IsSkipped(err):
+		case bucketSkipped:
 			stats.Skipped++
-		default:
+		case bucketPartial:
+			// Content saved; only summarization failed (e.g. quota). Not lost
+			// and not a hard failure — a later run resumes the summary.
+			stats.Partial++
+			slog.Warn("item partial: content saved, summary failed", "url", item.URL, "err", err)
+		case bucketFailed:
 			stats.Failed++
 			stats.Errors = append(stats.Errors, ItemError{
 				URL:   item.URL,
@@ -245,7 +286,9 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 		MaxTokens: p.config.Summary.MaxTokens,
 	})
 	if err != nil {
-		return fmt.Errorf("summarize: %w", err)
+		// Content was already extracted and written above, so this is a
+		// partial outcome (resumable), not a hard failure.
+		return fmt.Errorf("%w: summarize: %v", errPartial, err)
 	}
 	summaryText := summarize.StripThinkingTags(summaryResult.Text)
 
