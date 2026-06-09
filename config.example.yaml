@@ -50,6 +50,12 @@ llm:
     # Shorter cooldown for transient rate-limit errors (HTTP 429/529) when the
     # server gives no Retry-After hint. A server-advised Retry-After always wins.
     rate_limit_cooldown_seconds: 60
+    # Consecutive empty responses before opening a provider's circuit (default: 3).
+    # A single empty only fails over; a persistent streak (e.g. a CLI backend
+    # exiting 0 with no output when quota is used up) is skipped for cooldown_seconds
+    # instead of retried every request. Only the main summary's empties count
+    # (keywords/mermaid may legitimately be empty). Negative = disable.
+    empty_response_threshold: 3
 
   # --- Ollama (local LLM server) ---
   ollama:
