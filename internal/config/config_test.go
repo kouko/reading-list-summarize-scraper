@@ -119,6 +119,37 @@ llm:
 	}
 }
 
+func TestLoad_DomainRulePagination(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfgFile := filepath.Join(tmpDir, "config.yaml")
+
+	content := `output_dir: /tmp/test-output
+extract:
+  domain_rules:
+    - domains: ["www.itmedia.co.jp"]
+      next_page_selector: "a[rel=next]"
+      max_pages: 5
+`
+	if err := os.WriteFile(cfgFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(cfgFile)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if len(cfg.Extract.DomainRules) != 1 {
+		t.Fatalf("DomainRules len = %d, want 1", len(cfg.Extract.DomainRules))
+	}
+	r := cfg.Extract.DomainRules[0]
+	if r.NextPageSelector != "a[rel=next]" {
+		t.Errorf("NextPageSelector = %q, want a[rel=next]", r.NextPageSelector)
+	}
+	if r.MaxPages != 5 {
+		t.Errorf("MaxPages = %d, want 5", r.MaxPages)
+	}
+}
+
 func TestLoad_RSSConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfgFile := filepath.Join(tmpDir, "config.yaml")

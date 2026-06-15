@@ -2,6 +2,7 @@ package extract
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/chromedp/cdproto/runtime"
@@ -75,6 +76,43 @@ func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, wait
 		}),
 	)
 	return content, err
+}
+
+// ExtractPaginated extracts a multi-page article by following the next-page
+// link (matched by nextSelector) page-by-page and concatenating the per-page
+// markdown. It reuses this Browser across sequential navigations. The loop
+// stops at the first page with no next link, an already-visited URL (loop
+// guard), or maxPages (<=0 → defaultMaxPages). It is fail-soft: a page that
+// errors mid-sequence stops the loop but keeps the pages gathered so far;
+// only a total failure (nothing extracted) returns the error.
+func (b *Browser) ExtractPaginated(startURL, jsCode, nextSelector string, maxPages int, timeout, waitAfterLoad time.Duration) (string, error) {
+	// Embed the selector safely as a JS string literal.
+	selLit, _ := json.Marshal(nextSelector)
+	nextJS := `(function(){var e=document.querySelector(` + string(selLit) + `);return e?e.href:"";})()`
+
+	// fetch loads one page and returns its markdown + the next-page href. The
+	// loop, stop conditions, and concatenation live in paginate (tested there);
+	// this closure is the only browser-bound part.
+	fetch := func(pageURL string) (string, string, error) {
+		var content, nextHref string
+		ctx, cancel := chromedp.NewContext(b.ctx)
+		defer cancel()
+		ctx, cancelT := context.WithTimeout(ctx, timeout)
+		defer cancelT()
+		err := chromedp.Run(ctx,
+			chromedp.Navigate(pageURL),
+			chromedp.WaitVisible(`body`, chromedp.ByQuery),
+			chromedp.Sleep(waitAfterLoad),
+			chromedp.Evaluate(jsCode, nil),
+			chromedp.Evaluate(`window.extractArticle()`, &content, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
+				return p.WithAwaitPromise(true)
+			}),
+			chromedp.Evaluate(nextJS, &nextHref),
+		)
+		return content, nextHref, err
+	}
+
+	return paginate(startURL, maxPages, fetch)
 }
 
 func (b *Browser) Close() {

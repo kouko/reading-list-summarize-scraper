@@ -284,6 +284,16 @@ extract:
   #     - domains: ["github.com"]
   #       headed: false                  # GitHub works headless
   #       chrome_profile: "Profile 2"    # But needs specific profile's cookies
+  #     - domains: ["www.itmedia.co.jp"]
+  #       next_page_selector: "link[rel=next]"  # Multi-page article: CSS selector for the
+  #                                             # "next page" link (its href is followed).
+  #                                             # When set, extraction follows it page-by-page
+  #                                             # and concatenates the full article; unset =
+  #                                             # single-page (default). itmedia marks the next
+  #                                             # page as <link rel="next"> in <head>, so use
+  #                                             # link[rel=next] (not a[rel=next]). Other sites
+  #                                             # differ, e.g. ".article_pagination_next a".
+  #       max_pages: 10                          # Safety cap on pages followed (default: 10).
   domain_rules: []
 
 # ============================================================================
