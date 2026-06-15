@@ -1,6 +1,8 @@
 package source
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/mmcdole/gofeed"
@@ -118,5 +120,57 @@ func TestFeedToItems_FewerThanCap(t *testing.T) {
 	items := feedToItems(feed, 50)
 	if len(items) != 5 {
 		t.Errorf("got %d, want all 5 when cap exceeds available", len(items))
+	}
+}
+
+// feedServer serves the given feed body at /feed for hermetic Fetch tests.
+func feedServer(t *testing.T, body string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestRSSSource_Fetch_FromServer(t *testing.T) {
+	srv := feedServer(t, sampleRSS)
+	src := NewRSSSource([]string{srv.URL}, 2)
+
+	if src.Name() != "rss" {
+		t.Errorf("Name() = %q, want rss", src.Name())
+	}
+
+	items, err := src.Fetch()
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("got %d items, want 2 (newest-N cap)", len(items))
+	}
+	if items[0].Title != "Post 5" || items[0].URL != "https://example.com/5" {
+		t.Errorf("newest item = %q/%q, want Post 5 / .../5", items[0].Title, items[0].URL)
+	}
+	if items[0].Source != "rss" {
+		t.Errorf("Source = %q, want rss", items[0].Source)
+	}
+}
+
+func TestRSSSource_Fetch_ToleratesBadFeed(t *testing.T) {
+	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "nope", http.StatusInternalServerError)
+	}))
+	t.Cleanup(bad.Close)
+	good := feedServer(t, sampleRSS)
+
+	// Bad feed first: it must be logged + skipped, not abort the whole fetch.
+	src := NewRSSSource([]string{bad.URL, good.URL}, 3)
+	items, err := src.Fetch()
+	if err != nil {
+		t.Fatalf("Fetch should tolerate a bad feed, got err: %v", err)
+	}
+	if len(items) != 3 {
+		t.Fatalf("got %d items, want 3 from the good feed (bad feed skipped)", len(items))
 	}
 }
