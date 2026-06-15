@@ -254,6 +254,13 @@ type DomainRule struct {
 	Headed        bool     `yaml:"headed"`
 	GoogleAccount string   `yaml:"google_account"`
 	ChromeProfile string   `yaml:"chrome_profile"`
+	// NextPageSelector is a CSS selector for the "next page" link on a paginated
+	// article. When set, extraction follows it page-by-page and concatenates the
+	// content. Empty (default) → single-page extraction, unchanged.
+	NextPageSelector string `yaml:"next_page_selector"`
+	// MaxPages caps how many pages a paginated article is followed for (safety
+	// bound against loops). 0 → default applied at the extractor (10).
+	MaxPages int `yaml:"max_pages"`
 }
 
 type ExtractConfig struct {
