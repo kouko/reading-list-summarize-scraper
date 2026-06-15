@@ -196,6 +196,9 @@ func fetchAndFilter(cfg *config.Config, resolver *extract.ProfileResolver) ([]so
 		profilePath := filepath.Join(userDataDir, profileDir)
 		sources = append(sources, source.NewChromeLevelDBSource(profilePath))
 	}
+	if cfg.RSS.Enabled {
+		sources = append(sources, source.NewRSSSource(cfg.RSS.Feeds, cfg.RSS.Count))
+	}
 
 	var allItems []source.ReadingItem
 	for _, src := range sources {

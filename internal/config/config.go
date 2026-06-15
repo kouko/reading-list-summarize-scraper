@@ -196,6 +196,7 @@ type Config struct {
 	Summary   SummaryConfig  `yaml:"summary"`
 	Safari    SafariConfig   `yaml:"safari"`
 	Chrome    ChromeConfig   `yaml:"chrome"`
+	RSS       RSSConfig      `yaml:"rss"`
 	Extract   ExtractConfig  `yaml:"extract"`
 	Pipeline  PipelineConfig `yaml:"pipeline"`
 	Filter    FilterConfig   `yaml:"filter"`
@@ -235,6 +236,17 @@ type ChromeConfig struct {
 	Profile       string `yaml:"profile"`
 	UserDataDir   string `yaml:"user_data_dir"`
 	CloneProfile  bool   `yaml:"clone_profile"`
+}
+
+// RSSConfig configures the RSS/Atom subscription source. Feeds are polled each
+// run (or each watch cycle); already-summarized articles skip cheaply via the
+// file index, so steady state only processes genuinely new entries.
+type RSSConfig struct {
+	Enabled bool     `yaml:"enabled"`
+	Feeds   []string `yaml:"feeds"`
+	// Count caps how many newest entries per feed are taken each poll, bounding
+	// first-subscribe backfill. 0 → default applied at the source (5).
+	Count int `yaml:"count"`
 }
 
 type DomainRule struct {

@@ -119,6 +119,40 @@ llm:
 	}
 }
 
+func TestLoad_RSSConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfgFile := filepath.Join(tmpDir, "config.yaml")
+
+	content := `output_dir: /tmp/test-output
+rss:
+  enabled: true
+  count: 5
+  feeds:
+    - https://example.com/feed.xml
+    - https://blog.example.org/atom
+`
+	if err := os.WriteFile(cfgFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(cfgFile)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if !cfg.RSS.Enabled {
+		t.Error("RSS.Enabled should be true")
+	}
+	if cfg.RSS.Count != 5 {
+		t.Errorf("RSS.Count = %d, want 5", cfg.RSS.Count)
+	}
+	if len(cfg.RSS.Feeds) != 2 {
+		t.Fatalf("RSS.Feeds len = %d, want 2", len(cfg.RSS.Feeds))
+	}
+	if cfg.RSS.Feeds[0] != "https://example.com/feed.xml" {
+		t.Errorf("RSS.Feeds[0] = %q", cfg.RSS.Feeds[0])
+	}
+}
+
 func TestLoad_AntigravityCLIConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfgFile := filepath.Join(tmpDir, "config.yaml")

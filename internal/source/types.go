@@ -8,7 +8,7 @@ type ReadingItem struct {
 	DateAdded   time.Time `json:"date_added"`
 	IsUnread    bool      `json:"is_unread"`
 	PreviewText string    `json:"preview_text,omitempty"`
-	Source      string    `json:"source"` // "safari" | "chrome" | "manual"
+	Source      string    `json:"source"` // "safari" | "chrome" | "manual" | "rss"
 }
 
 type Source interface {
