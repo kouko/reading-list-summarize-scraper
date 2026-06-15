@@ -1,6 +1,7 @@
 package extract
 
 import (
+	"log/slog"
 	"net/url"
 	"strings"
 )
@@ -8,6 +9,59 @@ import (
 // defaultMaxPages bounds how many pages a paginated article is followed for
 // when a DomainRule sets no (or a non-positive) MaxPages.
 const defaultMaxPages = 10
+
+// pageFetcher loads one page and returns its extracted content plus the raw
+// href of its "next page" link ("" if none). It is the injectable seam that
+// lets the paginate loop be tested without a real browser; the production
+// implementation in ExtractPaginated drives chromedp.
+type pageFetcher func(url string) (content, nextHref string, err error)
+
+// paginate walks a paginated article: fetch a page, record it, resolve+follow
+// its next link, repeat — stopping at no next link, an already-visited URL
+// (loop guard), or maxPages (<=0 → defaultMaxPages). It is fail-soft: a page
+// that errors mid-sequence stops the loop but keeps the pages already gathered
+// (logged via slog.Warn); only a total failure (nothing gathered) returns the
+// error. The browser-specific work lives behind the injected fetch.
+func paginate(startURL string, maxPages int, fetch pageFetcher) (string, error) {
+	if maxPages <= 0 {
+		maxPages = defaultMaxPages
+	}
+
+	var pages []string
+	visited := map[string]bool{}
+	current := startURL
+	var firstErr error
+
+	for pageCount := 0; ; pageCount++ {
+		visited[current] = true
+
+		content, nextHref, err := fetch(current)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			// Fail-soft: keep the pages gathered so far, but surface the
+			// failure so a truncated article isn't silently indistinguishable
+			// from a genuinely short one.
+			slog.Warn("paginated extract: page failed, keeping pages gathered so far",
+				"url", current, "pages_gathered", len(pages), "err", err)
+			break
+		}
+		pages = append(pages, content)
+
+		next, ok := resolveNextURL(current, nextHref)
+		if !ok || !shouldFollowNext(next, visited, pageCount+1, maxPages) {
+			break
+		}
+		current = next
+	}
+
+	combined := joinPages(pages)
+	if combined == "" && firstErr != nil {
+		return "", firstErr
+	}
+	return combined, nil
+}
 
 // resolveNextURL resolves a "next page" href (possibly relative) against the
 // current page's URL into an absolute URL. It returns ok=false for hrefs that
