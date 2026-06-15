@@ -196,6 +196,30 @@ chrome:
   clone_profile: true
 
 # ============================================================================
+# RSS / Atom subscriptions
+# ============================================================================
+# Polls feed URLs as an article source. Best paired with watch mode (or cron):
+# each cycle fetches the newest entries, and already-summarized articles are
+# skipped automatically (by the output file index), so steady state only
+# processes genuinely new posts. Articles are extracted via Defuddle like any
+# other source (the feed's own content is not used).
+rss:
+
+  # Enable RSS/Atom subscriptions as a source.
+  enabled: false
+
+  # Feed URLs (RSS 0.9x–2.0, Atom, or JSON Feed — gofeed auto-detects).
+  feeds:
+    - "https://example.com/feed.xml"
+    - "https://blog.example.org/atom"
+
+  # Newest entries to take per feed each poll (default: 5 when unset/0).
+  # Bounds first-subscribe backfill so a new feed doesn't process its whole
+  # history at once; subsequent polls only surface entries newer than the
+  # already-summarized ones.
+  count: 5
+
+# ============================================================================
 # Extraction Settings
 # ============================================================================
 # Uses chromedp-undetected to control Chrome for web content extraction.
