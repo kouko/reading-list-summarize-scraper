@@ -18,7 +18,7 @@ func TestOutlinePrompts_EnforceOutputLanguage(t *testing.T) {
 		"en":      {"Always write the output in English"},
 	}
 	for lang, needles := range cases {
-		got, err := loadBuiltinPrompt(lang)
+		got, err := loadBuiltinPrompt(lang, "") // outline default (style threaded in by #12)
 		if err != nil {
 			t.Errorf("loadBuiltinPrompt(%q): %v", lang, err)
 			continue
