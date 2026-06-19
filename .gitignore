@@ -19,3 +19,6 @@ config.yaml
 
 # Antigravity CLI (agy) per-directory artifact
 .antigravitycli/
+
+# Local prompt experiments (RLSS_PROMPT_FILE)
+prompts/my-summary.md

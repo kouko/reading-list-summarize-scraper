@@ -116,6 +116,12 @@ summary:
   # Available: en, zh-Hant, ja
   language: "zh-Hant"
 
+  # Built-in prompt style (ignored if prompt / summary_prompt_file is set):
+  #   outline  - structured Overview + sections + key-point lists (default)
+  #   article  - TL;DR + narrative prose + Markdown tables
+  # Unknown values fall back to outline.
+  style: "outline"
+
   # Inline prompt text. Overrides the built-in prompt when set.
   # Leave empty to use the built-in prompt (determined by language).
   prompt: ""

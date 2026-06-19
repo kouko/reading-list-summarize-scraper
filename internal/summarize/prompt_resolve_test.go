@@ -71,13 +71,26 @@ func TestReadPromptFile(t *testing.T) {
 	}
 }
 
+func TestBuiltinPromptPrefix(t *testing.T) {
+	// "article" selects the article-style built-in; everything else (incl. the
+	// default "", "outline", and typos) selects the plain outline prefix.
+	if got := builtinPromptPrefix("article"); got != "summary-article" {
+		t.Errorf("builtinPromptPrefix(article) = %q, want summary-article", got)
+	}
+	for _, style := range []string{"", "outline", "Article", "classic", "xxx"} {
+		if got := builtinPromptPrefix(style); got != "summary" {
+			t.Errorf("builtinPromptPrefix(%q) = %q, want summary (outline default)", style, got)
+		}
+	}
+}
+
 func TestLoadBuiltinPrompt_KnownAndFallback(t *testing.T) {
-	// Known language.
-	if got, err := loadBuiltinPrompt("ja"); err != nil || strings.TrimSpace(got) == "" {
+	// Known language (outline default style).
+	if got, err := loadBuiltinPrompt("ja", ""); err != nil || strings.TrimSpace(got) == "" {
 		t.Errorf("loadBuiltinPrompt(ja) = (%q, %v), want non-empty", truncate(got), err)
 	}
 	// Unknown language → falls back to en (non-empty, no error).
-	got, err := loadBuiltinPrompt("zz-not-a-language")
+	got, err := loadBuiltinPrompt("zz-not-a-language", "")
 	if err != nil {
 		t.Fatalf("unknown language should fall back to en, got error: %v", err)
 	}

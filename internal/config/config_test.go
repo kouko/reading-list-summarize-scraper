@@ -150,6 +150,31 @@ extract:
 	}
 }
 
+func TestLoad_SummaryStyle(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfgFile := filepath.Join(tmpDir, "config.yaml")
+
+	content := `output_dir: /tmp/test-output
+summary:
+  style: article
+`
+	if err := os.WriteFile(cfgFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(cfgFile)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	if cfg.Summary.Style != "article" {
+		t.Errorf("Summary.Style = %q, want article", cfg.Summary.Style)
+	}
+
+	// Default config leaves Style unset; the resolver maps "" → outline.
+	if def := DefaultConfig(); def.Summary.Style != "" {
+		t.Errorf("DefaultConfig Summary.Style = %q, want \"\" (outline default)", def.Summary.Style)
+	}
+}
+
 func TestLoad_RSSConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfgFile := filepath.Join(tmpDir, "config.yaml")
