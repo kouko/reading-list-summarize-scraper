@@ -206,7 +206,12 @@ type Config struct {
 }
 
 type SummaryConfig struct {
-	Language          string         `yaml:"language"`
+	Language string `yaml:"language"`
+	// Style selects the built-in summary prompt: "outline" (default — structured
+	// Overview + sections + key-point lists) or "article" (TL;DR + narrative
+	// prose + tables). Empty/unknown resolves to outline. Ignored when Prompt or
+	// SummaryPromptFile overrides the built-in.
+	Style             string         `yaml:"style"`
 	Prompt            string         `yaml:"prompt"`
 	SummaryPromptFile string         `yaml:"summary_prompt_file"`
 	MaxTokens         int            `yaml:"max_tokens"`
