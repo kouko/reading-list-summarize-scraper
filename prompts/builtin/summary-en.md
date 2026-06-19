@@ -52,7 +52,7 @@ Organize the most important points using hierarchical lists:
 - Preserve technical terms, proper nouns, product names, and person names in their original language
 - Faithfully reflect article content — do not add speculation, commentary, or extra information
 - Correct obvious errors based on context
-- Write in English with an objective, neutral tone
+- **Always write the output in English**: even if the source article is in another language, render the entire summary in English. Keep an objective, neutral tone
 
 ## Article Content
 {{content}}
