@@ -241,6 +241,13 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 			}
 		}
 
+		// Maintenance / paywall / login-wall page served instead of the article.
+		// Fail (not a silent short-content "success", not a garbage summary) and
+		// write no content file, so the item is re-attempted on the next run.
+		if isUnavailablePage(markdown) {
+			return fmt.Errorf("extract %s: page unavailable (maintenance / paywall / login required) — not summarized; will retry next run", item.URL)
+		}
+
 		// Create output directory.
 		if err := os.MkdirAll(outDir, 0755); err != nil {
 			return fmt.Errorf("create dir %s: %w", outDir, err)
@@ -469,6 +476,46 @@ func extractDomain(rawURL string) string {
 		return "unknown"
 	}
 	return u.Hostname()
+}
+
+// isUnavailablePage detects pages that were served INSTEAD of the article and
+// that won't be fixed by retrying headless→headed: maintenance pages, paywalls,
+// and login/subscription walls. These otherwise slip through (they aren't
+// anti-bot challenges) and get silently mis-handled — counted as a short-content
+// "success" or summarized into a "I can't, it's a paywall" non-summary. Treat
+// them as an extraction failure instead (the caller does not write a content
+// file, so the item is re-attempted on the next run).
+//
+// Patterns are deliberately specific multi-word/wall strings (not bare topic
+// words like "subscribe" or "登入") so a real article *about* paywalls or
+// maintenance is not misflagged. One match is enough.
+func isUnavailablePage(content string) bool {
+	lower := strings.ToLower(content)
+	unavailablePatterns := []string{
+		// English — maintenance / login / subscription walls
+		"under maintenance",
+		"sign in to read",
+		"log in to read",
+		"please sign in to",
+		"subscribe to read",
+		"subscribe to continue reading",
+		// Chinese (Traditional + Simplified) — maintenance / login / member walls
+		"系統維護中",
+		"系统维护中",
+		"登入後閱讀全文",
+		"請登入後閱讀",
+		"訂閱成為會員",
+		// Japanese — maintenance / login walls
+		"メンテナンス中",
+		"ログインしてください",
+		"ログインが必要",
+	}
+	for _, pattern := range unavailablePatterns {
+		if strings.Contains(lower, pattern) {
+			return true
+		}
+	}
+	return false
 }
 
 // isBlockedPage detects anti-bot protection pages (Cloudflare, CAPTCHA, etc.)
