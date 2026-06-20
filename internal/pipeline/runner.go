@@ -519,10 +519,16 @@ func isUnavailablePage(content string) bool {
 }
 
 // isBlockedPage detects anti-bot protection pages (Cloudflare, CAPTCHA, etc.)
-// that were extracted instead of actual content.
+// that were extracted instead of actual content. Patterns include localized
+// (ja / zh-Hant / zh-Hans) challenge-UI strings, since Cloudflare/anti-bot
+// interstitials render in the page's language; the language-neutral branding
+// ("cloudflare", "ray id:", "captcha") is kept too. The >=2 threshold guards
+// against false-positives on real articles that merely discuss these topics —
+// so the localized entries are challenge-UI phrases, not generic security words.
 func isBlockedPage(content string) bool {
 	lower := strings.ToLower(content)
 	blockedPatterns := []string{
+		// English / language-neutral
 		"performing security verification",
 		"security challenge",
 		"checking your browser",
@@ -534,6 +540,21 @@ func isBlockedPage(content string) bool {
 		"access denied",
 		"please verify you are a human",
 		"bot protection",
+		// Japanese challenge-UI
+		"ブラウザを確認しています",
+		"あなたが人間であることを確認",
+		"ロボットではないことを確認",
+		"アクセスが拒否されました",
+		// Chinese (Traditional) challenge-UI
+		"正在檢查您的瀏覽器",
+		"請完成安全驗證",
+		"確認您是真人",
+		"拒絕存取",
+		// Chinese (Simplified) challenge-UI
+		"正在检查您的浏览器",
+		"请完成安全验证",
+		"确认您是真人",
+		"拒绝访问",
 	}
 	matchCount := 0
 	for _, pattern := range blockedPatterns {

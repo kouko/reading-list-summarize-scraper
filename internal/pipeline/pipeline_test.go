@@ -252,3 +252,33 @@ func TestIsUnavailablePage_MaintenanceAndWalls(t *testing.T) {
 		}
 	}
 }
+
+func TestIsBlockedPage_MultiLanguage(t *testing.T) {
+	// Localized anti-bot challenge pages (no English Cloudflare branding) — each
+	// has >=2 challenge-specific UI phrases, so they should be detected.
+	blocked := []string{
+		"ブラウザを確認しています。あなたが人間であることを確認します。",   // ja
+		"アクセスが拒否されました。ロボットではないことを確認してください。", // ja (other phrases)
+		"正在檢查您的瀏覽器，請完成安全驗證後繼續。",             // zh-Hant
+		"拒絕存取，請確認您是真人後再試。",                  // zh-Hant (other phrases)
+		"正在检查您的浏览器，请完成安全验证。",                // zh-Hans
+		"拒绝访问，请确认您是真人。",                     // zh-Hans (other phrases)
+	}
+	for _, c := range blocked {
+		if !isBlockedPage(c) {
+			t.Errorf("isBlockedPage should detect a localized challenge page: %q", c)
+		}
+	}
+
+	// Real articles that merely discuss these topics must NOT be flagged
+	// (one topic word + an existing English pattern must not reach the >=2 bar).
+	normal := []string{
+		"本文討論人機驗證（CAPTCHA）的演進與存取控制機制。",    // captcha(1) only → not blocked
+		"セキュリティチェックの自動化とアクセス制御について解説します。", // no challenge-UI phrase
+	}
+	for _, c := range normal {
+		if isBlockedPage(c) {
+			t.Errorf("isBlockedPage should NOT flag a normal article: %q", c)
+		}
+	}
+}
