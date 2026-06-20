@@ -218,3 +218,37 @@ func TestStripFrontmatter_MinimalFrontmatter(t *testing.T) {
 		t.Errorf("stripFrontmatter() = %q, want %q", got, want)
 	}
 }
+
+func TestIsUnavailablePage_MaintenanceAndWalls(t *testing.T) {
+	unavailable := []string{
+		// nikkei headless bot-served maintenance page (the dogfood case)
+		"非常感謝您的訪問！現在日經中文網正在系統維護中。請在稍晚時間嘗試訪問本網站。",
+		"现在日经中文网正在系统维护中。请在稍晚时间尝试访问。",
+		"The site is currently under maintenance. Please try again later.",
+		"ただいまメンテナンス中です。しばらくしてから再度お試しください。",
+		// login / paywall walls
+		"Please sign in to read the full article.",
+		"Subscribe to read more.",
+		"Subscribe to continue reading this article.",
+		"この記事を読むにはログインしてください。",
+		"請登入後閱讀全文，或訂閱成為會員。",
+	}
+	for _, c := range unavailable {
+		if !isUnavailablePage(c) {
+			t.Errorf("isUnavailablePage should be true for a wall page: %q", c)
+		}
+	}
+
+	// Real article content (incl. prose that merely mentions the topics) must NOT match.
+	normal := []string{
+		"This article explains how scheduled server maintenance windows reduce downtime.",
+		"本文討論付費牆（paywall）對新聞業的影響，以及訂閱制的興衰。",
+		"ログイン機能の実装方法を解説します。セッション管理とCookieについて。",
+		"A long, normal article body with several paragraphs of real content and no wall.",
+	}
+	for _, c := range normal {
+		if isUnavailablePage(c) {
+			t.Errorf("isUnavailablePage should be false for normal content: %q", c)
+		}
+	}
+}
