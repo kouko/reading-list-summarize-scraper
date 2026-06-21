@@ -1,6 +1,6 @@
 # Plan: Paginated article extraction (route B — per-domain next-link following)
 
-Source brief: docs/code-toolkit/specs/2026-06-15-paginated-article-extraction.md
+Source brief: docs/loom/specs/2026-06-15-paginated-article-extraction.md
 Total tasks: 6
 Critical-path depth: 3 (≤5)  ← longest chains: T1→T3→T5 and T2→T4→T5
 Execution order: parallel-where-possible (T1 & T2 independent leaves; rest follow)

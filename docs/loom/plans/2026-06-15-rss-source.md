@@ -1,6 +1,6 @@
 # Plan: RSS subscription as a new article source
 
-Source brief: docs/code-toolkit/specs/2026-06-15-rss-source.md
+Source brief: docs/loom/specs/2026-06-15-rss-source.md
 Total tasks: 4
 Critical-path depth: 2 (≤5)  ← longest Dependencies chain: (Task 1 or 2) → Task 3
 Execution order: parallel-where-possible (Tasks 1 & 2 independent; 3 & 4 follow)

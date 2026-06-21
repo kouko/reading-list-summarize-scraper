@@ -1,6 +1,6 @@
 # Plan: antigravity-cli provider
 
-Source brief: docs/code-toolkit/specs/2026-05-31-antigravity-cli-provider.md
+Source brief: docs/loom/specs/2026-05-31-antigravity-cli-provider.md
 Total tasks: 6
 Critical-path depth: 4 (≤5)   ← longest chain: Task1 → Task3 → Task4 → Task6
 Execution order: parallel-where-possible

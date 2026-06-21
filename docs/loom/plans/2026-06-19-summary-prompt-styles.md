@@ -1,6 +1,6 @@
 # Plan: Built-in summary prompt styles (outline default + article opt-in)
 
-Source brief: docs/code-toolkit/specs/2026-06-19-summary-prompt-styles.md
+Source brief: docs/loom/specs/2026-06-19-summary-prompt-styles.md
 Total tasks: 5
 Critical-path depth: 3 (≤5)  ← longest: T1→T2→{T3|T4}
 Execution order: parallel-where-possible (T3 & T4 are independent leaves after T2)
