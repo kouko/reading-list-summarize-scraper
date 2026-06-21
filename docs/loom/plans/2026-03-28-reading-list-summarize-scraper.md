@@ -10,7 +10,7 @@
 
 **Reference project:** `/Users/kouko/VisualStudioCodeProject/youtube-summarize-scraper` (ytss) — the summarize layer, config patterns, pipeline patterns, and prompt templates are ported from this project.
 
-**Design spec:** `docs/superpowers/specs/2026-03-28-reading-list-summarize-scraper-design.md`
+**Design spec:** `docs/loom/specs/2026-03-28-reading-list-summarize-scraper-design.md`
 
 ---
 
