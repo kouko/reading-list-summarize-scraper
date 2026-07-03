@@ -247,11 +247,15 @@ llm:
     model: "coder-model"
     path: ""
     timeout: 900
+  # Map of named instances (multi-instance HA, see
+  # docs/loom/specs/2026-07-03-openai-compat-multi-instance-ha.md).
+  # Bare "openai-compat" resolves to the "default" key.
   openai-compat:
-    endpoint: "http://127.0.0.1:8000/v1"
-    model: ""
-    api_key: ""
-    timeout: 900
+    default:
+      endpoint: "http://127.0.0.1:8000/v1"
+      model: ""
+      api_key: ""
+      timeout: 900
 
 # 摘要設定（與 ytss 完全相同結構）
 summary:

@@ -126,16 +126,16 @@ type FallbackStrategyConfig struct {
 }
 
 type LLMConfig struct {
-	Provider                 ProviderList           `yaml:"provider"`
-	ProviderFallbackStrategy FallbackStrategyConfig `yaml:"provider_fallback_strategy"`
-	Ollama                   OllamaConfig           `yaml:"ollama"`
-	LlamaCpp                 LlamaCppConfig         `yaml:"llamacpp"`
-	ClaudeAPI                ClaudeAPIConfig        `yaml:"claude-api"`
-	ClaudeCode               ClaudeCodeConfig       `yaml:"claude-code"`
-	GeminiCLI                GeminiCLIConfig        `yaml:"gemini-cli"`
-	QwenCode                 QwenCodeConfig         `yaml:"qwen-code"`
-	AntigravityCLI           AntigravityCLIConfig   `yaml:"antigravity-cli"`
-	OpenAICompat             OpenAICompatConfig     `yaml:"openai-compat"`
+	Provider                 ProviderList                  `yaml:"provider"`
+	ProviderFallbackStrategy FallbackStrategyConfig        `yaml:"provider_fallback_strategy"`
+	Ollama                   OllamaConfig                  `yaml:"ollama"`
+	LlamaCpp                 LlamaCppConfig                `yaml:"llamacpp"`
+	ClaudeAPI                ClaudeAPIConfig               `yaml:"claude-api"`
+	ClaudeCode               ClaudeCodeConfig              `yaml:"claude-code"`
+	GeminiCLI                GeminiCLIConfig               `yaml:"gemini-cli"`
+	QwenCode                 QwenCodeConfig                `yaml:"qwen-code"`
+	AntigravityCLI           AntigravityCLIConfig          `yaml:"antigravity-cli"`
+	OpenAICompat             map[string]OpenAICompatConfig `yaml:"openai-compat"`
 }
 
 type OllamaConfig struct {

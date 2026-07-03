@@ -246,6 +246,98 @@ llm:
 	}
 }
 
+func TestLLMConfig_OpenAICompat_Map_Parse(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfgFile := filepath.Join(tmpDir, "config.yaml")
+
+	content := `output_dir: /tmp/test-output
+llm:
+  openai-compat:
+    default:
+      endpoint: "http://localhost:8000/v1"
+      model: "m-default"
+    box1:
+      endpoint: "http://192.168.1.10:1234/v1"
+`
+	if err := os.WriteFile(cfgFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(cfgFile)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	if got := cfg.LLM.OpenAICompat["default"].Endpoint; got != "http://localhost:8000/v1" {
+		t.Errorf(`OpenAICompat["default"].Endpoint: got %q, want %q`, got, "http://localhost:8000/v1")
+	}
+	if got := cfg.LLM.OpenAICompat["default"].Model; got != "m-default" {
+		t.Errorf(`OpenAICompat["default"].Model: got %q, want %q`, got, "m-default")
+	}
+	if got := cfg.LLM.OpenAICompat["box1"].Endpoint; got != "http://192.168.1.10:1234/v1" {
+		t.Errorf(`OpenAICompat["box1"].Endpoint: got %q, want %q`, got, "http://192.168.1.10:1234/v1")
+	}
+}
+
+func TestLLMConfig_OpenAICompat_OldSingleBlockShape_FailsToParse(t *testing.T) {
+	// Pre-migration configs wrote openai-compat as a single struct block
+	// (endpoint/model/api_key/timeout as direct siblings). That shape no
+	// longer decodes into map[string]OpenAICompatConfig; Load() must
+	// surface a parse error rather than silently dropping the fields.
+	tmpDir := t.TempDir()
+	cfgFile := filepath.Join(tmpDir, "config.yaml")
+
+	content := `output_dir: /tmp/test-output
+llm:
+  openai-compat:
+    endpoint: "http://127.0.0.1:8000/v1"
+    model: "some-model"
+    api_key: ""
+    timeout: 900
+`
+	if err := os.WriteFile(cfgFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := Load(cfgFile)
+	if err == nil {
+		t.Fatal("Load() with old single-block openai-compat shape: expected parse error, got nil")
+	}
+}
+
+func TestLLMConfig_OpenAICompat_NoPhantomDefault_ThroughLoad(t *testing.T) {
+	// DefaultConfig() seeds no "default" instance (TestDefaultConfig_OpenAICompat_NoSeed
+	// guards that in isolation). This guards the actual risk: yaml.v3 merges into an
+	// existing map rather than replacing it, so if DefaultConfig() ever seeded a
+	// "default" instance again, a user config containing only box1 would still end up
+	// with a phantom "default" key after Load() — silently defeating the resolver's
+	// "bare openai-compat with no configured default -> error" contract.
+	tmpDir := t.TempDir()
+	cfgFile := filepath.Join(tmpDir, "config.yaml")
+
+	content := `output_dir: /tmp/test-output
+llm:
+  openai-compat:
+    box1:
+      endpoint: "http://192.168.1.10:1234/v1"
+`
+	if err := os.WriteFile(cfgFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(cfgFile)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	if _, ok := cfg.LLM.OpenAICompat["default"]; ok {
+		t.Error(`OpenAICompat: got phantom "default" instance after Load() with only box1 configured, want none`)
+	}
+	if len(cfg.LLM.OpenAICompat) != 1 {
+		t.Errorf("OpenAICompat: got %d instances, want 1 (box1 only)", len(cfg.LLM.OpenAICompat))
+	}
+}
+
 func TestLoad_NonexistentFile(t *testing.T) {
 	cfg, err := Load("/nonexistent/path/config.yaml")
 	if err != nil {
@@ -406,5 +498,16 @@ func TestDefaultConfig_SanityCheck(t *testing.T) {
 	}
 	if !cfg.Pipeline.SkipExisting {
 		t.Error("Pipeline.SkipExisting should default to true")
+	}
+}
+
+func TestDefaultConfig_OpenAICompat_NoSeed(t *testing.T) {
+	// DefaultConfig must NOT seed a "default" openai-compat instance: a phantom
+	// default would survive yaml.v3 map-merge into user configs and make the
+	// resolver's "bare openai-compat with no default -> error" contract
+	// unreachable. Omitting the seed keeps code, docs, and tests consistent.
+	cfg := DefaultConfig()
+	if len(cfg.LLM.OpenAICompat) != 0 {
+		t.Errorf("DefaultConfig OpenAICompat: got %d instances, want 0 (no seeded default)", len(cfg.LLM.OpenAICompat))
 	}
 }
