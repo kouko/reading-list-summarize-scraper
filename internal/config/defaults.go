@@ -33,9 +33,10 @@ func DefaultConfig() Config {
 				Model:   "coder-model",
 				Timeout: 900,
 			},
-			OpenAICompat: OpenAICompatConfig{
-				Timeout: 900,
-			},
+			// OpenAICompat is intentionally left nil: no built-in "default"
+			// instance. Bare "openai-compat" resolves to the "default" key, so
+			// omitting it makes bare usage fail loud (matching the resolver's
+			// no-instance error) rather than silently binding localhost:8000.
 		},
 		Summary: SummaryConfig{
 			Language:     "zh-Hant",

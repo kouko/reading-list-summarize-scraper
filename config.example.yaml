@@ -39,6 +39,9 @@ llm:
   #   provider: "claude-code"
   # Fallback chain:
   #   provider: ["claude-code", "gemini-cli", "ollama"]
+  # For HA across several OpenAI-compatible boxes, list named instances:
+  #   provider: ["openai-compat:box1", "openai-compat:box2"]
+  #   (instances are defined under the openai-compat: block below)
   provider: "claude-code"
 
   # Fallback strategy configuration
@@ -101,11 +104,27 @@ llm:
     timeout: 900                         # Request timeout in seconds
 
   # --- OpenAI-compatible API (oMLX, LM Studio, vLLM, etc.) ---
+  # Map of named instances, for HA across several OpenAI-compatible boxes.
+  # Naming rules:
+  #   - Instance names are yours to choose, any number of them; reference one
+  #     via `openai-compat:<name>` (e.g. in the provider fallback chain above).
+  #   - `default` is reserved: a bare `openai-compat` (no colon) resolves to it.
+  #     Omit `default` if you never use the bare form.
+  #   - Names must not contain a colon `:` (the prefix/instance-name separator).
   openai-compat:
-    endpoint: "http://127.0.0.1:8000/v1" # API endpoint
-    model: ""                            # Model name
-    api_key: ""                          # API key (optional)
-    timeout: 900
+    default:                             # bare `openai-compat` resolves here
+      endpoint: "http://127.0.0.1:8000/v1" # API endpoint
+      model: ""                            # Model name
+      api_key: ""                          # API key (optional)
+      timeout: 900
+    box1:                                 # e.g. LM Studio on the LAN (port 1234)
+      endpoint: "http://192.168.1.10:1234/v1"
+      model: ""
+      timeout: 900
+    box2:                                 # second box for HA
+      endpoint: "http://192.168.1.11:1234/v1"
+      model: ""
+      timeout: 900
 
 # ============================================================================
 # Summary Settings
