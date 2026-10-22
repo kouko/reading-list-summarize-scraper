@@ -136,3 +136,56 @@ Focused tests above PASS. Complete required command is `go test ./...`; acceptan
 - Localhost HTTP fixture server was unreachable (`curl --max-time 3 -I http://127.0.0.1:18764/article` also timed out). Its CLI attempt correctly failed both navigations but does not count as wall or initial-success evidence. Switched to a data URL for deterministic real-browser wall validation.
 - One wall CLI was accidentally started while that localhost attempt still held the same temporary profile; it failed with SingletonLock. Discarded as a harness collision, not product wall behavior. Usable wall checks were rerun sequentially or with separate profile directories after completion.
 - Fixed-content recognition does not guarantee arbitrary future pages are classified perfectly. No important findings were dismissed by the station; both adversarial defects are fixed and permanent regression cases passed.
+
+## Re-run on 2026-10-22, at a8eab1e
+
+Reviewed fix range `ae5de46..a8eab1e`: shared body detection now discards link-only authentication/navigation controls; pipeline dependency accepts the extraction interface; fallback/flag cases now enter ProcessItem and inspect output files. Because that boundary serves every row, all rows were re-tested rather than carried over. Prior live-browser observations remain historical evidence, not claims of repeated browser checks where this re-run uses focused pipeline fixtures.
+
+Fresh `git archive a8eab1e` copy: `/private/tmp/rlss-acceptance-round2.TbcVUA`. README quick build `go build -o rlss ./cmd/rlss/` exit 0. Temporary profiles/output only; no AI, vault writes, login, or authentication changes.
+
+Focused command:
+
+```sh
+go test -v ./internal/pipeline ./internal/extract -run 'Test(ProcessItemWithFallback|ProcessItemRejectsCachedWall|ExtractionRejectsObservedWalls|IsUnavailablePage|IsBlockedPage|Adversarial|Pool)' -count=1
+```
+
+Exit 0; pipeline 0.402s, extract 0.719s, all selected tests PASS. `TestProcessItemWithFallback` covers 14 cases: initial success, load error, empty, challenge, login wall, already-headed failure/challenge, failed/empty/challenge/login retry, and disabled-switch challenge/navigation/empty. Successful cases assert exactly one saved content file with expected body and no summary; failed cases assert no files. Calls assert initial-only or exactly one headed retry. `TestProcessItemRejectsCachedWall` tests plain X auth plus generic privacy/reset links and X privacy links on initial/retry/cache, rejecting them and preserving cached bytes. Both permanent adversarial regressions and wall/body recognizers PASS. Pool profile/pagination/timeout/lifecycle cases PASS.
+
+Independent temporary probe `test_pipeline_auth_controls_rejected_and_real_body_preserved` (`TestAcceptanceRound2BodyStates`) ran through ProcessItem for 15 combinations: three wall-only bodies (generic privacy, generic password reset, X privacy), two genuine bodies with generic/X login prompts, each as initial response, retry response after navigation error, and existing cache. `go test -v ./internal/pipeline -run '^TestAcceptanceRound2BodyStates$' -count=1`: exit 0, all 15 PASS, 0.393s. Walls return errors and create no new files; genuine bodies remain eligible and produce content only; cached bytes remain identical and make no extraction calls. Probe docstring is the English name above; no product file changed.
+
+Temporary batch probe `test_batch_cached_wall_continues` repeated with generic wall plus privacy link followed by real cached prose. `go test -v ./internal/pipeline -run '^TestAcceptanceBatchCachedWallContinues$' -count=1`: exit 0, PASS, 0.379s. Captured `cached content: page unavailable` for first item, then `processing item index=2 total=2`; Total 2 / Failed 1 / Success 1, no summarizer configured.
+
+Live target repeated in fresh isolated profile with the same temporary config settings as before:
+
+```sh
+./rlss url https://x.com/Sukiea1008/status/2112084040362897441 --config acceptance.yaml --no-summary
+```
+
+```text
+13:49:26 WARN headless extraction failed, retrying with headed mode
+err="page load error net::ERR_HTTP_RESPONSE_CODE_FAILURE"
+13:49:32 INFO wrote content
+13:49:32 INFO no summarizer configured, skipping summary
+Pipeline completed in 8s
+Total: 1  Success: 1  Skipped: 0  Partial: 0  Failed: 0
+```
+
+Exit 0. Read-back: content_length 17621, target article heading and all eight scenario headings remain present. This is live public recovery proof, while auth/privacy/reset distinctions above remain synthetic fixtures.
+
+- 1: re-tested — generic ProcessItem recovery, pool routing and live X recovery all PASS.
+- 2: re-tested — live X initial failure followed by one successful retry saved target body in one invocation.
+- 3: re-tested — ProcessItem final load/empty/wall failures return errors and assert zero output files.
+- 4: re-tested — initial/retry/cache privacy/reset/X walls rejected, real bodies preserved, cached bytes unchanged; verification recognizers PASS.
+- 5: re-tested — ProcessItem success case asserts one initial call and expected saved content, no summary.
+- 6: re-tested — live warning and successful visible retry; focused pool timeout/profile/pagination cases PASS.
+- 7: re-tested — live target saved; independent retry-state genuine-body cases save content only.
+- 8: re-tested — final-error/empty ProcessItem cases assert errors and no files; batch witness verifies next-item continuation. CLI exit mapping is unchanged in the inspected diff; previous actual nonzero CLI result remains supporting history.
+- 9: re-tested — all observed wall recognizers, new link-control wall variants and ProcessItem challenge/login cases PASS.
+- 10: re-tested — generic and X genuine-body+login prompts preserved in initial/retry/cache states; live X saved again.
+- 11: re-tested — headed failure/challenge cases call initial only, return errors and create no files; explicit pool/domain-rule routing PASS.
+- 12: re-tested — disabled challenge fails without retry/files, while disabled navigation/empty recover with exactly one retry and save expected body.
+- 13: re-tested — enabled challenge can recover; terminal retry-challenge fails with no files.
+- 14: re-tested — four permanent cached-wall shapes and independent body-state matrix preserve bytes; batch proceeds after rejected cache.
+- 15: re-tested — focused tests PASS; required `go test ./...` remains the finalize-review gate, not a suite run claimed by this tester.
+
+No dismissed important findings were supplied. No new product findings. Main-profile state remains unobservable and heuristic limitations remain as described above.
