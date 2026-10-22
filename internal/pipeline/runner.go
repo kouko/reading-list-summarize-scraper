@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -209,6 +210,9 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 			if err == nil {
 				slog.Info("resuming: content exists, skipping extraction", "sha8", sha8)
 				markdown = stripFrontmatter(string(data))
+				if err := validateExtractedContent(markdown); err != nil {
+					return fmt.Errorf("extract %s: cached content: %w", item.URL, err)
+				}
 			}
 		}
 	}
@@ -219,33 +223,9 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 	if markdown == "" {
 		// Domain rule matching is handled inside pool.ExtractURL.
 		var err error
-		markdown, err = p.pool.ExtractURL(item.URL)
+		markdown, err = extractWithFallback(p.pool, item.URL, p.config.Extract.HeadedOnBlock)
 		if err != nil {
 			return fmt.Errorf("extract %s: %w", item.URL, err)
-		}
-		if strings.TrimSpace(markdown) == "" {
-			return fmt.Errorf("extract %s: empty content (Defuddle returned nothing)", item.URL)
-		}
-		if isBlockedPage(markdown) {
-			if p.config.Extract.HeadedOnBlock {
-				slog.Warn("blocked by anti-bot, retrying with headed mode", "url", item.URL)
-				markdown, err = p.pool.ExtractURLHeaded(item.URL)
-				if err != nil {
-					return fmt.Errorf("extract (headed retry) %s: %w", item.URL, err)
-				}
-				if strings.TrimSpace(markdown) == "" || isBlockedPage(markdown) {
-					return fmt.Errorf("extract %s: still blocked after headed retry", item.URL)
-				}
-			} else {
-				return fmt.Errorf("extract %s: blocked by anti-bot protection (Cloudflare/CAPTCHA). Try setting extract.headed_on_block: true or adding this domain to extract.domain_rules with headed: true", item.URL)
-			}
-		}
-
-		// Maintenance / paywall / login-wall page served instead of the article.
-		// Fail (not a silent short-content "success", not a garbage summary) and
-		// write no content file, so the item is re-attempted on the next run.
-		if isUnavailablePage(markdown) {
-			return fmt.Errorf("extract %s: page unavailable (maintenance / paywall / login required) — not summarized; will retry next run", item.URL)
 		}
 
 		// Create output directory.
@@ -478,9 +458,12 @@ func extractDomain(rawURL string) string {
 	return u.Hostname()
 }
 
-// isUnavailablePage detects pages that were served INSTEAD of the article and
-// that won't be fixed by retrying headless→headed: maintenance pages, paywalls,
-// and login/subscription walls. These otherwise slip through (they aren't
+var xAuthLinks = regexp.MustCompile(`\[[^\]\n]*\]\(https://(?:x\.com/(?:i/jf/onboarding/web\?[^)\s]*|i/flow/(?:login|signup)|login|tos|privacy)|support\.x\.com/articles/20170514|help\.x\.com/resources/accessibility|business\.x\.com/en/help/troubleshooting/how-twitter-ads-work\.html[^)\s]*)\)`)
+var xAuthIframe = regexp.MustCompile(`^<iframe (?:src="https://accounts\.google\.com/gsi/button\?[^"\n]*"[^>]*|style="display: none;")></iframe>$`)
+var xCopyright = regexp.MustCompile(`^© [0-9]{4} x corp\.$`)
+
+// isUnavailablePage detects maintenance pages, paywalls, and login/subscription
+// walls served INSTEAD of the article. These otherwise slip through (they aren't
 // anti-bot challenges) and get silently mis-handled — counted as a short-content
 // "success" or summarized into a "I can't, it's a paywall" non-summary. Treat
 // them as an extraction failure instead (the caller does not write a content
@@ -491,6 +474,29 @@ func extractDomain(rawURL string) string {
 // maintenance is not misflagged. One match is enough.
 func isUnavailablePage(content string) bool {
 	lower := strings.ToLower(content)
+	// X may return just its authentication UI. Remove known UI text, links,
+	// and embedded sign-in controls; any other text preserves article content.
+	if strings.Contains(lower, "https://x.com/") || strings.Contains(lower, "## log in or sign up for x") {
+		authUI := xAuthLinks.MatchString(lower)
+		body := false
+		for _, line := range strings.Split(lower, "\n") {
+			line = strings.TrimSpace(line)
+			line = strings.Trim(xAuthLinks.ReplaceAllString(line, ""), " ·")
+			switch {
+			case line == "", xAuthIframe.MatchString(line), xCopyright.MatchString(line):
+			case line == "## log in or sign up for x",
+				line == "see what’s happening and join the conversation",
+				line == "continue with google", line == "or",
+				line == "透過 google 帳戶繼續操作透過 google 帳戶繼續操作。在新分頁中開啟":
+				authUI = true
+			default:
+				body = true
+			}
+		}
+		if authUI && !body {
+			return true
+		}
+	}
 	unavailablePatterns := []string{
 		// English — maintenance / login / subscription walls
 		"under maintenance",
@@ -527,6 +533,13 @@ func isUnavailablePage(content string) bool {
 // so the localized entries are challenge-UI phrases, not generic security words.
 func isBlockedPage(content string) bool {
 	lower := strings.ToLower(content)
+	// Observed go.dev interstitial: a challenge heading followed only by
+	// Google's cookie notice. A heading mention in an article is insufficient.
+	parts := strings.Split(strings.TrimSpace(lower), "\n\n")
+	if len(parts) == 2 && parts[0] == "## to, err:= human()" &&
+		strings.HasPrefix(parts[1], "go.dev uses cookies from google to deliver and enhance the quality of its services and to analyze traffic.") {
+		return true
+	}
 	blockedPatterns := []string{
 		// English / language-neutral
 		"performing security verification",

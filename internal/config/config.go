@@ -278,7 +278,7 @@ type ExtractConfig struct {
 	WaitAfterLoad    time.Duration `yaml:"wait_after_load"`
 	MinContentLength int           `yaml:"min_content_length"`
 	DomainRules      []DomainRule  `yaml:"domain_rules"`
-	HeadedOnBlock    bool          `yaml:"headed_on_block"`
+	HeadedOnBlock    bool          `yaml:"headed_on_block"` // Allow headed retry for detected anti-bot challenges.
 }
 
 type PipelineConfig struct {
