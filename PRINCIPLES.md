@@ -6,9 +6,9 @@ ratified-by: kouko 2026-10-22
 kouko：從閱讀清單取得文章正文並產生筆記；目前部分頁面需要手動切換瀏覽器模式重試。
 
 ## Non-negotiables (ordered)
-1. 正確性優先：交付內容必須對應目標文章的實際內文。
-2. 不將登入頁或驗證頁當成實際內文。
-3. 未取得實際內文時，不將該次擷取回報為成功。
+1. Prioritize correctness: delivered content must correspond to the target article body.
+2. Never treat a login or verification page as the actual article body.
+3. Never report extraction success when the actual article body was not obtained.
 
 ## Won't do
 - 不將錯誤頁面摘要成文章筆記。
