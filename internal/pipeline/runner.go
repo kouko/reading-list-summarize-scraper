@@ -471,7 +471,8 @@ var xCopyright = regexp.MustCompile(`^© [0-9]{4} x corp\.$`)
 //
 // Patterns are deliberately specific multi-word/wall strings (not bare topic
 // words like "subscribe" or "登入") so a real article *about* paywalls or
-// maintenance is not misflagged. One match is enough.
+// maintenance is not misflagged. A wall phrase must occur without an independent
+// body paragraph; a heading alone does not establish that an article was served.
 func isUnavailablePage(content string) bool {
 	lower := strings.ToLower(content)
 	// X may return just its authentication UI. Remove known UI text, links,
@@ -483,7 +484,7 @@ func isUnavailablePage(content string) bool {
 			line = strings.TrimSpace(line)
 			line = strings.Trim(xAuthLinks.ReplaceAllString(line, ""), " ·")
 			switch {
-			case line == "", xAuthIframe.MatchString(line), xCopyright.MatchString(line):
+			case line == "", line == "## post", xAuthIframe.MatchString(line), xCopyright.MatchString(line):
 			case line == "## log in or sign up for x",
 				line == "see what’s happening and join the conversation",
 				line == "continue with google", line == "or",
@@ -516,12 +517,27 @@ func isUnavailablePage(content string) bool {
 		"ログインしてください",
 		"ログインが必要",
 	}
-	for _, pattern := range unavailablePatterns {
-		if strings.Contains(lower, pattern) {
-			return true
+	wall := false
+	body := false
+	for _, paragraph := range strings.Split(lower, "\n\n") {
+		paragraph = strings.TrimSpace(paragraph)
+		if paragraph == "" {
+			continue
+		}
+		matched := false
+		for _, pattern := range unavailablePatterns {
+			if strings.Contains(paragraph, pattern) {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			wall = true
+		} else if !strings.HasPrefix(paragraph, "#") {
+			body = true
 		}
 	}
-	return false
+	return wall && !body
 }
 
 // isBlockedPage detects anti-bot protection pages (Cloudflare, CAPTCHA, etc.)
