@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
 	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
@@ -461,6 +462,31 @@ func extractDomain(rawURL string) string {
 var xAuthLinks = regexp.MustCompile(`\[[^\]\n]*\]\(https://(?:x\.com/(?:i/jf/onboarding/web\?[^)\s]*|i/flow/(?:login|signup)|login|tos|privacy)|support\.x\.com/articles/20170514|help\.x\.com/resources/accessibility|business\.x\.com/en/help/troubleshooting/how-twitter-ads-work\.html[^)\s]*)\)`)
 var xAuthIframe = regexp.MustCompile(`^<iframe (?:src="https://accounts\.google\.com/gsi/button\?[^"\n]*"[^>]*|style="display: none;")></iframe>$`)
 var xCopyright = regexp.MustCompile(`^© [0-9]{4} x corp\.$`)
+var markdownLinks = regexp.MustCompile(`!?\[[^\]\n]*\]\([^\)\n]*\)`)
+var htmlTags = regexp.MustCompile(`<[^>]*>`)
+
+// hasArticleBody ignores headings and navigation controls when deciding whether
+// a recognized wall also contains independent prose. Link labels alone are not
+// evidence of a body; prose beside links remains eligible, including short posts.
+func hasArticleBody(text string) bool {
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		line = markdownLinks.ReplaceAllString(line, "")
+		line = strings.Trim(htmlTags.ReplaceAllString(line, ""), " \t·|>*_-")
+		switch strings.ToLower(line) {
+		case "", "log in", "sign in", "sign up", "forgot password?", "reset password",
+			"privacy", "terms", "home", "back", "menu", "or", "continue with google":
+			continue
+		}
+		if strings.ContainsFunc(line, unicode.IsLetter) {
+			return true
+		}
+	}
+	return false
+}
 
 // isUnavailablePage detects maintenance pages, paywalls, and login/subscription
 // walls served INSTEAD of the article. These otherwise slip through (they aren't
@@ -491,7 +517,7 @@ func isUnavailablePage(content string) bool {
 				line == "透過 google 帳戶繼續操作透過 google 帳戶繼續操作。在新分頁中開啟":
 				authUI = true
 			default:
-				body = true
+				body = body || hasArticleBody(line)
 			}
 		}
 		if authUI && !body {
@@ -533,8 +559,8 @@ func isUnavailablePage(content string) bool {
 		}
 		if matched {
 			wall = true
-		} else if !strings.HasPrefix(paragraph, "#") {
-			body = true
+		} else {
+			body = body || hasArticleBody(paragraph)
 		}
 	}
 	return wall && !body
