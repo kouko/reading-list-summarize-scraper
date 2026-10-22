@@ -2,8 +2,14 @@ package pipeline
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/kouko/reading-list-summarize-scraper/internal/config"
+	"github.com/kouko/reading-list-summarize-scraper/internal/source"
 )
 
 type stubExtractor struct {
@@ -25,53 +31,58 @@ func (s *stubExtractor) ExtractURLHeaded(string) (string, error) {
 	return s.retry, s.retryErr
 }
 
-func TestExtractWithFallback(t *testing.T) {
+func TestProcessItemWithFallback(t *testing.T) {
 	loadErr := errors.New("net::ERR_HTTP_RESPONSE_CODE_FAILURE")
 	for _, tt := range []struct {
-		name      string
-		s         stubExtractor
-		want      string
-		wantCalls []string
-		wantErr   bool
+		name          string
+		s             stubExtractor
+		want          string
+		wantCalls     []string
+		wantErr       bool
+		blockDisabled bool
 	}{
-		{"success", stubExtractor{first: "article"}, "article", []string{"initial"}, false},
-		{"load error", stubExtractor{firstErr: loadErr, retry: "article"}, "article", []string{"initial", "headed"}, false},
-		{"empty", stubExtractor{first: " \n", retry: "article"}, "article", []string{"initial", "headed"}, false},
-		{"challenge", stubExtractor{first: "Cloudflare CAPTCHA", retry: "article"}, "article", []string{"initial", "headed"}, false},
-		{"login wall", stubExtractor{first: "Please sign in to read", retry: "article"}, "article", []string{"initial", "headed"}, false},
-		{"headed failure", stubExtractor{headed: true, firstErr: loadErr}, "", []string{"initial"}, true},
-		{"headed challenge", stubExtractor{headed: true, first: "Cloudflare CAPTCHA"}, "", []string{"initial"}, true},
-		{"retry failure", stubExtractor{firstErr: loadErr, retryErr: loadErr}, "", []string{"initial", "headed"}, true},
-		{"retry empty", stubExtractor{firstErr: loadErr}, "", []string{"initial", "headed"}, true},
-		{"retry challenge", stubExtractor{firstErr: loadErr, retry: "Cloudflare CAPTCHA"}, "", []string{"initial", "headed"}, true},
-		{"retry login wall", stubExtractor{firstErr: loadErr, retry: "Please sign in to read"}, "", []string{"initial", "headed"}, true},
+		{"success", stubExtractor{first: "article"}, "article", []string{"initial"}, false, false},
+		{"load error", stubExtractor{firstErr: loadErr, retry: "article"}, "article", []string{"initial", "headed"}, false, false},
+		{"empty", stubExtractor{first: " \n", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
+		{"challenge", stubExtractor{first: "Cloudflare CAPTCHA", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
+		{"login wall", stubExtractor{first: "Please sign in to read", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
+		{"headed failure", stubExtractor{headed: true, firstErr: loadErr}, "", []string{"initial"}, true, false},
+		{"headed challenge", stubExtractor{headed: true, first: "Cloudflare CAPTCHA"}, "", []string{"initial"}, true, false},
+		{"retry failure", stubExtractor{firstErr: loadErr, retryErr: loadErr}, "", []string{"initial", "headed"}, true, false},
+		{"retry empty", stubExtractor{firstErr: loadErr}, "", []string{"initial", "headed"}, true, false},
+		{"retry challenge", stubExtractor{firstErr: loadErr, retry: "Cloudflare CAPTCHA"}, "", []string{"initial", "headed"}, true, false},
+		{"retry login wall", stubExtractor{firstErr: loadErr, retry: "Please sign in to read"}, "", []string{"initial", "headed"}, true, false},
+		{"block disabled challenge", stubExtractor{first: "Cloudflare CAPTCHA", retry: "article"}, "", []string{"initial"}, true, true},
+		{"block disabled navigation", stubExtractor{firstErr: loadErr, retry: "article"}, "article", []string{"initial", "headed"}, false, true},
+		{"block disabled empty", stubExtractor{retry: "article"}, "article", []string{"initial", "headed"}, false, true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractWithFallback(&tt.s, "https://example.com/article", true)
-			if got != tt.want || (err != nil) != tt.wantErr {
-				t.Fatalf("got (%q, %v), want (%q, error=%v)", got, err, tt.want, tt.wantErr)
+			dir := t.TempDir()
+			cfg := &config.Config{OutputDir: dir, Extract: config.ExtractConfig{HeadedOnBlock: !tt.blockDisabled}}
+			p := New(cfg, &tt.s, nil)
+			err := p.ProcessItem(source.ReadingItem{URL: "https://example.com/article"})
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("got error %v, want error=%v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(tt.s.calls, tt.wantCalls) {
 				t.Fatalf("calls=%v, want %v", tt.s.calls, tt.wantCalls)
 			}
-		})
-	}
-}
-
-func TestExtractWithFallbackBlockDisabled(t *testing.T) {
-	for _, tt := range []struct {
-		name      string
-		s         stubExtractor
-		wantCalls int
-	}{
-		{"challenge", stubExtractor{first: "Cloudflare CAPTCHA", retry: "article"}, 1},
-		{"navigation", stubExtractor{firstErr: errors.New("navigation failed"), retry: "article"}, 2},
-		{"empty", stubExtractor{retry: "article"}, 2},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := extractWithFallback(&tt.s, "https://example.com/article", false)
-			if len(tt.s.calls) != tt.wantCalls || (err != nil) != (tt.wantCalls == 1) {
-				t.Fatalf("calls=%v, err=%v", tt.s.calls, err)
+			files, err := filepath.Glob(filepath.Join(dir, "*", "*"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.wantErr {
+				if len(files) != 0 {
+					t.Fatalf("failed extraction wrote files: %v", files)
+				}
+				return
+			}
+			if len(files) != 1 || !strings.HasSuffix(files[0], "__content.md") {
+				t.Fatalf("expected content only, no summary; got %v", files)
+			}
+			data, err := os.ReadFile(files[0])
+			if err != nil || stripFrontmatter(string(data)) != tt.want {
+				t.Fatalf("saved content=%q, err=%v; want %q", data, err, tt.want)
 			}
 		})
 	}

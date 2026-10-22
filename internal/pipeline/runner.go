@@ -16,7 +16,6 @@ import (
 	"unicode"
 
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
-	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 	"github.com/kouko/reading-list-summarize-scraper/internal/output"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
 	"github.com/kouko/reading-list-summarize-scraper/internal/summarize"
@@ -82,7 +81,7 @@ func classifyResult(err error) resultBucket {
 // Pipeline orchestrates extraction, summarization, and output for reading list items.
 type Pipeline struct {
 	config     *config.Config
-	pool       *extract.Pool
+	pool       articleExtractor
 	summarizer summarize.Summarizer // may be nil
 	index      *output.FileIndex
 	ctx        context.Context
@@ -92,7 +91,7 @@ type Pipeline struct {
 }
 
 // New creates a new Pipeline. The summarizer may be nil (extraction-only mode).
-func New(cfg *config.Config, pool *extract.Pool, sum summarize.Summarizer) *Pipeline {
+func New(cfg *config.Config, pool articleExtractor, sum summarize.Summarizer) *Pipeline {
 	ctx, cancel := context.WithCancel(context.Background())
 	idx := output.NewFileIndex()
 	idx.Build(cfg.OutputDir)
