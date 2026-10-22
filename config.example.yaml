@@ -286,10 +286,10 @@ extract:
   # Set to 0 to disable the check.
   min_content_length: 100
 
-  # Auto-retry with headed mode when anti-bot protection is detected.
-  # Detection: content matches 2+ patterns (e.g., "cloudflare", "ray id",
-  # "security verification", "captcha").
-  # Retry uses headed_timeout as the timeout value.
+  # Allow one headed retry for detected anti-bot verification pages.
+  # Load errors, empty content, and login / paywall / maintenance pages retry
+  # once using headed_timeout regardless of this switch.
+  # Explicitly headed pages are not retried.
   headed_on_block: true
 
   # Per-domain extraction rules.

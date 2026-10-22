@@ -1,0 +1,101 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-21-headed-extraction-fallback",
+  "content_digest": "f43c856ce9872e37c80f6dd236dcc2285f4018ce",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json ./internal/pipeline -run '^TestAdversarialArticlePrompt$' -count=1",
+      "artifact": "internal/pipeline/adversarial_test.go",
+      "result": "pass",
+      "command_digest": "28e7cb921c04943148486778dce1d3a379dae853e76630eb0e35e50d7851fb32",
+      "evidence": "parsed",
+      "passed": 1
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json ./internal/pipeline -run '^TestAdversarialXShell$' -count=1",
+      "artifact": "internal/pipeline/adversarial_test.go",
+      "result": "pass",
+      "command_digest": "717589d794c82043be7685f588c669b54ba8a4e775a96934516911e29944a59a",
+      "evidence": "parsed",
+      "passed": 1
+    }
+  ],
+  "verdicts": [
+    {
+      "verdict": "PASS_WITH_NOTES",
+      "lens": "code",
+      "reviewed_sha": "f52d35faa84f729d9cfaf27be789e04bf350b1d1",
+      "review_target_sha": "727424c2b21f2402df07c66a75bca6b0a22fa80a",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS_WITH_NOTES",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md exists",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [
+        {
+          "severity": "important",
+          "dimension": "tests",
+          "anchor": "internal/pipeline/pipeline_test.go:26",
+          "text": "issue (unfixed): The original recovery table now exercises ProcessItem, but the fix adds a new direct extractWithFallback invocation inside the cached-wall table. This repeats the prior internal-helper testing issue for behavior reachable from ProcessItem, so the earlier tests finding is only partially closed.",
+          "fix": "Replace this new direct-helper invocation with ProcessItem using the existing stub extractor and a fresh temporary output directory, asserting failure and no output; retain the separate cached-content preservation check."
+        }
+      ],
+      "notes": [
+        "Round1 correctness finding fixed: shared body evidence excludes link-only authentication/navigation controls, and the exact privacy-footer reproduction plus reset/X variants pass the expanded cached-wall test. Round1 tests finding remains partially unfixed as anchored above.",
+        "Round2 bounded changed tests passed: go test ./internal/pipeline -run '^(TestProcessItemWithFallback|TestProcessItemRejectsCachedWall|TestExtractionRejectsObservedWalls|TestIsBlockedPage|TestIsUnavailablePage|TestIsSkipped|TestStats|TestStripFrontmatter)' -count=1 -v. Inspection was limited to ae5de46..727424c and previous findings.",
+        "No full suite or adversarial program was rerun. Handed /private/tmp/rlss-adversarial-round2.txt has no artifact stem and cannot support probe_confirmations."
+      ],
+      "reviewer": "closing-code-review",
+      "vendor": "codex",
+      "model": "inherited"
+    },
+    {
+      "verdict": "PASS",
+      "lens": "spec+adversarial",
+      "reviewed_sha": "f52d35faa84f729d9cfaf27be789e04bf350b1d1",
+      "review_target_sha": "727424c2b21f2402df07c66a75bca6b0a22fa80a",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS",
+        "design-conformance": "N/A — no DESIGN.md exists; relevant CLI flows are specified in spec.md and were inspected",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Round 1 finding at internal/pipeline/runner.go:536 is fixed: shared hasArticleBody excludes link-only and authentication/navigation controls from body evidence in generic and X validation. Exact password-reset and privacy-link variants reject initial/retry/cache content while genuine article fixtures remain eligible.",
+        "Inspected only ae5de466..727424c fix delta and previous finding. Focused TestProcessItemWithFallback, TestProcessItemRejectsCachedWall, TestExtractionRejectsObservedWalls and TestIsUnavailablePage_MaintenanceAndWalls passed via go test ./internal/pipeline -run '^(TestProcessItemWithFallback|TestProcessItemRejectsCachedWall|TestExtractionRejectsObservedWalls|TestIsUnavailablePage_MaintenanceAndWalls)$' -count=1. Updated acceptance evidence accurately separates repeated live recovery, synthetic wall/body-state checks and historical browser wall observations.",
+        "No new findings in fix delta. Package-only adversarial output gets no artifact confirmation. Native vendor codex; inherited model identity remains unobservable."
+      ],
+      "probe_confirmations": [],
+      "reviewer": "closing-spec-review",
+      "vendor": "codex",
+      "model": "inherited"
+    }
+  ],
+  "findings": [],
+  "selection": null
+}

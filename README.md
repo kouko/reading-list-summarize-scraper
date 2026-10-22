@@ -13,6 +13,7 @@ Manual --url ────────────┘
 - **Safari Reading List**: Direct plist parsing, Full Disk Access guidance
 - **Chrome Reading List**: LevelDB direct read — no Chrome launch needed, <1s
 - **Content Extraction**: chromedp-undetected (anti-bot stealth) + Defuddle Markdown output
+- **Automatic Retry**: Headless extraction can recover once with a visible Chrome window on any site, subject to the anti-bot retry setting
 - **LLM Summarization**: 8 providers with fallback chain + circuit breaker
 - **Obsidian Output**: YAML frontmatter, keywords, Mermaid diagrams
 - **Watch Mode**: Periodic re-scan for new items
@@ -133,7 +134,7 @@ chrome:
   google_account: "you@gmail.com"      # Auto-find matching Chrome profile
 
 extract:
-  headed_on_block: true                # Auto-retry with headed mode on Cloudflare
+  headed_on_block: true                # Allow headed retry for anti-bot verification
   domain_rules:
     - domains: ["medium.com"]
       headed: true
@@ -146,6 +147,14 @@ summary:
   mermaid:
     enabled: true
 ```
+
+Headless extraction automatically retries once in headed mode on load errors,
+empty content, or detected anti-bot/login/paywall pages. Both attempts use the
+same content checks, including cached content resumed for summarization.
+Set `extract.headed_on_block: false` to suppress retries for detected anti-bot
+verification pages; load errors and empty content still retry. Explicitly headed
+attempts are not retried. Recognized walls fail without saving new content or
+summaries; existing notes are retained.
 
 ## Output Structure
 

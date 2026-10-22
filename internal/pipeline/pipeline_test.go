@@ -3,10 +3,50 @@ package pipeline
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/kouko/reading-list-summarize-scraper/internal/config"
+	"github.com/kouko/reading-list-summarize-scraper/internal/output"
+	"github.com/kouko/reading-list-summarize-scraper/internal/source"
 )
+
+func TestProcessItemRejectsCachedWall(t *testing.T) {
+	for _, wall := range []string{
+		"## Log in or sign up for X\n\n[Log in](https://x.com/i/flow/login)",
+		"Please sign in to read the full article.\n\n[Privacy](https://example.com/privacy)",
+		"Please sign in to read the full article.\n\n[Forgot password?](https://example.com/reset)",
+		"## Log in or sign up for X\n\n[Log in](https://x.com/i/flow/login)\n\n[Privacy](https://example.com/privacy)",
+	} {
+		t.Run(wall, func(t *testing.T) {
+			s := &stubExtractor{first: wall, retry: wall}
+			if got, err := extractWithFallback(s, "https://example.com/article", true); err == nil || got != "" || len(s.calls) != 2 {
+				t.Errorf("expected initial/retry rejection, got %q, %v, calls=%v", got, err, s.calls)
+			}
+			dir := t.TempDir()
+			item := source.ReadingItem{URL: "https://x.com/example/status/123"}
+			domainDir := filepath.Join(dir, output.DomainDir(item.URL))
+			if err := os.MkdirAll(domainDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(domainDir, output.ContentFilename(time.Now(), output.SHA8(item.URL)))
+			content := "---\ntype: reading-list-content\n---\n\n" + wall
+			if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			p := New(&config.Config{OutputDir: dir}, nil, nil)
+			if err := p.ProcessItem(item); err == nil || !strings.Contains(err.Error(), "cached content") {
+				t.Fatalf("expected cached extraction failure, got %v", err)
+			}
+			if got, err := os.ReadFile(path); err != nil || string(got) != content {
+				t.Fatalf("existing note changed: %q, %v", got, err)
+			}
+		})
+	}
+}
 
 // --- isBlockedPage tests ---
 
@@ -275,6 +315,7 @@ func TestIsBlockedPage_MultiLanguage(t *testing.T) {
 	normal := []string{
 		"本文討論人機驗證（CAPTCHA）的演進與存取控制機制。",    // captcha(1) only → not blocked
 		"セキュリティチェックの自動化とアクセス制御について解説します。", // no challenge-UI phrase
+		"## to, err:= human()\n\nThis article explains Go error handling and cookie policies.",
 	}
 	for _, c := range normal {
 		if isBlockedPage(c) {
