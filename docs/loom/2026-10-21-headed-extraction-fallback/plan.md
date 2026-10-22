@@ -16,6 +16,17 @@ charter: 1.1
 - Test: A1 positive: navigation-recovery; negative: block-disabled. A2 positive: recovered-body; boundary: already-headed. A3 positive: terminal-error; negative: invalid-retry. A4 positive: genuine-x-body; negative: login-verification-cache.
 - Risk: agent-decided — REQ-1/REQ-4 preserve existing pipeline_test.go recognizer cases, widen wall detection conservatively, validate cached content, and retain headed_on_block semantics. Adopt existing uncommitted changes only after test-first verification.
 
+### Wave 2 — article/authentication distinction
+**W2-01 Preserve genuine bodies and reject authentication shells** after: W1-01 acceptance: 4
+- Files: internal/pipeline/runner.go (entry: isUnavailablePage), internal/pipeline/pipeline_test.go
+- Test: A4 positive: incidental-generic-login-prompt; negative: x-post-shell.
+- Risk: agent-decided — REQ-4 fix the whole wall/body confusion class across generic and X checks; preserve existing wall-only rejection and quoted-topic negative cases. Adversarial programs remain unchanged.
+
+**W2-02 Graduate adversarial regressions into the package suite** after: W2-01 acceptance: 4
+- Files: internal/pipeline/adversarial_test.go, docs/loom/2026-10-21-headed-extraction-fallback/evidence/probes/test_article_prompt.py, docs/loom/2026-10-21-headed-extraction-fallback/evidence/probes/test_x_shell.py
+- Test: A4 positive: article-prompt-preserved; negative: authentication-shell-rejected.
+- Risk: agent-decided — move the two adversary-authored injected Go test bodies into a permanent package test without changing assertions; retire only their temporary Python overlay runners after equivalent RED/GREEN verification.
+
 ## Simplicity check
 - none found
 
