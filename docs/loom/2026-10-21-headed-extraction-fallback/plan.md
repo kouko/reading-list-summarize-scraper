@@ -27,6 +27,17 @@ charter: 1.1
 - Test: A4 positive: article-prompt-preserved; negative: authentication-shell-rejected.
 - Risk: agent-decided — move the two adversary-authored injected Go test bodies into a permanent package test without changing assertions; retire only their temporary Python overlay runners after equivalent RED/GREEN verification.
 
+### Wave 3 — closing review repairs
+**W3-01 Reject authentication navigation as body evidence** after: W2-02 acceptance: 4
+- Files: internal/pipeline/runner.go (entry: isUnavailablePage), internal/pipeline/pipeline_test.go
+- Test: A4 positive: substantive-body-with-prompt; negative: cached-wall-with-ui-links.
+- Risk: agent-decided — REQ-4 exclude link-only, navigation, and authentication chrome from body evidence; cover privacy and password-reset examples across initial, retry, and cache validation without weakening real-body cases.
+
+**W3-02 Verify recovery through the pipeline entry** after: W3-01 acceptance: 1, 2, 3, 4
+- Files: internal/pipeline/runner.go (entry: ProcessItem), internal/pipeline/extraction_test.go
+- Test: A1 positive: entry-recovery; boundary: block-disabled. A2 positive: saved-body; boundary: headed-once. A3 positive: returned-error; negative: output-on-failure. A4 positive: real-body; negative: wall-saved.
+- Risk: agent-decided — existing extraction interface becomes the pipeline dependency; move the fallback table to ProcessItem and assert file results, removing duplicate helper-only cases.
+
 ## Simplicity check
 - none found
 
