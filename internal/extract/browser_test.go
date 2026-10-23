@@ -32,6 +32,10 @@ func TestBrowserExtractPaginated(t *testing.T) {
 			} else {
 				fmt.Fprint(w, `<link rel="first" href="?page=1&amp;id=article"><body><article>first</article><a href="?page=0&amp;id=other">other</a><a class="next" href="?page=2&amp;id=article">next</a></body>`)
 			}
+		case "/query-base-prev":
+			fmt.Fprint(w, `<body><article>second</article><a class="prev" href="?id=article">previous</a></body>`)
+		case "/query-no-prev":
+			fmt.Fprint(w, `<body><article>second</article></body>`)
 		case "/hint":
 			fmt.Fprint(w, `<link rel="next" href="/2"><body><article>first</article></body>`)
 		case "/empty-next":
@@ -46,11 +50,13 @@ func TestBrowserExtractPaginated(t *testing.T) {
 	defer server.Close()
 	js := `window.extractArticle=()=>document.querySelector('article').textContent`
 	t.Run("initial earlier page evidence", func(t *testing.T) {
-		got, err := b.ExtractPaginated(server.URL+"/query?page=2&id=article", js, ".next", 10, 2*time.Second, 0)
-		if err == nil || got != "" {
-			t.Fatalf("later query entry: got %q, %v", got, err)
+		for _, path := range []string{"/query", "/query-base-prev", "/query-no-prev"} {
+			got, err := b.ExtractPaginated(server.URL+path+"?page=2&id=article", js, ".next", 10, 2*time.Second, 0)
+			if err == nil || got != "" {
+				t.Errorf("%s later query entry: got %q, %v", path, got, err)
+			}
 		}
-		got, err = b.ExtractPaginated(server.URL+"/query?page=1&id=article", js, ".next", 10, 2*time.Second, 0)
+		got, err := b.ExtractPaginated(server.URL+"/query?page=1&id=article", js, ".next", 10, 2*time.Second, 0)
 		if err != nil || got != "first\n\nsecond" {
 			t.Fatalf("first query entry: got %q, %v", got, err)
 		}

@@ -98,17 +98,8 @@ for(var e of earlier){
   throw new Error('incomplete pagination: initial page advertises an earlier page');
 }
 var numbers=current.searchParams.getAll('page');
-if(numbers.length!==1||!/^\d+$/.test(numbers[0])||Number(numbers[0])<=1)return;
-var rest=new URLSearchParams(current.search);rest.delete('page');rest.sort();
-for(var a of document.querySelectorAll('a[href]')){
- var target;try{target=new URL(a.getAttribute('href'),document.baseURI);}catch(_){continue;}
- if(target.origin!==current.origin||target.pathname!==current.pathname)continue;
- var pages=target.searchParams.getAll('page');
- if(pages.length!==1||!/^\d+$/.test(pages[0])||Number(pages[0])<1||Number(pages[0])>=Number(numbers[0]))continue;
- target.searchParams.delete('page');target.searchParams.sort();
- if(target.searchParams.toString()===rest.toString())
-  throw new Error('incomplete pagination: initial page links to a lower article page');
-}
+if(numbers.length===1&&/^\d+$/.test(numbers[0])&&Number(numbers[0])>1)
+ throw new Error('incomplete pagination: initial page number is greater than one');
 })()`
 	// Embed the selector safely as a JS string literal.
 	selLit, _ := json.Marshal(nextSelector)
