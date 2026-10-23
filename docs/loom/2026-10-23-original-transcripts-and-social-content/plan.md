@@ -1,6 +1,6 @@
 # Original transcripts and social content — plan
-intent: 2026-10-23-original-transcripts-and-social-content@7565660
-spec: docs/loom/2026-10-23-original-transcripts-and-social-content/spec.md@10e7241
+intent: 2026-10-23-original-transcripts-and-social-content@ef0b597
+spec: docs/loom/2026-10-23-original-transcripts-and-social-content/spec.md@3713ba2
 charter: 1.1
 
 ## Task DAG
@@ -32,7 +32,7 @@ charter: 1.1
 **W4-01 Reject target-owned X preview text** after: W3-01 acceptance: 2, 3
 - Files: extraction.ts (entry: extractArticle), extraction.test.mjs, embed/defuddle.min.js
 - Test: A2 positive: complete-target-with-unrelated-quoted-preview; negative: target-owned-show-more. A3 positive: complete-canonical-read-view; negative: explicit-truncated-target-body.
-- Risk: agent-decided — both closing reviewers found explicit X truncation ignored before success. Reject remaining target-owned expansion markers; preserve complete bodies and ignore unrelated quoted markers. Bilibili scope and live X access remain unresolved, not dismissed.
+- Risk: agent-decided — both closing reviewers found explicit X truncation ignored before success. Reject target-owned expansion markers; preserve complete bodies and ignore unrelated quoted markers. Live X access remains unverified; the later user-confirmed scope excludes Bilibili.
 
 ### Wave 5 — preserve challenge retry policy
 **W5-01 Retain challenge identity through specialized extraction errors** after: W4-01 acceptance: 3
@@ -43,7 +43,7 @@ charter: 1.1
 ### Wave 6 — collect graduated regressions in the declared suite
 **W6-01 Run earned JavaScript regressions from the Go suite** after: W5-01 acceptance: 2, 4
 - Files: extraction_boundaries_test.go (entry: TestExtractionBoundaries), README.md
-- Test: A2 negative: quoted-target remains rejected. A4 negative: malformed-markup remains rejected. The Go entry executes the unchanged JavaScript regression program; observe RED against its original defective revision and GREEN on current content.
+- Test: A2 positive: corrected-target-regression-passes; negative: original-target-defect-fails. A4 positive: corrected-markup-regression-passes; negative: original-markup-defect-fails. The Go entry executes the unchanged JavaScript program, RED against its original defective revision and GREEN on current content.
 - Risk: agent-decided — finalization cannot collect JavaScript under the declared Go suite. A small Go test bridge makes the existing suite actually execute the earned regressions; retain Node failures and unchanged assertions. The adversary owns this program normalization.
 
 ## Simplicity check
@@ -54,6 +54,7 @@ charter: 1.1
 ① — what — 字幕來源還有前一題待確認：沒有人工字幕時，你能接受平台提供的原語自動字幕嗎？
 ① — what — 確認這次就先實作以上完整範圍嗎？確認後會完成測試、審查並建立 PR；合併另行確認，發布前也可取消。
 ② — behaviour — 以上行為符合預期嗎？
+① — what — 本輪影片支援是否先限 YouTube，Bilibili 另案處理？
 
 ## Risks
 1. Original-audio evidence can be absent, ambiguous, or tied to a dubbed track; reject uncertainty instead of guessing from locale/default captions. No promise of audio-verified word accuracy or complete speech coverage.
@@ -61,3 +62,4 @@ charter: 1.1
 3. Fixture-backed tests exercise actual module entries; fake only network/resource boundaries. Independent acceptance also runs the built browser bundle and existing CLI pipeline in isolated output directories; live-site access limitations must remain explicit.
 4. Add only a small DOM test dependency if required, reusing esbuild and Node's built-in test runner. Run npm test in existing CI and alongside the standing Go suite; finalization also executes the committed JavaScript adversarial command.
 5. The prior general article data-date defect is known and not fixed by upstream 0.19.5; this scope does not claim its correction. The existing extraction mode/profile settings and completed-summary skip behavior remain unchanged.
+6. user-decided — 2026-10-23: “好 先只做 youtube” confirms YouTube-only video support, excluding Bilibili; social scope is unchanged. Reconcile artifacts under this newly confirmed intent, independently update acceptance and repeat checks/review. No runtime change is needed.
