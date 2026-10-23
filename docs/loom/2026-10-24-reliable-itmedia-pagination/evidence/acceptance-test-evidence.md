@@ -124,3 +124,66 @@ All thirteen rows re-tested independently. No carried-over verdict relied on pre
 ## Data effects and decisions
 
 Only synthetic existing files and newly created isolated artifacts touched. Failed extraction preserved content and summary in focused integration tests. Successful explicit URL retains overwrite; completed batch items retain skip. No real user data or backup/migration. Agent decisions retained: fail known incomplete rather than auto-return first; wait DOMContentLoaded and usable body rather than all resources; preserve caller retry policy. Main agent agreed both discovered page2 cases require repair; neither dismissed.
++
+## Re-run on 2026-10-24, at c576b8e — final post-fix acceptance
+
+The earlier failure measurements above remain historical evidence, not the current verdict. The initial report incorrectly used re-tested on its first measurement; that first measurement's Re-run cells should have been “—”. This is now a genuine post-fix re-run, so every current report row is re-tested.
+
+### Clean setup, scope and commands
+
+Fresh detached worktree /private/tmp/rlss-accept-rerun-c576b8e created with `git worktree add --detach /private/tmp/rlss-accept-rerun-c576b8e c576b8e`. Followed README `make` anew: npm install26 packages, audit0 vulnerabilities, JS bundle rebuilt, Go binary compiled; exit0. No root binary/config/vault/profile reused. Actual live configs, output and Chrome profiles under /private/tmp/rlss-accept-rerun-runs, all reading-list sources/RSS/copy_to disabled and --no-summary.
+
+Reviewed exact fix delta `git diff 9e5c01d..c576b8e -- internal/extract/browser.go internal/extract/browser_test.go`: only initial configured-pagination guard and its focused tests changed. Explicit single numeric page parameter greater than1 rejects; rel first/prev checks retained; forward traversal applies entry check only to initial page. No walker/storage/retry/CLI policy changes.
+
+Commands executed:
+- `python3 /private/tmp/rlss-accept-rerun.py` —20 independent live runs using clean binary.
+- `TMPDIR=/private/tmp GOCACHE=/private/tmp/rlss-go-build go test ./internal/pipeline ./internal/extract ./cmd/rlss -run 'Test(ProcessItemWithFallback|ProcessBatchFailedPaginationPreservesFiles|ProcessItemVideoResume|ExtractionRejectsObservedWalls|IsSkipped|Stats_Report|ApplyFiltersDateOrder|Paginate_|BrowserExtractPaginated|Pagination_laterentry)' -count=1 -v > /private/tmp/rlss-accept-rerun-focused.log 2>&1` — all three selected packages PASS, no skipped selected browser tests.
+- `python3 /private/tmp/rlss-accept-rerun-compare.py > /private/tmp/rlss-accept-rerun-compare.log` — compare newly saved outputs against independently observed per-page references, inspection retains advertising/comment exclusions rather than asserting perfect cleanliness.
+- `python3 /private/tmp/rlss-accept-rerun-itmedia.py` — compares new output against independently fetched article-boundary paragraphs retained from the immediately preceding measurement; PC USER61/61 all exactly once in five-page order, Business32/32 and Mobile10/10 with unique article paragraphs in page order. Two identical Business paragraphs occur in different source pages as well; no whole-page duplicate claim is made from repeated prose.
+- `python3 /private/tmp/rlss-accept-rerun-extra.py` — actual complete overwrite, empty process and dry-run all exit0. Synthetic old content replaced by full content; synthetic summary retained. Existing completed-item skip established with named pipeline test, since explicit URL forces processing.
+- Full suite not run by acceptance tester. finalize-review will run full suite and earned probe, blocking attestation on failure; neither check was skipped.
+
+### Actual twenty-run outcomes
+
+All12 first-page positives from the earlier corpus table were re-executed: same34 source pages, each exit0/Success1/Partial0/Failed0 and one content file. Prior working publishers and additional examples all actually ran again. Exact commands/exits/filenames are in /private/tmp/rlss-accept-rerun-runs/runs.json and per-case run.json; per-case cli.log retains displayed messages.
+
+| Negative control | Actual exit | New content files | New summary files |
+|---|---:|---:|---:|
+| ITmedia cap1 | 1 | 0 | 0 |
+| ITmedia missing selector with standard next hint | 1 | 0 | 0 |
+| ITmedia initial page3 | 1 | 0 | 0 |
+| ITmedia initial page5 | 1 | 0 | 0 |
+| PRESIDENT initial page3 | 1 | 0 | 0 |
+| Yahoo initial page2 | 1 | 0 | 0 |
+| PRESIDENT initial page2 | 1 | 0 | 0 |
+| Toyokeizai initial page2 | 1 | 0 | 0 |
+
+New defect reproductions now show “initial page number is greater than one”, retained headless failure/allowed headed retry messages, Total1 Success0 Partial0 Failed1, final command error. In both cases each permitted attempt rejects; no suffix is saved. Configured headed_on_block:false still suppresses verification-page retries, while these nonchallenge failures follow existing permitted retry policy.
+
+Exact new negative commands:
+`/private/tmp/rlss-accept-rerun-c576b8e/rlss --config /private/tmp/rlss-accept-rerun-runs/president-page2/config.yaml --no-summary url 'https://president.jp/articles/-/120600?page=2'`
+`/private/tmp/rlss-accept-rerun-c576b8e/rlss --config /private/tmp/rlss-accept-rerun-runs/toyokeizai-page2/config.yaml --no-summary url 'https://toyokeizai.net/articles/-/859253?page=2'`
+
+### Row-by-row re-run record
+
+1: re-tested — actual five-page CLI, all61 article paragraphs once/in order, focused successful walker and duplicate guard PASS.
+2: re-tested — all eight live negative controls fail/no files; later-failure/empty/unfollowable/loop tests PASS; output-preservation integration PASS. Both earlier important findings closed.
+3: re-tested — all12 live positives, full selected fallback matrix, challenge-disabled settings, failed retries, explicit headed behavior, browser readiness/navigation errors and earlier-entry checks PASS. Whole affected named surface exercised.
+4: re-tested — twelve article corpus/ten groups/34pages executed again, saved outputs compared per page and results recorded, new negatives explicitly fail.
+5: re-tested — live complete configured article Success1/exit0/all five pages.
+6: re-tested — fallback matrix and actual negative retry messages; retry body replaces initial partial body and only complete extraction writes.
+7: re-tested — later failed/empty page and exhausted retry tests retain page cause, no partial success; existing-file byte comparison PASS.
+8: re-tested — live cap1 fails/no output; loop/unfollowable/cap walker tests PASS.
+9: re-tested — pagination wrapped challenge disabled and ordinary block-disabled tests PASS with no headed call; no substitute output.
+10: re-tested — batch failed-pagination preservation/counting and stats tests PASS; unchanged batch/watch shared path. No real reading lists accessed.
+11: re-tested — actual empty process exit0/no items; dry-run URL exit0/Skipped1/no extraction or writing.
+12: re-tested — actual complete overwrite retaining summary; failed extraction preserves synthetic old content+summary byte-for-byte; completed and dry-run pipeline tests make no extractor calls.
+13: re-tested — expanded corpus re-executed and comparisons inspected, no reliance on author's success.
+
+### Current findings, decisions, data effects, skips and open questions
+
+No open findings. Both important page2 false-success instances are closed by independent observed failures with no saved files; neither was dismissed. No new case exploration or product repair by acceptance tester.
+
+Decision retained: explicit numeric later entry is known incomplete within configured pagination, even absent backwards link; fail rather than automatically return to first. Unsupported/unnumbered encodings without recognizable signals remain outside the guarantee. Full automatic pagination discovery and perfect ad removal remain unpromised.
+
+Only new isolated files and synthetic old files touched. Failure preserves old content+summary; success retains overwrite; completed items retain skip. No real user data, migration or backup. No user-instructed skipped steps. No open user decision.
