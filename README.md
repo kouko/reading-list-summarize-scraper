@@ -228,13 +228,17 @@ Reads directly from Chrome's Sync Data LevelDB files. **No special permissions n
 
 ## Build
 
+Tests require Node.js (CI uses version 22) and dependencies installed with `npm ci`.
+The Go suite also runs the JavaScript boundary regressions; `npm test` runs all browser extraction tests.
+
 | Command | Description |
 |---------|-------------|
 | `make` | Full build: reinstall npm deps → rebuild Defuddle JS → compile Go |
 | `make js-quick` | Rebuild JS only (skip npm reinstall) |
 | `go build -o rlss ./cmd/rlss/` | Quick Go build using committed defuddle.min.js |
 | `make clean` | Remove binary, JS bundle, node_modules |
-| `go test ./...` | Run all tests |
+| `go test ./...` | Run the Go suite and JavaScript boundary regressions |
+| `npm test` | Run all browser extraction tests |
 
 ## Release
 
