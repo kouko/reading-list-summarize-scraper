@@ -29,6 +29,16 @@ charter: 1.1
 - Test: A2 positive: first-page-traversal-with-earlier-links-on-later-pages; negative: initial-earlier-page-evidence. Retain the graduated regression unchanged; cover standard first/previous metadata and same-article lower numbered page navigation observed on the four real later-entry examples.
 - Risk: agent-decided — Class: known incomplete initial entry returns success. Search all changed files and initial/next navigation surfaces. Reject justified earlier-page evidence only at initial entry; do not add automatic first-page recovery, new settings or site-specific extractors.
 
+**W5-01 Validate each page before combining article content** after: W4-02 acceptance: 2, 3
+- Files: internal/extract/browser.go (entry: Browser.ExtractPaginated), internal/extract/browser_test.go, internal/extract/content.go (entry: ValidateContent), internal/pipeline/extraction.go, internal/pipeline/runner.go, internal/pipeline/pipeline_test.go, internal/pipeline/extraction_test.go
+- Test: A2 positive: article-discussing-login-is-retained; negative: real-extractor-later-login-wall. A3 positive: shared-validation-retains-retry-classification; negative: later-challenge-with-headed-retry-disabled. Extend the browser entry fixture using the real injected extractor; retain the graduated probe unchanged.
+- Risk: agent-decided — Class: earlier prose masks a recognized later-page wall. Search changed files plus actual TypeScript bridge, browser/walker, validation, retry and storage surfaces. Reuse the existing validation policy for both individual pages and combined output; avoid a second pattern list or a dependency cycle. Preserve current policy and ordinary extraction behavior.
+
+**W6-01 Exercise incomplete sequences through the browser entry** after: W5-01 acceptance: 2, 3
+- Files: internal/extract/browser_test.go (entry: Browser.ExtractPaginated), internal/extract/pagination_test.go
+- Test: A2 positive: complete-sequence-retained; negative: table-of-incomplete-sequences. Move the changed private-walker cap, loop, later failure, unusable continuation and empty-page tests into one table-driven subtest of the existing browser entry test.
+- Risk: agent-decided — Class: changed tests bypass the declared browser entry. Search every changed test and the affected Acceptance surfaces. Remove corresponding direct tests and only helpers/imports this move makes unused; leave pre-existing unrelated tests and the independent probe unchanged. This task changes tests only.
+
 ## Simplicity check
 - none found
 
