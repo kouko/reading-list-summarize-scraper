@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -54,6 +55,8 @@ func TestProcessItemWithFallback(t *testing.T) {
 		{"social body", stubExtractor{first: "The target post explains how workers exchange files."}, "The target post explains how workers exchange files.", []string{"initial"}, false, false},
 		{"specialized challenge disabled", stubExtractor{firstErr: errors.New("Inaccessible social target: Cloudflare CAPTCHA"), retry: "article"}, "", []string{"initial"}, true, true},
 		{"load error", stubExtractor{firstErr: loadErr, retry: "article"}, "article", []string{"initial", "headed"}, false, false},
+		{"pagination retry replaces partial body", stubExtractor{first: "partial first attempt", firstErr: fmt.Errorf("pagination page 2: %w", loadErr), retry: "page one\n\npage two\n\npage three"}, "page one\n\npage two\n\npage three", []string{"initial", "headed"}, false, false},
+		{"pagination wrapped challenge disabled", stubExtractor{first: "partial first page", firstErr: fmt.Errorf("pagination page 2: %w", errors.New("blocked by anti-bot protection (Cloudflare/CAPTCHA)")), retry: "article"}, "", []string{"initial"}, true, true},
 		{"empty", stubExtractor{first: " \n", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
 		{"challenge", stubExtractor{first: "Cloudflare CAPTCHA", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
 		{"login wall", stubExtractor{first: "Please sign in to read", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
@@ -106,6 +109,51 @@ func TestProcessItemWithFallback(t *testing.T) {
 				t.Fatalf("saved content=%q, err=%v; want %q", data, err, tt.want)
 			}
 		})
+	}
+}
+
+func TestProcessBatchFailedPaginationPreservesFiles(t *testing.T) {
+	dir := t.TempDir()
+	item := source.ReadingItem{URL: "https://example.com/article"}
+	out := filepath.Join(dir, output.DomainDir(item.URL))
+	if err := os.MkdirAll(out, 0755); err != nil {
+		t.Fatal(err)
+	}
+	now, sha := time.Now(), output.SHA8(item.URL)
+	files := map[string]string{
+		output.ContentFilename(now, sha): "---\ntype: reading-list-content\n---\n\nExisting complete article",
+		output.SummaryFilename(now, sha): "---\ntype: reading-list-summary\n---\n\nExisting summary",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(out, name), []byte(body), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cause := errors.New("later page navigation failed")
+	s := &stubExtractor{
+		first: "partial initial body", firstErr: fmt.Errorf("pagination page 2: %w", cause),
+		retry: "partial retry body", retryErr: fmt.Errorf("pagination page 3: %w", cause),
+	}
+	cfg := &config.Config{OutputDir: dir, Extract: config.ExtractConfig{HeadedOnBlock: true}}
+	stats := New(cfg, s, nil).ProcessBatch([]source.ReadingItem{item})
+	if stats.Success != 0 || stats.Partial != 0 || stats.Skipped != 0 || stats.Failed != 1 || len(stats.Errors) != 1 {
+		t.Fatalf("incomplete pagination misreported: %+v", stats)
+	}
+	if !errors.Is(stats.Errors[0].Err, cause) || !strings.Contains(stats.Errors[0].Err.Error(), "pagination page 3") {
+		t.Fatalf("lost pagination failure: %v", stats.Errors[0].Err)
+	}
+	if !reflect.DeepEqual(s.calls, []string{"initial", "headed"}) {
+		t.Fatalf("unexpected retries: %v", s.calls)
+	}
+	entries, err := os.ReadDir(out)
+	if err != nil || len(entries) != len(files) {
+		t.Fatalf("output files changed: %v, err=%v", entries, err)
+	}
+	for name, want := range files {
+		body, err := os.ReadFile(filepath.Join(out, name))
+		if err != nil || string(body) != want {
+			t.Fatalf("existing file %s changed: %q, err=%v", name, body, err)
+		}
 	}
 }
 
