@@ -163,7 +163,8 @@ verification pages; load errors and empty content still retry. Explicitly headed
 attempts are not retried. Recognized walls fail without saving new content or
 summaries; existing notes are retained.
 
-YouTube extraction saves original-language subtitles only when first-party player
+Video transcript support in this release is limited to YouTube. Extraction saves
+original-language subtitles only when first-party player
 data unambiguously associates the original audio with an automatic-caption
 language and a usable track matches that language. Both human and automatic
 tracks are accepted after checking actual cue text, timing and explicit incomplete
@@ -173,8 +174,9 @@ refreshes caption URLs through YouTube's native iOS player API, then Android onc
 if needed, and repeats the same identity, original-language and cue checks.
 Caption XML is parsed without HTML string assignment, including on pages enforcing
 Trusted Types. This does not guarantee transcription accuracy or
-complete speech coverage. Bilibili currently fails because its original-audio
-language cannot be verified; recognized unsupported video platforms also fail
+complete speech coverage. Bilibili is outside this release's supported video
+scope and currently fails because its original-audio language cannot be verified;
+recognized unsupported video platforms also fail
 instead of saving descriptions. Pending video caches without current target-bound
 validation are re-extracted; completed summaries retain existing skip behavior.
 
