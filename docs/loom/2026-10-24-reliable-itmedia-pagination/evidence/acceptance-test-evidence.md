@@ -187,3 +187,55 @@ No open findings. Both important page2 false-success instances are closed by ind
 Decision retained: explicit numeric later entry is known incomplete within configured pagination, even absent backwards link; fail rather than automatically return to first. Unsupported/unnumbered encodings without recognizable signals remain outside the guarantee. Full automatic pagination discovery and perfect ad removal remain unpromised.
 
 Only new isolated files and synthetic old files touched. Failure preserves old content+summary; success retains overwrite; completed items retain skip. No real user data, migration or backup. No user-instructed skipped steps. No open user decision.
++
+## Re-run on 2026-10-24, at 7e7069a — review-fix closure
+
+### Fresh setup and actual execution
+
+Fresh detached worktree /private/tmp/rlss-accept-reviewfix-7e7069a, created with `git worktree add --detach /private/tmp/rlss-accept-reviewfix-7e7069a 7e7069a`. README `make` succeeded anew:26 npm packages, audit0 vulnerabilities, rebuilt bundle and Go executable. All live commands used that executable and fresh /private/tmp/rlss-accept-reviewfix-runs configs/profiles/outputs, disabled reading-list sources, RSS, copy_to and summaries. No root executable, real profile, user notes or production config used.
+
+Read W5/W6 and actual d3647b1..7e7069a diff. Existing content policy moved into shared extract validation and now validates each page before combining; pipeline uses the same policy. Five incomplete-sequence regressions now enter through Browser.ExtractPaginated. This broadens the affected checks to page validity, caller classification, retries, cached walls and existing-file protection; all were re-tested.
+
+Commands and results:
+- `python3 /private/tmp/rlss-accept-reviewfix-run.py`:20 actual runs. Exact arguments, statuses and output filenames in runs.json and each case run.json; displayed processing/retry/failure output in cli.log.
+- `TMPDIR=/private/tmp GOCACHE=/private/tmp/rlss-go-build go test ./internal/pipeline ./internal/extract ./cmd/rlss -run 'Test(ProcessItemWithFallback|ProcessBatchFailedPaginationPreservesFiles|ProcessItemVideoResume|ExtractionRejectsObservedWalls|ProcessItemRejectsCachedWall|IsBlockedPage_|IsUnavailablePage_|IsSkipped|Stats_Report|ApplyFiltersDateOrder|Paginate_|BrowserExtractPaginated|Pagination_laterentry)' -count=1 -v > /private/tmp/rlss-accept-reviewfix-focused.log 2>&1`: PASS all three selected packages; selected browser cases ran, no skips.
+- `python3 /private/tmp/rlss-accept-reviewfix-body.py`: independently fetched current source HTML and compared current saved output; first Nikkan comparison raced its not-yet-written output, so `python3 /private/tmp/rlss-accept-reviewfix-nikkan.py` completed those two current-page comparisons afterward. No failed comparison counted as a pass.
+- `python3 /private/tmp/rlss-accept-reviewfix-compare.py`: new saved outputs versus independent per-page reference blocks. Dynamic ads/recommendations/comment registration differ; inspected as such, not claimed exact article matches. Current article-boundary HTTP checks separately confirm all61 PC USER,32 Business and10 Mobile paragraphs.
+- `python3 /private/tmp/rlss-accept-reviewfix-order.py`: current HTTP article-boundary text against current saved content; PC USER61 paragraphs each once in five-page order, Business32/Mobile10 present with unique paragraphs ordered by page. Raw current HTML, private body comparisons and article prose remain temporary.
+- `python3 /private/tmp/rlss-accept-reviewfix-extra.py`: complete overwrite, empty batch and dry-run all exit0; synthetic content overwritten only with complete article, summary retained; empty selection/no write and dry-run Skipped1 confirmed.
+- Full package suite and earned probe remain finalize-review's responsibility; neither skipped. Acceptance tester did not run full suite or author a probe.
+
+| Actual live surface | Cases | Outcome |
+|---|---:|---|
+| All original and expanded first-page articles | 12 articles /10 groups /34pages | Each exit0, Success1, one content file; body checks completed |
+| ITmedia cap1 and missing selector | 2 | Each exit1, Success0, zero content/summary files |
+| ITmedia pages3/5, PRESIDENT3, Yahoo2 | 4 | Each exit1, Success0, zero content/summary files |
+| Previously defective PRESIDENT2 and Toyokeizai2 | 2 | Each exit1, Success0, zero content/summary files |
+
+### Review findings closed by actual entry-level evidence
+
+Fatal earlier-prose-masks-later-wall finding: `TestBrowserExtractPaginated/real_extractor_validates_later_page` PASS using actual embedded extractor JS. The test's login, challenge and article cases all executed: later recognized login/challenge returns error naming affected wall-end URL and policy reason with empty returned body, despite usable preceding prose; genuine article prose discussing login remains accepted. This is targeted actual browser-entry evidence, not a live publisher login-wall claim.
+
+Important private-tests-bypass-entry finding: `TestBrowserExtractPaginated/incomplete_sequences` PASS for cap, loop, later-failure, unfollowable and empty. Each calls actual browser entry and asserts no body, affected page URL and reason. Prior direct-test names above belong to historical SHAs, not this final run.
+
+Shared-policy preservation: moved classifier tests for challenge languages, normal articles, single-pattern mentions, maintenance/login walls and cached walls PASS; fallback matrix includes pagination wrapped challenge with headed retry disabled and complete retry replacing partial body. Failed batch pagination preserves both old content and summary byte-for-byte. No important finding dismissed.
+
+### Current row-by-row verdicts
+
+1: re-tested, works — current five-page CLI plus61 paragraphs once/in order.
+2: re-tested, works — all8 live incomplete controls plus real-extractor later login/challenge, all5 browser-entry incomplete sequences, no-body/page-reason assertions and failed-output preservation.
+3: re-tested, works — all12 live positives plus shared classifier/cache policy, full selected fallback settings matrix, readiness, navigation and storage checks PASS.
+4: re-tested, works — current12/10/34 corpus, independent current HTML/body comparisons and failures recorded.
+5: re-tested, works — actual complete configured article Success1/exit0.
+6: re-tested, works — allowed retry logs and full selected fallback matrix, complete retry replaces partial attempt.
+7: re-tested, works — actual browser-entry later failure/empty/login/challenge plus existing-file protection.
+8: re-tested, works — actual cap rejection and browser-entry cap/loop/unfollowable checks.
+9: re-tested, works — wrapped and ordinary challenge-disabled tests retain no-headed-retry policy; shared classifier checks PASS.
+10: re-tested, works — selected batch failure counts, stats and preservation tests; unchanged shared watch-cycle behavior, no real reading-list access.
+11: re-tested, works — actual empty batch and dry-run exit0/no extraction/write.
+12: re-tested, works — failed extraction preserves synthetic old content/summary; complete overwrite and completed-item skip checked again.
+13: re-tested, works — expanded examples actually executed again, source/body evidence inspected.
+
+### Decisions, data effects, skips and open questions
+
+All previous important entry findings remain closed; newly reported fatal page-wall masking and important entry-test coverage findings also closed at7e7069a. No open findings or user decisions, no skipped instructed steps. Preserve original validation policy by sharing it per page rather than inventing another wall classifier; genuine independent article prose still accepted. Fail known incomplete, do not auto-return to first; configured-pagination scope and unsupported/unrecognizable signal limitations remain, with no universal or perfect-ad-cleaning claim. Only isolated and synthetic data touched; existing failure/success/skip semantics remain as described in report.
