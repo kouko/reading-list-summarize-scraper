@@ -1,6 +1,7 @@
 package extract
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -8,15 +9,36 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/chromedp"
+
 	assets "github.com/kouko/reading-list-summarize-scraper/embed"
 )
 
-func TestBrowserExtractPaginated(t *testing.T) {
+func newTestBrowser(t *testing.T) *Browser {
+	t.Helper()
 	b, err := NewBrowser(false, "", t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer b.Close()
+	// Register after TempDir so Chrome finishes writing before profile removal.
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(b.ctx, 10*time.Second)
+		defer cancel()
+		defer b.Close()
+		if err := chromedp.Cancel(ctx); err != nil {
+			t.Errorf("close test browser: %v", err)
+		}
+	})
+	// Allocate on the root context so child navigation deadlines exclude
+	// process startup and every extraction reuses the same browser.
+	if err := chromedp.Run(b.ctx); err != nil {
+		t.Fatalf("start test browser: %v", err)
+	}
+	return b
+}
+
+func TestBrowserExtractPaginated(t *testing.T) {
+	b := newTestBrowser(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/pending" {
 			<-r.Context().Done()
