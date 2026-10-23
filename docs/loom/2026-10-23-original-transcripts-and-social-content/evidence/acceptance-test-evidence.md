@@ -344,3 +344,436 @@ All captured URLs are public sample targets or synthetic fixtures. No signed cap
 
 Git-memory classification for this report commit: routine review artifact, no new product decision; the diagnosed availability and scope limits are recorded here rather than presented as a new chosen implementation. Exact commit-message privacy scan must pass before commit. No ambiguous private-party identifying text appears, so no semantic judge dispatch is required.
 
+
+## Re-run on 2026-10-23, at ca5acba848ca87ec26cd2f500119796534ff6499
+
+Fix range checked: `ad2bb6b..ca5acba`. Only README, plan, video extraction source/tests and generated browser bundle changed. The fix adds bounded official native-player refresh with revalidated identity/language and replaces caption HTML parsing with strict SAX cue parsing. Social extraction, Go pipeline, command settings and cache/skip machinery are unchanged. This rerun independently retested all 18 rows; no verdict was carried over without a rerun. The first-run observations above remain historical, not the current live result.
+
+### Setup, isolation and exact commands
+
+- Created new clean worktree `git worktree add /private/tmp/rlss-original-acceptance-w3 ca5acba848ca87ec26cd2f500119796534ff6499`; followed README quick source build into `/private/tmp/rlss-original-w3-cli`. Independently ran `npm ci --ignore-scripts` and `npm run build:defuddle`; all passed, npm reported 26 packages / 0 vulnerabilities and 784.5kb browser bundle. Worktree stayed clean after rebuild.
+- Reused only tester-authored temporary harness/fixture code, never another implementer's active tree, profile, output or live result. Fresh browser profile `/private/tmp/rlss-original-w3-profile`, fresh direct output `/private/tmp/rlss-original-w3-output`; separate fresh batch profile/output, plus dedicated synthetic cache output. No user data or paid provider was touched.
+- CLI config: source lists disabled for direct runs; headless true; wait_after_load 2s; headless/headed timeout 40s; existing headed retry enabled; copy disabled. Every extraction command included `--no-summary`.
+- Per-criterion commands in order: `node --test --test-name-pattern='A1' extraction.test.mjs`, then A2, A3, A4. Results 4/4, 2/2, 4/4, 3/3 respectively; some native refresh tests intentionally match multiple affected criteria. No complete package-suite command was run.
+- Pipeline criteria: `GOCACHE=/private/tmp/rlss-go-build go test ./internal/pipeline -run 'TestProcessItemWithFallback|TestProcessItemVideoResume|TestExtractionRejectsObservedWalls' -v`; passed.
+- Actual rebuilt browser command: `go run /private/tmp/rlss-original-browser.go > /private/tmp/rlss-original-w3-browser.log`; all 12 existing real-Chrome fixture cases passed. The harness injects the actual generated bundle and awaits `window.extractArticle()`; only network page/caption resources are mocked.
+- Exact live CLI pattern: `/private/tmp/rlss-original-w3-cli url <public-url> --config /private/tmp/rlss-original-w3.yaml --no-summary`. Public URLs: YouTube `https://www.youtube.com/watch?v=dQw4w9WgXcQ` and `https://www.youtube.com/watch?v=rfscVS0vtbw`; Threads `https://www.threads.com/@zuck/post/DeZtp-TkQHh`; Medium `https://ev.medium.com/welcome-to-medium-9e53ca408c48`; X `https://x.com/jack/status/20`; Bilibili `https://www.bilibili.com/video/BV123`; unsupported `https://vimeo.com/123`.
+- All independent live results below were reproduced by this tester through the CLI; supplied primary observations were leads only. No signed caption URLs, authentication data or full third-party bodies are retained.
+
+### 1. Original-language subtitles — re-tested
+
+- Real YouTube direct CLI succeeded in 4s, exit 0, Total 1 / Success 1 / Failed 0.
+- Saved content `www_youtube_com/2026-10-23__0424974c__content.md` is 2562 characters including frontmatter, 63 nonblank lines after the provenance marker. Confirmed target `dQw4w9WgXcQ`, language en, source human and evidence original-audio-asr-association. Substantive cue text is present; no full lyrics are committed. No summary file was produced.
+- Real RSS batch independently saved the same public video's verified transcript after a failed ambiguous-language item.
+- Current built-browser verified-ASR and criterion tests passed, including native refresh identity/language conflicts and translations rejected.
+- Bilibili still has no code success path (`extraction.ts:231`); actual bundle rejects with explicit unverified-language cause. Live malformed sample also exited 1, without claiming that it represents a real accessible Bilibili video.
+- Current verdict: partly because the retained named-platform promise still includes Bilibili. First-run YouTube failure is resolved for the independently tested public video, not a universal availability guarantee.
+
+### 2. Target social bodies — re-tested
+
+- Actual Threads CLI exit 0; saved body 136 characters, one target post. Verified its expected introductory text and target URL; no reply list/navigation was included. Content checked locally, not copied into evidence.
+- Actual Medium CLI exit 0 after headless rejection and headed retry; saved Markdown body 6825 characters, heading `Welcome to Medium` and expected article sections. Target URL matched; recommendation labels `More from`, `Recommended from Medium` and X login chrome were absent.
+- Actual X CLI exit 1, Failed 1, no X content or summary output. The observed page/network/access failure does not establish a product defect or prove login is the cause.
+- All three controlled-browser target cases and social criterion tests still passed.
+- Current verdict: partly; Threads/Medium now have independent full CLI saved-body evidence, X success remains unverified.
+
+### 3. No substitute success — re-tested
+
+- Current actual CLI ambiguous-language YouTube and unavailable X remained failures with no newly saved substitute. Unsupported video direct CLI also exit 1.
+- A3 native refreshed wrong identity, conflicting language/audio, translated URL, HTTP/empty/malformed JSON failures all passed rejection assertions. Existing wall/preview/description and wrong-target cases passed.
+- Actual three-item batch and watch each reported Success 2 / Failed 1; only verified real-video content and synthetic ordinary article were saved.
+- Current verdict: works. Full automated suite remains due before acceptance and blocks acceptance if it fails.
+
+### 4. Real subtitle content checks — re-tested
+
+- A4 tests passed: strict SAX output with Trusted Types rejecting HTML sinks; empty-human fallback to usable automatic track; IOS failure followed by ANDROID usable automatic track; empty, negative-timed, malformed, timestamp-only, DTD/entity and explicitly incomplete checks.
+- Actual built-browser empty-human case returned automatic source and cue text; both-usable returned a validated human source; malformed nested markup rejected.
+- Real target page CLI now successfully saves nonempty human source despite the live page's HTML assignment restrictions. This does not infer semantic transcription accuracy or complete spoken-word coverage.
+- Current verdict: works; full suite remains a blocking later check.
+
+### 5. Video success — re-tested
+
+- Real single-URL exit 0 and actual batch save witnessed with verified English human subtitles and labels. Watch resumed that verified content.
+- Bilibili remains unavailable by implementation; summary providers were not called, so complete summary-provider execution is not verified.
+- Verdict: partly.
+
+### 6. Empty human subtitles — re-tested
+
+- Actual rebuilt browser case used automatic subtitles after an empty human track. Updated criterion also exercised the native refresh fallback to automatic after IOS failure.
+- No real live video with exactly this supplied empty-human/usable-auto state and complete CLI save was established.
+- Verdict: partly.
+
+### 7. Multiple usable tracks — re-tested
+
+- Actual rebuilt browser both-usable fixture returned substantive validated human text, label and target provenance, with no accuracy comparison.
+- The real video's human selection proves that selected track usable; it does not establish that every other offered track was usable. Full live multi-track comparison remains unverified.
+- Verdict: partly.
+
+### 8. Original language unknown — re-tested
+
+- Real `rfscVS0vtbw` single URL still failed in both modes with `Unverified original language: ambiguous or dubbed audio association`, exit 1; no new content.
+- Actual browser missing-original-association fixture rejected; current native refresh tests rejected changed language/audio.
+- Verdict: works.
+
+### 9. No usable original track — re-tested
+
+- Real old Rick-video empty-response failure no longer applies at this HEAD; it now succeeds.
+- Current actual browser malformed-caption fixture and updated A1/A3/A4 tests reject empty/incomplete/translated/unusable responses, including exhaustion/failure of fresh-player requests. Pipeline rejection tests ensure description-only/wrong-target payloads are not saved.
+- No real live target intentionally confirmed to have unusable original captions was substituted for these controlled cases; success of unrelated live video is not evidence for this failure case.
+- Verdict: works for criterion tests and actual browser rejection; full suite remains blocking.
+
+### 10. Other video platform — re-tested
+
+- Real `vimeo.com/123` direct CLI exit 1 with unsupported-transcript error, no content saved; actual browser fixture also rejected.
+- Verdict: works.
+
+### 11. Social success — re-tested
+
+- Full actual CLI success, exit 0, and saved target-body checks for Threads/Medium now witnessed.
+- Current X public sample remains unsuccessful, with no existing logged-in profile borrowed; X positive CLI save remains not verified.
+- Verdict: partly.
+
+### 12. Login, challenge or subscription — re-tested
+
+- Current built-browser subscription-preview fixture rejected. Pipeline selected tests again passed login/challenge/retry-setting variants without failed-content writes.
+- Real Medium headless failed with missing/different canonical identity; headed retry produced expected complete target body and exit 0. Do not relabel this observed rejection as a proven Cloudflare/login cause.
+- No manual login/member credential recovery was performed.
+- Verdict: partly.
+
+### 13. Wrong or empty social content — re-tested
+
+- All current social criterion cases and actual browser wrong-target X / Medium preview failed as expected; actual live X failed without saving.
+- Did not run every negative state as full CLI across all three platforms.
+- Verdict: partly.
+
+### 14. In progress — re-tested
+
+- Current actual CLI emitted processing, fallback/retry and final item outcomes. Updated native-refresh tests passed bounded-client ordering and request signal/options checks; built browser exercised candidate fallback.
+- 40s enclosing browser limits configured; no intentionally stalled request tested timeout enforcement itself.
+- Verdict: partly.
+
+### 15. Batch and watch failure — re-tested
+
+- Temporary loopback RSS served three items ordered newest first: ambiguous `rfscVS0vtbw`, eligible `dQw4w9WgXcQ`, synthetic ordinary article. Existing `process --config /private/tmp/rlss-original-w3-batch.yaml --no-summary` exit 0, Total 3 / Success 2 / Failed 1. It continued past failure and saved exactly two content files.
+- Existing `process ... --watch` completed one cycle with the same counts, resumed verified video/ordinary content and rechecked failed video, then slept 10 minutes. SIGINT during sleep returned exit 0.
+- No second cycle or restored-access recovery was attempted. Loopback server was stopped afterward.
+- Verdict: partly.
+
+### 16. Cached incomplete video — re-tested
+
+- Seeded a synthetic old description in dedicated temporary `www_youtube_com/2026-10-23__5ff986bd__content.md`.
+- Existing batch CLI `process --config /private/tmp/rlss-original-w3-batch.yaml --output /private/tmp/rlss-original-w3-cache-output --no-summary --limit 1` logged `cached video requires fresh extraction`, retried actual ambiguous-language target, Failed 1. Old content bytes remained exactly the seeded description; no summary existed at this step.
+- Selected pending/verified pipeline criterion tests passed again. No LLM call was made.
+- Verdict: works.
+
+### 17. Already completed — re-tested
+
+- After step 16, seeded only a synthetic completed summary in the same isolated cache directory.
+- Same existing batch CLI command now exit 0, Skipped 1 / Failed 0, no extraction log, in 0s; old description and synthetic summary retained.
+- Selected completed-cache test passed again.
+- Verdict: works.
+
+### 18. No selected items / dry run — re-tested
+
+- Existing CLI with direct isolated config sources disabled: `no items to process`, exit 0.
+- Existing RSS process `--dry-run --no-summary`: Total 3 / Skipped 3 / Failed 0, no extraction. Loopback server only saw feed GET for the dry-run.
+- Selected pipeline dry-run test passed with zero extractor calls.
+- Verdict: works.
+
+### Current anchored findings and resolution of earlier findings
+
+- **important, unresolved — Bilibili scope contradiction**, `extraction.ts:231`, retained spec Design decision / Video success. Every Bilibili URL is rejected before evidence acquisition. This is literal absent success implementation, honestly documented in README, not a mere observed access restriction. Close with grounded original-language implementation and independent success, or explicitly revise the agreed supported scope with the user. No fabricated provenance is acceptable.
+- **Earlier important real-YouTube-success gap: resolved for witnessed sample.** Exact existing CLI independently returned/saved original subtitles at current HEAD. This is sufficient to remove the previous blanket absence-of-live-success finding, while preserving normal network/availability limits.
+- **Social verification gap narrowed; X remains not verified**, retained spec UI flows / Social success. Actual independent Threads/Medium CLI success now established. X current public target fails network/access/body retrieval; this remains an explicit verification limitation, not an invented adapter defect. Controlled X cases pass. Close positive verification using a legitimately accessible public or authorized isolated-profile target.
+- No important finding was dismissed. Bilibili remains blocking for literal scope completion; this report does not declare the entire original promise ready.
+
+### Re-run captured output
+
+#### Actual rebuilt browser fixtures
+
+```text
+test_bundle_original_automatic_saved expected=true pass=true transport=<nil> result={"ok":true,"text":"<!-- rlss-video-v1 {\"platform\":\"youtube\",\"target\":\"abc\",\"language\":\"en\",\"source\":\"automatic\",\"evidence\":\"original-audio-asr-association\"} -->\n\nSubtitle language: en\nSubtitle source: automatic\n\nActual original spoken words."}
+test_bundle_empty_human_automatic_used expected=true pass=true transport=<nil> result={"ok":true,"text":"<!-- rlss-video-v1 {\"platform\":\"youtube\",\"target\":\"abc\",\"language\":\"en\",\"source\":\"automatic\",\"evidence\":\"original-audio-asr-association\"} -->\n\nSubtitle language: en\nSubtitle source: automatic\n\nActual original spoken words."}
+test_bundle_multiple_usable_validated expected=true pass=true transport=<nil> result={"ok":true,"text":"<!-- rlss-video-v1 {\"platform\":\"youtube\",\"target\":\"abc\",\"language\":\"en\",\"source\":\"human\",\"evidence\":\"original-audio-asr-association\"} -->\n\nSubtitle language: en\nSubtitle source: human\n\nActual original spoken words."}
+test_bundle_unknown_original_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Unverified original language: missing or conflicting original-audio automatic captions"}
+test_bundle_malformed_cues_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Unusable original-language subtitles: Unusable subtitles: malformed XML (1:44: unexpected close tag.); Unexpected token '<', \"<!doctype \"... is not valid JSON; Unexpected token '<', \"<!doctype \"... is not valid JSON"}
+test_bundle_other_video_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Unsupported video transcript extraction"}
+test_bundle_bilibili_unverified_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Unverified original language: Bilibili exposes subtitle language but no verified original-audio association"}
+test_bundle_threads_target_selected expected=true pass=true transport=<nil> result={"ok":true,"text":"Original target body."}
+test_bundle_medium_target_selected expected=true pass=true transport=<nil> result={"ok":true,"text":"Original target body."}
+test_bundle_x_target_selected expected=true pass=true transport=<nil> result={"ok":true,"text":"Original target body."}
+test_bundle_medium_preview_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Inaccessible social target: subscription or preview"}
+test_bundle_wrong_x_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Inaccessible social target: main body unavailable"}
+```
+
+#### Actual live CLI results (trimmed)
+
+```text
+--- youtube ---
+time=2026-10-23T14:30:17.807+08:00 level=INFO msg="processing item" index=1 total=1 url="https://www.youtube.com/watch?v=dQw4w9WgXcQ" title=""
+time=2026-10-23T14:30:22.186+08:00 level=INFO msg="wrote content" path=/private/tmp/rlss-original-w3-output/www_youtube_com/2026-10-23__0424974c__content.md
+Pipeline completed in 4s
+  Total:   1
+  Success: 1
+  Skipped: 0
+  Partial: 0
+  Failed:  0
+CLI_EXIT=0
+
+--- threads ---
+Pipeline completed in 5s
+  Total:   1
+  Success: 1
+  Skipped: 0
+  Partial: 0
+  Failed:  0
+time=2026-10-23T14:30:50.127+08:00 level=INFO msg="processing item" index=1 total=1 url=https://www.threads.com/@zuck/post/DeZtp-TkQHh title=""
+time=2026-10-23T14:30:54.822+08:00 level=INFO msg="wrote content" path=/private/tmp/rlss-original-w3-output/www_threads_com/2026-10-23__f3772312__content.md
+CLI_EXIT=0
+
+--- medium ---
+Pipeline completed in 7s
+  Total:   1
+  Success: 1
+  Skipped: 0
+  Partial: 0
+  Failed:  0
+time=2026-10-23T14:30:54.831+08:00 level=INFO msg="processing item" index=1 total=1 url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 title=""
+time=2026-10-23T14:30:57.639+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 err="exception \"Uncaught (in promise) Error: Inaccessible social target: canonical identity missing or different\" (344:4148): Error: Inaccessible social target: canonical identity missing or different\n    at dt (<anonymous>:344:4148)\n    at Xi (<anonymous>:353:407)\n    at jo (<anonymous>:353:1942)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:31:01.367+08:00 level=INFO msg="wrote content" path=/private/tmp/rlss-original-w3-output/ev_medium_com/2026-10-23__300cbc52__content.md
+CLI_EXIT=0
+
+--- x ---
+Pipeline completed in 5s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+time=2026-10-23T14:31:01.374+08:00 level=INFO msg="processing item" index=1 total=1 url=https://x.com/jack/status/20 title=""
+time=2026-10-23T14:31:02.256+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url=https://x.com/jack/status/20 err="page load error net::ERR_HTTP_RESPONSE_CODE_FAILURE"
+time=2026-10-23T14:31:06.608+08:00 level=ERROR msg="item failed" url=https://x.com/jack/status/20 err="extract https://x.com/jack/status/20: headless attempt: page load error net::ERR_HTTP_RESPONSE_CODE_FAILURE; headed retry: exception \"Uncaught (in promise) Error: Inaccessible social target: main body unavailable\" (344:4148): Error: Inaccessible social target: main body unavailable\n    at dt (<anonymous>:344:4148)\n    at Xi (<anonymous>:353:1123)\n    at jo (<anonymous>:353:1942)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+CLI_EXIT=1
+
+--- unknown ---
+Pipeline completed in 8s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+time=2026-10-23T14:31:06.616+08:00 level=INFO msg="processing item" index=1 total=1 url="https://www.youtube.com/watch?v=rfscVS0vtbw" title=""
+time=2026-10-23T14:31:10.758+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:31:14.457+08:00 level=ERROR msg="item failed" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="extract https://www.youtube.com/watch?v=rfscVS0vtbw: headless attempt: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8; headed retry: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+CLI_EXIT=1
+
+--- bilibili ---
+Pipeline completed in 55s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+time=2026-10-23T14:31:14.465+08:00 level=INFO msg="processing item" index=1 total=1 url=https://www.bilibili.com/video/BV123 title=""
+time=2026-10-23T14:31:29.011+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url=https://www.bilibili.com/video/BV123 err="exception \"Uncaught (in promise) Error: Unverified original language: Bilibili exposes subtitle language but no verified original-audio association\" (344:4148): Error: Unverified original language: Bilibili exposes subtitle language but no verified original-audio association\n    at dt (<anonymous>:344:4148)\n    at jo (<anonymous>:353:1455)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:32:09.027+08:00 level=ERROR msg="item failed" url=https://www.bilibili.com/video/BV123 err="extract https://www.bilibili.com/video/BV123: headless attempt: exception \"Uncaught (in promise) Error: Unverified original language: Bilibili exposes subtitle language but no verified original-audio association\" (344:4148): Error: Unverified original language: Bilibili exposes subtitle language but no verified original-audio association\n    at dt (<anonymous>:344:4148)\n    at jo (<anonymous>:353:1455)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8; headed retry: context deadline exceeded"
+CLI_EXIT=1
+
+--- unsupported ---
+Pipeline completed in 7s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+time=2026-10-23T14:32:09.036+08:00 level=INFO msg="processing item" index=1 total=1 url=https://vimeo.com/123 title=""
+time=2026-10-23T14:32:12.394+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url=https://vimeo.com/123 err="exception \"Uncaught (in promise) Error: Unsupported video transcript extraction\" (344:4148): Error: Unsupported video transcript extraction\n    at dt (<anonymous>:344:4148)\n    at jo (<anonymous>:353:1783)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:32:15.551+08:00 level=ERROR msg="item failed" url=https://vimeo.com/123 err="extract https://vimeo.com/123: headless attempt: exception \"Uncaught (in promise) Error: Unsupported video transcript extraction\" (344:4148): Error: Unsupported video transcript extraction\n    at dt (<anonymous>:344:4148)\n    at jo (<anonymous>:353:1783)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8; headed retry: exception \"Uncaught (in promise) Error: Unsupported video transcript extraction\" (344:4148): Error: Unsupported video transcript extraction\n    at dt (<anonymous>:344:4148)\n    at jo (<anonymous>:353:1783)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+CLI_EXIT=1
+```
+
+#### Actual batch, cache, completed and dry-run
+
+```text
+--- batch ---
+time=2026-10-23T14:31:44.429+08:00 level=INFO msg="processing item" index=1 total=3 url="https://www.youtube.com/watch?v=rfscVS0vtbw" title="Ambiguous original audio"
+time=2026-10-23T14:31:48.423+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:31:52.272+08:00 level=ERROR msg="item failed" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="extract https://www.youtube.com/watch?v=rfscVS0vtbw: headless attempt: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8; headed retry: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:31:52.272+08:00 level=INFO msg="processing item" index=2 total=3 url="https://www.youtube.com/watch?v=dQw4w9WgXcQ" title="Public original subtitles"
+time=2026-10-23T14:31:56.191+08:00 level=INFO msg="wrote content" path=/private/tmp/rlss-original-w3-batch-output/www_youtube_com/2026-10-23__0424974c__content.md
+time=2026-10-23T14:31:56.191+08:00 level=INFO msg="processing item" index=3 total=3 url=http://127.0.0.1:18643/article title="Ordinary test article"
+time=2026-10-23T14:31:58.568+08:00 level=INFO msg="wrote content" path=/private/tmp/rlss-original-w3-batch-output/127_0_0_1/2026-10-23__3f11badb__content.md
+Pipeline completed in 14s
+  Total:   3
+  Success: 2
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+CLI_EXIT=0
+
+--- cache ---
+time=2026-10-23T14:32:02.511+08:00 level=INFO msg="processing item" index=1 total=1 url="https://www.youtube.com/watch?v=rfscVS0vtbw" title="Ambiguous original audio"
+time=2026-10-23T14:32:02.511+08:00 level=INFO msg="resuming: content exists, skipping extraction" sha8=5ff986bd
+time=2026-10-23T14:32:02.511+08:00 level=INFO msg="cached video requires fresh extraction" sha8=5ff986bd err="unverified original language: missing or invalid target-bound transcript provenance"
+time=2026-10-23T14:32:06.173+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:32:09.854+08:00 level=ERROR msg="item failed" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="extract https://www.youtube.com/watch?v=rfscVS0vtbw: headless attempt: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8; headed retry: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+Pipeline completed in 7s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+CLI_EXIT=0
+
+--- completed ---
+time=2026-10-23T14:32:52.755+08:00 level=INFO msg="processing item" index=1 total=1 url="https://www.youtube.com/watch?v=rfscVS0vtbw" title="Ambiguous original audio"
+Pipeline completed in 0s
+  Total:   1
+  Success: 0
+  Skipped: 1
+  Partial: 0
+  Failed:  0
+CLI_EXIT=0
+
+--- dry ---
+time=2026-10-23T14:32:52.764+08:00 level=INFO msg="processing item" index=1 total=3 url="https://www.youtube.com/watch?v=rfscVS0vtbw" title="Ambiguous original audio"
+time=2026-10-23T14:32:52.764+08:00 level=INFO msg="dry-run: would process" url="https://www.youtube.com/watch?v=rfscVS0vtbw" sha8=5ff986bd
+time=2026-10-23T14:32:52.764+08:00 level=INFO msg="processing item" index=2 total=3 url="https://www.youtube.com/watch?v=dQw4w9WgXcQ" title="Public original subtitles"
+time=2026-10-23T14:32:52.764+08:00 level=INFO msg="dry-run: would process" url="https://www.youtube.com/watch?v=dQw4w9WgXcQ" sha8=0424974c
+time=2026-10-23T14:32:52.764+08:00 level=INFO msg="processing item" index=3 total=3 url=http://127.0.0.1:18643/article title="Ordinary test article"
+time=2026-10-23T14:32:52.764+08:00 level=INFO msg="dry-run: would process" url=http://127.0.0.1:18643/article sha8=3f11badb
+Pipeline completed in 0s
+  Total:   3
+  Success: 0
+  Skipped: 3
+  Partial: 0
+  Failed:  0
+
+--- empty ---
+time=2026-10-23T14:32:52.771+08:00 level=INFO msg="no items to process"
+```
+
+#### Watch cycle (trimmed)
+
+```text
+time=2026-10-23T14:32:32.520+08:00 level=INFO msg="processing item" index=1 total=3 url="https://www.youtube.com/watch?v=rfscVS0vtbw" title="Ambiguous original audio"
+time=2026-10-23T14:32:36.644+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:32:40.472+08:00 level=ERROR msg="item failed" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="extract https://www.youtube.com/watch?v=rfscVS0vtbw: headless attempt: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8; headed retry: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:32:40.472+08:00 level=INFO msg="processing item" index=2 total=3 url="https://www.youtube.com/watch?v=dQw4w9WgXcQ" title="Public original subtitles"
+time=2026-10-23T14:32:40.473+08:00 level=INFO msg="resuming: content exists, skipping extraction" sha8=0424974c
+time=2026-10-23T14:32:40.473+08:00 level=INFO msg="processing item" index=3 total=3 url=http://127.0.0.1:18643/article title="Ordinary test article"
+time=2026-10-23T14:32:40.474+08:00 level=INFO msg="resuming: content exists, skipping extraction" sha8=3f11badb
+time=2026-10-23T14:32:40.474+08:00 level=INFO msg="watch: cycle complete" report="Pipeline completed in 8s\n  Total:   3\n  Success: 2\n  Skipped: 0\n  Partial: 0\n  Failed:  1\n\nErrors:\n  - Ambiguous original audio: extract https://www.youtube.com/watch?v=rfscVS0vtbw: headless attempt: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8; headed retry: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at dt (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Vi (<anonymous>:346:1423)\n    at jo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8\n"
+time=2026-10-23T14:32:40.474+08:00 level=INFO msg="watch: sleeping" minutes=10
+```
+
+#### Criterion tests
+
+```text
+A1
+# Subtest: A1/A3 native player refresh recovers empty inline captions with bounded first-party requests
+ok 1 - A1/A3 native player refresh recovers empty inline captions with bounded first-party requests
+# Subtest: A1 verified original audio association
+ok 2 - A1 verified original audio association
+# Subtest: A1 unverified default language rejected
+ok 3 - A1 unverified default language rejected
+# Subtest: A1/A3 refreshed invalid identity, language and API failures stay unsuccessful
+ok 4 - A1/A3 refreshed invalid identity, language and API failures stay unsuccessful
+# tests 4
+# pass 4
+# fail 0
+
+A2
+# Subtest: A2 target bodies on three platforms exclude replies
+ok 1 - A2 target bodies on three platforms exclude replies
+# Subtest: A2 wrong target rejected
+ok 2 - A2 wrong target rejected
+# tests 2
+# pass 2
+# fail 0
+
+A3
+# Subtest: A1/A3 native player refresh recovers empty inline captions with bounded first-party requests
+ok 1 - A1/A3 native player refresh recovers empty inline captions with bounded first-party requests
+# Subtest: A1/A3 refreshed invalid identity, language and API failures stay unsuccessful
+ok 2 - A1/A3 refreshed invalid identity, language and API failures stay unsuccessful
+# Subtest: A3 verified social content succeeds without network fallback
+ok 3 - A3 verified social content succeeds without network fallback
+# Subtest: A3 login, preview and unsupported video fail
+ok 4 - A3 login, preview and unsupported video fail
+# tests 4
+# pass 4
+# fail 0
+
+A4
+# Subtest: A4 captions work when Trusted Types rejects HTML parsing sinks
+ok 1 - A4 captions work when Trusted Types rejects HTML parsing sinks
+# Subtest: A4 blank human track does not block usable automatic track
+ok 2 - A4 blank human track does not block usable automatic track
+# Subtest: A4 malformed, truncated and timestamp-only cues fail
+ok 3 - A4 malformed, truncated and timestamp-only cues fail
+# tests 3
+# pass 3
+# fail 0
+=== RUN   TestProcessItemWithFallback
+=== RUN   TestProcessItemWithFallback/success
+=== RUN   TestProcessItemWithFallback/video_verified
+=== RUN   TestProcessItemWithFallback/video_description
+=== RUN   TestProcessItemWithFallback/video_metadata_only
+=== RUN   TestProcessItemWithFallback/video_wrong_target
+=== RUN   TestProcessItemWithFallback/social_body
+=== RUN   TestProcessItemWithFallback/specialized_challenge_disabled
+=== RUN   TestProcessItemWithFallback/load_error
+=== RUN   TestProcessItemWithFallback/empty
+=== RUN   TestProcessItemWithFallback/challenge
+=== RUN   TestProcessItemWithFallback/login_wall
+=== RUN   TestProcessItemWithFallback/headed_failure
+=== RUN   TestProcessItemWithFallback/headed_challenge
+=== RUN   TestProcessItemWithFallback/retry_failure
+=== RUN   TestProcessItemWithFallback/retry_empty
+=== RUN   TestProcessItemWithFallback/retry_challenge
+=== RUN   TestProcessItemWithFallback/retry_login_wall
+=== RUN   TestProcessItemWithFallback/block_disabled_challenge
+=== RUN   TestProcessItemWithFallback/block_disabled_navigation
+=== RUN   TestProcessItemWithFallback/block_disabled_empty
+--- PASS: TestProcessItemWithFallback (0.01s)
+    --- PASS: TestProcessItemWithFallback/success (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_verified (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_description (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_metadata_only (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_wrong_target (0.00s)
+    --- PASS: TestProcessItemWithFallback/social_body (0.00s)
+    --- PASS: TestProcessItemWithFallback/specialized_challenge_disabled (0.00s)
+    --- PASS: TestProcessItemWithFallback/load_error (0.00s)
+    --- PASS: TestProcessItemWithFallback/empty (0.00s)
+    --- PASS: TestProcessItemWithFallback/challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/login_wall (0.00s)
+    --- PASS: TestProcessItemWithFallback/headed_failure (0.00s)
+    --- PASS: TestProcessItemWithFallback/headed_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_failure (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_empty (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_login_wall (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_navigation (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_empty (0.00s)
+=== RUN   TestProcessItemVideoResume
+=== RUN   TestProcessItemVideoResume/pending
+=== RUN   TestProcessItemVideoResume/verified
+=== RUN   TestProcessItemVideoResume/completed
+=== RUN   TestProcessItemVideoResume/dry-run
+--- PASS: TestProcessItemVideoResume (0.00s)
+    --- PASS: TestProcessItemVideoResume/pending (0.00s)
+    --- PASS: TestProcessItemVideoResume/verified (0.00s)
+    --- PASS: TestProcessItemVideoResume/completed (0.00s)
+    --- PASS: TestProcessItemVideoResume/dry-run (0.00s)
+=== RUN   TestExtractionRejectsObservedWalls
+--- PASS: TestExtractionRejectsObservedWalls (0.00s)
+PASS
+ok  	github.com/kouko/reading-list-summarize-scraper/internal/pipeline	0.380s
+```
+
+No complete Go/npm package suite or workflow-helper test was run by this tester. Finalize-review is still scheduled by the primary reviewer; no steps skipped by instruction. Dispatch remains inherited overrides null, unobservable-main-profile; no subagents dispatched.
+
+Commit classification: routine acceptance rerun with corrected observations; no product implementation or new product design decision. Exact final commit-message deterministic privacy scan is required, and no ambiguous private-party text requires a semantic judge.
+
