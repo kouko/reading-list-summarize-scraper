@@ -163,6 +163,30 @@ verification pages; load errors and empty content still retry. Explicitly headed
 attempts are not retried. Recognized walls fail without saving new content or
 summaries; existing notes are retained.
 
+Video transcript support in this release is limited to YouTube. Extraction saves
+original-language subtitles only when first-party player
+data unambiguously associates the original audio with an automatic-caption
+language and a usable track matches that language. Both human and automatic
+tracks are accepted after checking actual cue text, timing and explicit incomplete
+responses; human tracks are not always preferred. Saved content identifies the
+subtitle language and source. If verified inline tracks are unusable, extraction
+refreshes caption URLs through YouTube's native iOS player API, then Android once
+if needed, and repeats the same identity, original-language and cue checks.
+Caption XML is parsed without HTML string assignment, including on pages enforcing
+Trusted Types. This does not guarantee transcription accuracy or
+complete speech coverage. Bilibili is outside this release's supported video
+scope and currently fails because its original-audio language cannot be verified;
+recognized unsupported video platforms also fail
+instead of saving descriptions. Pending video caches without current target-bound
+validation are re-extracted; completed summaries retain existing skip behavior.
+
+Threads, Medium and X/Twitter extraction checks the target permalink or canonical
+identity before returning the main body. Missing targets, detected previews and
+access walls fail; unavailable private or member-only content is not promised.
+Existing social caches retain the normal wall checks but cannot retroactively
+prove target identity. Requests use first-party platform data and media endpoints
+with existing access, without outside mirrors, proxies or audio uploads.
+
 ## Output Structure
 
 ```
@@ -206,13 +230,17 @@ Reads directly from Chrome's Sync Data LevelDB files. **No special permissions n
 
 ## Build
 
+Tests require Node.js (CI uses version 22) and dependencies installed with `npm ci`.
+The Go suite also runs the JavaScript boundary regressions; `npm test` runs all browser extraction tests.
+
 | Command | Description |
 |---------|-------------|
 | `make` | Full build: reinstall npm deps → rebuild Defuddle JS → compile Go |
 | `make js-quick` | Rebuild JS only (skip npm reinstall) |
 | `go build -o rlss ./cmd/rlss/` | Quick Go build using committed defuddle.min.js |
 | `make clean` | Remove binary, JS bundle, node_modules |
-| `go test ./...` | Run all tests |
+| `go test ./...` | Run the Go suite and JavaScript boundary regressions |
+| `npm test` | Run all browser extraction tests |
 
 ## Release
 

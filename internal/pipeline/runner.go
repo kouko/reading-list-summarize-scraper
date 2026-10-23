@@ -210,8 +210,13 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 			if err == nil {
 				slog.Info("resuming: content exists, skipping extraction", "sha8", sha8)
 				markdown = stripFrontmatter(string(data))
-				if err := validateExtractedContent(markdown); err != nil {
-					return fmt.Errorf("extract %s: cached content: %w", item.URL, err)
+				if err := validateTargetContent(item.URL, markdown); err != nil {
+					if platform, _ := videoTarget(item.URL); platform != "" {
+						slog.Info("cached video requires fresh extraction", "sha8", sha8, "err", err)
+						markdown = ""
+					} else {
+						return fmt.Errorf("extract %s: cached content: %w", item.URL, err)
+					}
 				}
 			}
 		}

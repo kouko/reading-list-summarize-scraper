@@ -7,8 +7,10 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
+	"github.com/kouko/reading-list-summarize-scraper/internal/output"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
 )
 
@@ -20,6 +22,8 @@ type stubExtractor struct {
 	retry    string
 	retryErr error
 }
+
+const verifiedTranscript = `<!-- rlss-video-v1 {"platform":"youtube","target":"abc","language":"ja","source":"automatic","evidence":"original-audio-asr-association"} -->` + "\n\nSubtitle language: ja\nSubtitle source: automatic\n\n今日は字幕について話します。"
 
 func (s *stubExtractor) UsesHeaded(string) bool { return s.headed }
 func (s *stubExtractor) ExtractURL(string) (string, error) {
@@ -33,6 +37,7 @@ func (s *stubExtractor) ExtractURLHeaded(string) (string, error) {
 
 func TestProcessItemWithFallback(t *testing.T) {
 	loadErr := errors.New("net::ERR_HTTP_RESPONSE_CODE_FAILURE")
+	transcript := verifiedTranscript
 	for _, tt := range []struct {
 		name          string
 		s             stubExtractor
@@ -42,6 +47,12 @@ func TestProcessItemWithFallback(t *testing.T) {
 		blockDisabled bool
 	}{
 		{"success", stubExtractor{first: "article"}, "article", []string{"initial"}, false, false},
+		{"video verified", stubExtractor{headed: true, first: transcript}, transcript, []string{"initial"}, false, false},
+		{"video description", stubExtractor{headed: true, first: "A description without subtitles"}, "", []string{"initial"}, true, false},
+		{"video metadata only", stubExtractor{headed: true, first: strings.Split(transcript, "今日は")[0]}, "", []string{"initial"}, true, false},
+		{"video wrong target", stubExtractor{headed: true, first: transcript}, "", []string{"initial"}, true, false},
+		{"social body", stubExtractor{first: "The target post explains how workers exchange files."}, "The target post explains how workers exchange files.", []string{"initial"}, false, false},
+		{"specialized challenge disabled", stubExtractor{firstErr: errors.New("Inaccessible social target: Cloudflare CAPTCHA"), retry: "article"}, "", []string{"initial"}, true, true},
 		{"load error", stubExtractor{firstErr: loadErr, retry: "article"}, "article", []string{"initial", "headed"}, false, false},
 		{"empty", stubExtractor{first: " \n", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
 		{"challenge", stubExtractor{first: "Cloudflare CAPTCHA", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
@@ -60,7 +71,17 @@ func TestProcessItemWithFallback(t *testing.T) {
 			dir := t.TempDir()
 			cfg := &config.Config{OutputDir: dir, Extract: config.ExtractConfig{HeadedOnBlock: !tt.blockDisabled}}
 			p := New(cfg, &tt.s, nil)
-			err := p.ProcessItem(source.ReadingItem{URL: "https://example.com/article"})
+			rawURL := "https://example.com/article"
+			if strings.HasPrefix(tt.name, "video") {
+				rawURL = "https://www.youtube.com/watch?v=abc"
+				if tt.name == "video wrong target" {
+					rawURL = "https://youtu.be/other"
+				}
+			}
+			if tt.name == "social body" || tt.name == "specialized challenge disabled" {
+				rawURL = "https://x.com/example/status/123"
+			}
+			err := p.ProcessItem(source.ReadingItem{URL: rawURL})
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("got error %v, want error=%v", err, tt.wantErr)
 			}
@@ -83,6 +104,47 @@ func TestProcessItemWithFallback(t *testing.T) {
 			data, err := os.ReadFile(files[0])
 			if err != nil || stripFrontmatter(string(data)) != tt.want {
 				t.Fatalf("saved content=%q, err=%v; want %q", data, err, tt.want)
+			}
+		})
+	}
+}
+
+func TestProcessItemVideoResume(t *testing.T) {
+	for _, mode := range []string{"pending", "verified", "completed", "dry-run"} {
+		t.Run(mode, func(t *testing.T) {
+			dir := t.TempDir()
+			item := source.ReadingItem{URL: "https://youtu.be/abc"}
+			out := filepath.Join(dir, output.DomainDir(item.URL))
+			if err := os.MkdirAll(out, 0755); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(out, output.ContentFilename(time.Now(), output.SHA8(item.URL)))
+			if err := os.WriteFile(path, []byte("---\ntype: reading-list-content\n---\n\nOld video description"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if mode == "verified" {
+				if err := os.WriteFile(path, []byte("---\ntype: reading-list-content\n---\n\n"+verifiedTranscript), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if mode == "completed" {
+				if err := os.WriteFile(filepath.Join(out, output.SummaryFilename(time.Now(), output.SHA8(item.URL))), []byte("---\ntype: reading-list-summary\n---\n\nDone"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			s := &stubExtractor{headed: true, firstErr: errors.New("Unverified original language")}
+			cfg := &config.Config{OutputDir: dir, Pipeline: config.PipelineConfig{SkipExisting: true, DryRun: mode == "dry-run"}}
+			err := New(cfg, s, nil).ProcessItem(item)
+			if mode == "pending" {
+				if err == nil || !reflect.DeepEqual(s.calls, []string{"initial"}) {
+					t.Fatalf("unverified cache reused: err=%v calls=%v", err, s.calls)
+				}
+			} else if mode == "verified" {
+				if err != nil || len(s.calls) != 0 {
+					t.Fatalf("verified cache not resumed: err=%v calls=%v", err, s.calls)
+				}
+			} else if !IsSkipped(err) || len(s.calls) != 0 {
+				t.Fatalf("skip changed: err=%v calls=%v", err, s.calls)
 			}
 		})
 	}

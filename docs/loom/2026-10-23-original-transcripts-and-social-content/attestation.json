@@ -1,0 +1,99 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-23-original-transcripts-and-social-content",
+  "content_digest": "9eef6c0d8f94d6a979c3659f7ec0dae7ad9a371f",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json -count=1 -run '^TestExtractionBoundaries$' .",
+      "artifact": "extraction_boundaries_test.go",
+      "result": "pass",
+      "command_digest": "ff0a0691a3ab077b2549e2f4af6e3cf91a9ba881a4be1d465727e471f0db41e7",
+      "evidence": "parsed",
+      "passed": 1
+    }
+  ],
+  "verdicts": [
+    {
+      "reviewer": "youtube_scope_code_review",
+      "vendor": "codex",
+      "model": "inherited",
+      "lens": "code",
+      "verdict": "PASS_WITH_NOTES",
+      "reviewed_sha": "412deb870e5975a16e238075d48c26242700c8d8",
+      "review_target_sha": "3ab5380ffd2d30727158bf4b9213eed748103ba4",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS_WITH_NOTES",
+        "naming": "PASS",
+        "tests": "PASS_WITH_NOTES",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md exists",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [
+        {
+          "severity": "important",
+          "dimension": "tests",
+          "anchor": "docs/loom/2026-10-23-original-transcripts-and-social-content/evidence/acceptance-test-evidence.md:1258",
+          "text": "issue (non-blocking): X target extraction passes controlled entry tests, but successful extraction through the actual CLI remains independently unwitnessed. Acceptance 2 therefore remains partly verified; the observed access failures do not establish a code defect.",
+          "fix": "Independently process one legitimately accessible X target through the existing CLI, verify that the saved body belongs to that target and excludes replies or previews, and record the result in the existing acceptance evidence and report."
+        }
+      ],
+      "notes": [
+        "Ran node --test extraction.test.mjs: 13 passed, none skipped. Focused Go pipeline extraction, resume and wall tests passed using a writable temporary Go cache.",
+        "Read historical RED evidence and the handed current-target probe output: both earned regressions executed and passed. Did not rerun the probe or complete suites.",
+        "Bilibili’s former mismatch is resolved by explicit user-confirmed YouTube-only scope. Historical Medium success and later Cloudflare failures remain distinct; the existing attestation requires publication-metadata regeneration."
+      ]
+    },
+    {
+      "reviewer": "youtube_scope_spec_review",
+      "vendor": "codex",
+      "model": "inherited",
+      "lens": "spec+adversarial",
+      "verdict": "PASS_WITH_NOTES",
+      "reviewed_sha": "412deb870e5975a16e238075d48c26242700c8d8",
+      "review_target_sha": "3ab5380ffd2d30727158bf4b9213eed748103ba4",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS_WITH_NOTES",
+        "design-conformance": "N/A — no DESIGN.md exists; applicable spec UI flows were reviewed.",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [
+        {
+          "severity": "important",
+          "dimension": "spec-conformance",
+          "anchor": "docs/loom/2026-10-23-original-transcripts-and-social-content/evidence/acceptance-test-evidence.md:1258",
+          "text": "issue (verification): Acceptance 2 retains X/Twitter target-body extraction, but independent live CLI success and correct saved-body evidence remain absent. Controlled positive tests pass; the observed live access failure does not establish an implementation defect.",
+          "fix": "Independently process a legitimately accessible X target through the existing CLI using isolated output and authorized access; record exit status, saved target-body correctness, and exclusion of replies/navigation, then update the acceptance evidence and report."
+        }
+      ],
+      "notes": [
+        "The explicit user confirmation “好 先只做 youtube” resolves the former Bilibili contradiction by revised scope. Threads, Medium and X/Twitter remain required; historical findings are clearly distinguished from current findings.",
+        "Ran node --test extraction.test.mjs: 13 passed, zero failed or skipped. Its ordinary-article fixture emitted the documented upstream Invalid URL warning while passing its substantive-content assertion.",
+        "Judged the handed target-SHA raw JSON: TestExtractionBoundaries actually executed both earned JavaScript cases and passed. No probe or complete suite was rerun. Existing publication attestation metadata still requires regeneration by finalization."
+      ]
+    }
+  ],
+  "findings": [],
+  "selection": null
+}
