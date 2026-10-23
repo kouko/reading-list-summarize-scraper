@@ -12,11 +12,7 @@ import (
 
 // TestPagination_laterentry_rejectsincomplete exercises explicit first/previous-page evidence.
 func TestPagination_laterentry_rejectsincomplete(t *testing.T) {
-	b, err := NewBrowser(false, "", t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer b.Close()
+	b := newTestBrowser(t)
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		switch r.URL.Path {
