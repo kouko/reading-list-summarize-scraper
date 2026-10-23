@@ -1,9 +1,6 @@
 package extract
 
-import (
-	"errors"
-	"testing"
-)
+import "testing"
 
 func TestResolveNextURL(t *testing.T) {
 	base := "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096.html"
@@ -87,58 +84,6 @@ func TestPaginate_FollowsToEnd(t *testing.T) {
 	}
 }
 
-func TestPaginate_MaxPagesCap(t *testing.T) {
-	// Every page links to a next page; the cap must stop fetching at maxPages.
-	fetch, calls := scriptedFetcher(map[string]struct {
-		content, next string
-		err           error
-	}{
-		"https://s/1": {content: "p1", next: "https://s/2"},
-		"https://s/2": {content: "p2", next: "https://s/3"},
-		"https://s/3": {content: "p3", next: "https://s/4"},
-	})
-	got, err := paginate("https://s/1", 2, fetch)
-	if err == nil || got != "" {
-		t.Errorf("cap must reject incomplete content: %q, %v", got, err)
-	}
-	if *calls != 2 {
-		t.Errorf("fetched %d pages, want 2 (maxPages cap)", *calls)
-	}
-}
-
-func TestPaginate_VisitedLoopGuard(t *testing.T) {
-	// page2 links back to page1: must stop, not loop forever.
-	fetch, calls := scriptedFetcher(map[string]struct {
-		content, next string
-		err           error
-	}{
-		"https://s/1": {content: "p1", next: "https://s/2"},
-		"https://s/2": {content: "p2", next: "https://s/1"}, // back-link
-	})
-	got, err := paginate("https://s/1", 100, fetch)
-	if err == nil || got != "" {
-		t.Errorf("loop must reject incomplete content: %q, %v", got, err)
-	}
-	if *calls != 2 {
-		t.Errorf("fetched %d pages, want 2 (loop guard)", *calls)
-	}
-}
-
-func TestPaginate_LaterFailureRejectsPriorPages(t *testing.T) {
-	// Preserve the cause so existing challenge/retry classification still works.
-	fetch, _ := scriptedFetcher(map[string]struct {
-		content, next string
-		err           error
-	}{
-		"https://s/1": {content: "p1", next: "https://s/2"},
-		"https://s/2": {err: errTest("boom")},
-	})
-	got, err := paginate("https://s/1", 10, fetch)
-	if !errors.Is(err, errTest("boom")) || got != "" {
-		t.Errorf("later failure must reject partial body and preserve cause: %q, %v", got, err)
-	}
-}
-
 func TestPaginate_AllFail_ReturnsError(t *testing.T) {
 	// First page errors → nothing gathered → return the error.
 	fetch, _ := scriptedFetcher(map[string]struct {
@@ -149,34 +94,5 @@ func TestPaginate_AllFail_ReturnsError(t *testing.T) {
 	})
 	if _, err := paginate("https://s/1", 10, fetch); err == nil {
 		t.Fatal("total failure should return an error")
-	}
-}
-
-func TestPaginate_StopsOnUnfollowableNext(t *testing.T) {
-	// A non-empty but unusable continuation is not evidence of a final page.
-	fetch, calls := scriptedFetcher(map[string]struct {
-		content, next string
-		err           error
-	}{
-		"https://s/1": {content: "p1", next: "javascript:void(0)"},
-	})
-	got, err := paginate("https://s/1", 10, fetch)
-	if err == nil || got != "" {
-		t.Errorf("unfollowable continuation must reject partial body: %q, %v", got, err)
-	}
-	if *calls != 1 {
-		t.Errorf("fetched %d pages, want 1", *calls)
-	}
-}
-
-func TestPaginate_EmptyPage(t *testing.T) {
-	fetch, _ := scriptedFetcher(map[string]struct {
-		content, next string
-		err           error
-	}{
-		"https://s/1": {content: "p1", next: "/2"}, "https://s/2": {content: "  "},
-	})
-	if got, err := paginate("https://s/1", 10, fetch); err == nil || got != "" {
-		t.Fatalf("empty page must fail: %q, %v", got, err)
 	}
 }

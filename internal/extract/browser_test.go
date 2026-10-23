@@ -24,6 +24,21 @@ func TestBrowserExtractPaginated(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "text/html")
 		switch r.URL.Path {
+		case "/incomplete-start":
+			next := "/incomplete-end?kind=" + r.URL.Query().Get("kind")
+			switch r.URL.Query().Get("kind") {
+			case "unfollowable":
+				next = "javascript:void(0)"
+			case "later-failure":
+				next = "http://127.0.0.1:1/"
+			}
+			fmt.Fprintf(w, `<body><article>first</article><a class="next" href="%s">next</a></body>`, next)
+		case "/incomplete-end":
+			if r.URL.Query().Get("kind") == "loop" {
+				fmt.Fprint(w, `<body><article>second</article><a class="next" href="/incomplete-start?kind=loop">next</a></body>`)
+			} else {
+				fmt.Fprint(w, `<body><article>  </article></body>`)
+			}
 		case "/wall-start":
 			fmt.Fprintf(w, `<body><article><p>The investigation follows a complete account of the events and explains the evidence collected by the reporters.</p></article><a class="next" href="/wall-end?kind=%s">next</a></body>`, r.URL.Query().Get("kind"))
 		case "/wall-end":
@@ -62,6 +77,29 @@ func TestBrowserExtractPaginated(t *testing.T) {
 	}))
 	defer server.Close()
 	js := `window.extractArticle=()=>document.querySelector('article').textContent`
+	t.Run("incomplete sequences", func(t *testing.T) {
+		for _, tc := range []struct {
+			kind, page, reason string
+			maxPages           int
+		}{
+			{"cap", "/incomplete-start?kind=cap", "beyond maxPages 1", 1},
+			{"loop", "/incomplete-end?kind=loop", "repeats continuation", 10},
+			{"later-failure", "http://127.0.0.1:1/", "net::ERR_UNSAFE_PORT", 10},
+			{"unfollowable", "/incomplete-start?kind=unfollowable", "unfollowable continuation", 10},
+			{"empty", "/incomplete-end?kind=empty", "empty content", 10},
+		} {
+			t.Run(tc.kind, func(t *testing.T) {
+				failedPage := tc.page
+				if strings.HasPrefix(failedPage, "/") {
+					failedPage = server.URL + failedPage
+				}
+				got, err := b.ExtractPaginated(server.URL+"/incomplete-start?kind="+tc.kind, js, ".next", tc.maxPages, 2*time.Second, 0)
+				if err == nil || got != "" || !strings.Contains(err.Error(), "page "+failedPage) || !strings.Contains(err.Error(), tc.reason) {
+					t.Fatalf("got %q, %v; want no body and failed page %s with %s", got, err, failedPage, tc.reason)
+				}
+			})
+		}
+	})
 	t.Run("real extractor validates later page", func(t *testing.T) {
 		for _, tc := range []struct{ kind, reason string }{{"login", "login required"}, {"challenge", "Cloudflare/CAPTCHA"}, {"article", ""}} {
 			got, err := b.ExtractPaginated(server.URL+"/wall-start?kind="+tc.kind, assets.DefuddleJS, ".next", 10, 2*time.Second, 0)
