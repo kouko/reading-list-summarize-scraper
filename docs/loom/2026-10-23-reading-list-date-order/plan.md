@@ -6,7 +6,7 @@ charter: 1.1
 ## Task DAG
 ### Wave 0 — shared collection order
 **W0-01 Order qualifying reading items before limiting** after: none acceptance: 1, 2, 3
-- Files: cmd/rlss/process.go (entry: applyFilters), cmd/rlss/process_test.go, README.md
+- Files: cmd/rlss/process.go (entry: runProcess; runList in cmd/rlss/list.go is a read-only acceptance entry), cmd/rlss/process_test.go, README.md
 - Test: A1 positive: precise-newest-first; boundary: stable-ties-undated. A2 positive: mixed-sources; boundary: first-url-occurrence. A3 positive: filtered-top-n; boundary: unlimited-empty.
 - Risk: agent-decided — REQ-1/REQ-3 use a stable standard-library timestamp comparison in the existing shared filtering entry before limit; preserve deduplication and skip handling. Explain unchanged completed-item behavior in existing documentation.
 

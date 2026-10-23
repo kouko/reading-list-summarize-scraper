@@ -3,12 +3,19 @@ package main
 // concern: timestamp precision, stable undated placement, and limiting before date ordering can select the wrong reading items.
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
+	"gopkg.in/yaml.v3"
 )
 
 func TestApplyFiltersDateOrder(t *testing.T) {
@@ -42,10 +49,19 @@ func TestApplyFiltersDateOrder(t *testing.T) {
 			name: "mixed-sources",
 			items: []source.ReadingItem{
 				{URL: "safari", Source: "safari", DateAdded: base},
-				{URL: "chrome", Source: "chrome", DateAdded: base.Add(2 * time.Hour)},
+				{URL: "new-safari", Source: "safari", DateAdded: base.Add(2 * time.Hour)},
 				{URL: "rss", Source: "rss", DateAdded: base.Add(time.Hour)},
 			},
-			want: []string{"chrome", "rss", "safari"},
+			want: []string{"new-safari", "rss", "safari"},
+		},
+		{
+			name: "first-url-occurrence",
+			items: []source.ReadingItem{
+				{URL: "duplicate", Title: "first", Source: "safari", DateAdded: base},
+				{URL: "middle", Source: "rss", DateAdded: base.Add(time.Hour)},
+				{URL: "duplicate", Title: "later", Source: "rss", DateAdded: base.Add(2 * time.Hour)},
+			},
+			want: []string{"middle", "duplicate"},
 		},
 		{
 			name: "filtered-top-n",
@@ -72,28 +88,80 @@ func TestApplyFiltersDateOrder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			var bookmarks, feed strings.Builder
+			bookmarks.WriteString(`<plist version="1.0"><dict><key>Children</key><array><dict><key>Title</key><string>com.apple.ReadingList</string><key>Children</key><array>`)
+			feed.WriteString(`<rss version="2.0"><channel><title>Fixture</title>`)
+			for _, item := range tt.items {
+				url := "https://example.test/" + item.URL
+				if item.Source == "rss" {
+					fmt.Fprintf(&feed, "<item><title>%s</title><link>%s</link><pubDate>%s</pubDate></item>", item.Title, url, item.DateAdded.Format(time.RFC1123Z))
+					continue
+				}
+				fmt.Fprintf(&bookmarks, `<dict><key>WebBookmarkType</key><string>WebBookmarkTypeLeaf</string><key>URLString</key><string>%s</string><key>Title</key><string>%s</string><key>ReadingList</key><dict>`, url, item.Title)
+				if !item.DateAdded.IsZero() {
+					fmt.Fprintf(&bookmarks, "<key>DateAdded</key><date>%s</date>", item.DateAdded.Format(time.RFC3339Nano))
+				}
+				if !item.IsUnread {
+					fmt.Fprintf(&bookmarks, "<key>DateLastViewed</key><date>%s</date>", base.Format(time.RFC3339))
+				}
+				bookmarks.WriteString(`</dict></dict>`)
+			}
+			bookmarks.WriteString(`</array></dict></array></dict></plist>`)
+			feed.WriteString(`</channel></rss>`)
+			plistPath := filepath.Join(dir, "Bookmarks.plist")
+			if err := os.WriteFile(plistPath, []byte(bookmarks.String()), 0600); err != nil {
+				t.Fatal(err)
+			}
+			cfg := config.DefaultConfig()
+			cfg.Safari.Enabled, cfg.Chrome.Enabled = true, false
+			cfg.Safari.PlistPath = plistPath
+			cfg.Filter, cfg.OutputDir, cfg.Extract.UserDataDir = tt.filter, dir, dir
+			if strings.Contains(feed.String(), "<item>") {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, feed.String())
+				}))
+				defer server.Close()
+				cfg.RSS.Enabled, cfg.RSS.Feeds, cfg.RSS.Count = true, []string{server.URL}, len(tt.items)
+			} else {
+				cfg.RSS.Enabled = false
+			}
+			configData, err := yaml.Marshal(cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			configPath := filepath.Join(dir, "config.yaml")
+			if err := os.WriteFile(configPath, configData, 0600); err != nil {
+				t.Fatal(err)
+			}
+			oldConfig, oldStdout := flagConfigPath, os.Stdout
+			flagConfigPath = configPath
+			stdout, err := os.CreateTemp(dir, "stdout")
+			if err != nil {
+				t.Fatal(err)
+			}
+			os.Stdout = stdout
+			t.Cleanup(func() { flagConfigPath, os.Stdout = oldConfig, oldStdout; stdout.Close() })
+			if err := runList(listCmd, nil); err != nil {
+				t.Fatal(err)
+			}
+			out, err := os.ReadFile(stdout.Name())
+			if err != nil {
+				t.Fatal(err)
+			}
 			var got []string
-			for _, item := range applyFilters(tt.items, tt.filter) {
-				got = append(got, item.URL)
+			for _, line := range strings.Split(string(out), "\n") {
+				fields := strings.Fields(line)
+				if len(fields) > 0 && strings.HasPrefix(fields[0], "https://example.test/") {
+					got = append(got, strings.TrimPrefix(fields[0], "https://example.test/"))
+				}
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("URLs = %v, want %v", got, tt.want)
 			}
+			if tt.name == "first-url-occurrence" && (!strings.Contains(string(out), "  first\n") || !strings.Contains(string(out), "(safari, 2026-10-23)")) {
+				t.Fatalf("first URL metadata missing: %s", out)
+			}
 		})
-	}
-}
-
-func TestDateOrderKeepsFirstURLMetadata(t *testing.T) {
-	base := time.Date(2026, 10, 23, 8, 0, 0, 0, time.UTC)
-	first := source.ReadingItem{URL: "duplicate", Title: "first", Source: "safari", DateAdded: base}
-	middle := source.ReadingItem{URL: "middle", Source: "rss", DateAdded: base.Add(time.Hour)}
-	items := []source.ReadingItem{
-		first, middle,
-		{URL: "duplicate", Title: "later", Source: "chrome", DateAdded: base.Add(2 * time.Hour)},
-	}
-	got := applyFilters(source.DeduplicateByURL(items), config.FilterConfig{})
-	want := []source.ReadingItem{middle, first}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("items = %+v, want %+v", got, want)
 	}
 }
