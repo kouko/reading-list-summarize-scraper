@@ -1,0 +1,84 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-23-reading-list-date-order",
+  "content_digest": "859f733be17be81fae150d1075e4b21f3cee981d",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json ./cmd/rlss -run '^TestApplyFiltersDateOrder$' -count=1",
+      "artifact": "cmd/rlss/process_test.go",
+      "result": "pass",
+      "command_digest": "e0cc8d197950990333dfbb1f6a8bd6f7c314deac80386aa4445d0fab75666fc6",
+      "evidence": "parsed",
+      "passed": 7
+    }
+  ],
+  "verdicts": [
+    {
+      "reviewer": "date_code_review",
+      "vendor": "codex",
+      "model": "inherited",
+      "verdict": "PASS",
+      "lens": "code",
+      "reviewed_sha": "9952aecc2b42d408acfffaefdd2530fac38d4c2e",
+      "review_target_sha": "425d8257053274fc0d570f5f4590ca37fda00ecd",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "N/A — no new external API, SDK, CLI, or sibling-team contract",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "fixed — prior tests finding at cmd/rlss/process_test.go:76: all existing assertions now drive runList with temporary Safari XML and optional loopback RSS, exercising collection, deduplication, filtering, sorting, limiting and display; the plan names actual CLI entries.",
+        "Independently ran GOCACHE=/private/tmp/rlss-go-build go test ./cmd/rlss -run '^TestApplyFiltersDateOrder$' -count=1 -v: all seven cases passed. Read supplied RED/GREEN logs; old behavior failed six ordering cases and current behavior passed all seven.",
+        "Round 2 reviewed only c1919ac..425d825 fix delta and previous finding. No fix-induced defect found; production code unchanged. Profile ordinary inherited; overrides null; unobservable-main-profile."
+      ]
+    },
+    {
+      "reviewer": "date_spec_review",
+      "vendor": "codex",
+      "model": "inherited",
+      "verdict": "PASS",
+      "lens": "spec+adversarial",
+      "reviewed_sha": "9952aecc2b42d408acfffaefdd2530fac38d4c2e",
+      "review_target_sha": "425d8257053274fc0d570f5f4590ca37fda00ecd",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS",
+        "design-conformance": "N/A — No DESIGN.md exists.",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Round 2 reviewed only c1919ac..425d825 against prior findings (none). Tests now exercise runList with parsed Safari XML and loopback RSS, including first-occurrence deduplication; the plan identifies the real command entry.",
+        "Updated evidence explicitly supersedes historical helper-test names and Chrome synthetic coverage, and justifies carried-over CLI/watch evidence because production code is unchanged. No delta-induced inconsistency or overclaim found.",
+        "Supplied target JSONL shows all seven current subtests passed; no probe or full-suite rerun. No probe confirmation entry is eligible because output does not contain artifact stem process_test. Profile: ordinary inherited; overrides: null; unobservable-main-profile."
+      ],
+      "probe_confirmations": []
+    }
+  ],
+  "findings": [],
+  "selection": null
+}
