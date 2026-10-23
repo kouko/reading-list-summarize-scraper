@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -249,6 +250,13 @@ func applyFilters(items []source.ReadingItem, filter config.FilterConfig) []sour
 		}
 		result = append(result, item)
 	}
+
+	sort.SliceStable(result, func(i, j int) bool {
+		if result[i].DateAdded.IsZero() {
+			return false
+		}
+		return result[j].DateAdded.IsZero() || result[i].DateAdded.After(result[j].DateAdded)
+	})
 
 	if filter.Limit > 0 && len(result) > filter.Limit {
 		result = result[:filter.Limit]
