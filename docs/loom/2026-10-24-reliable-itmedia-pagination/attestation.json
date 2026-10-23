@@ -1,7 +1,7 @@
 {
   "schema": "loom-attestation/v2",
   "change_id": "2026-10-24-reliable-itmedia-pagination",
-  "content_digest": "ac8f80a3cb650ad56dc1be290ae1872f759804bd",
+  "content_digest": "edad9356e472f925c8b34e747ed5a90090566eca",
   "executions": [
     {
       "kind": "package-tests",
@@ -28,7 +28,7 @@
       "lens": "code",
       "verdict": "PASS",
       "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
-      "review_target_sha": "08b61cdcaf1eac62f6b89ba1ddfb8df80283fcf7",
+      "review_target_sha": "c272e61b0196e7a72501d1ae2508b3c062f3c415",
       "dimension_scores": {
         "security": "PASS",
         "architecture": "PASS",
@@ -43,20 +43,11 @@
         "deliberate-simplification": "PASS",
         "deletion-first": "PASS"
       },
-      "findings": [
-        {
-          "severity": "important",
-          "dimension": "tests",
-          "status": "fixed",
-          "anchor": "internal/extract/pagination_test.go:179 at d3647b1",
-          "text": "issue (resolved): The five changed direct walker tests were removed. Their replacements exercise Browser.ExtractPaginated through actual HTTP and Chrome navigation and assert empty returned content, the affected page and the failure reason.",
-          "fix": "Completed in 7e7069a: consolidated cap, loop, later failure, unusable continuation and empty-page cases into the existing browser entry test."
-        }
-      ],
+      "findings": [],
       "notes": [
-        "Reviewed only d3647b1..08b61cd for resolution and introduced regressions; no new findings. Shared per-page validation preserves the existing classification policy.",
-        "Independently ran focused browser, shared classifier, fallback, cached-wall and file-preservation tests; all selected tests executed and passed. Read the latest independent acceptance report and evidence.",
-        "Handed target probe JSON records a passing test; no confirmation emitted because output lines lack the artifact filename stem. No probes or complete suite rerun."
+        "Reviewed only 08b61cd..c272e61. Previous finding remains fixed. Test startup now fails before assertions if Chrome cannot initialize; extraction assertions, fixtures and navigation deadlines are unchanged.",
+        "Independently ran TestBrowserExtractPaginated: every selected subtest passed, including cleanup. Inspected pinned chromedp.Cancel implementation and documented timeout usage; cleanup runs before temporary-profile removal. Production code is unchanged.",
+        "Handed target probe JSON records passing later-entry cases. No confirmation emitted because complete output lines lack the artifact filename stem. No probes or complete suite rerun."
       ]
     },
     {
@@ -66,7 +57,7 @@
       "lens": "spec+adversarial",
       "verdict": "PASS",
       "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
-      "review_target_sha": "08b61cdcaf1eac62f6b89ba1ddfb8df80283fcf7",
+      "review_target_sha": "c272e61b0196e7a72501d1ae2508b3c062f3c415",
       "dimension_scores": {
         "omission": "PASS",
         "ambiguity": "PASS",
@@ -81,9 +72,9 @@
       },
       "findings": [],
       "notes": [
-        "Previous fatal finding at internal/extract/pagination.go:40 is fixed: Browser.ExtractPaginated validates every page before the walker appends it. Shared validation preserves the existing policy; preceding prose can no longer mask the recognized later-page wall.",
-        "Independently executed focused tests PASS, including the real embedded extractor with later login/challenge rejection and genuine article acceptance, five browser-entry incomplete sequences, retries, shared classifiers, cached-wall rejection and existing-file preservation. Reviewed the updated acceptance evidence and report against the fix delta.",
-        "Reviewed handed target probe output: later-entry regression passes. No artifact file stem appears in complete output lines, so no probe confirmation is emitted. No full suite or adversarial program was rerun."
+        "Previous fatal finding remains fixed: per-page ValidateContent still executes before pagination appends content. The terminal fix changes test startup and cleanup only; extraction assertions, fixtures and navigation deadlines remain unchanged.",
+        "Independently ran TestBrowserExtractPaginated: all subtests passed, including real-extractor later-wall rejection, legitimate article acceptance and all five incomplete sequences. W7 matches the observed CI failures and accurately preserves the earlier product acceptance evidence.",
+        "Handed target probe output records passing later-entry cases; no complete line contains the artifact file stem, so no probe confirmation is emitted. No full suite or adversarial program was rerun."
       ]
     }
   ],
