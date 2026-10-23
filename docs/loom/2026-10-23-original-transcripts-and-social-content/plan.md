@@ -40,6 +40,12 @@ charter: 1.1
 - Test: A3 positive: ordinary-access-error-keeps-normal-retry; negative: specialized-challenge-retains-block-signal. Boundary: X, Medium and YouTube challenge pages; existing ProcessItem specialized-challenge-disabled case confirms the retry-policy consumer.
 - Risk: agent-decided — live Medium's Cloudflare page becomes a generic canonical error, hiding the signal used by headed_on_block:false. Preserve a bounded challenge classification on extraction failure without returning page text or treating legitimate article mentions as challenges.
 
+### Wave 6 — collect graduated regressions in the declared suite
+**W6-01 Run earned JavaScript regressions from the Go suite** after: W5-01 acceptance: 2, 4
+- Files: extraction_boundaries_test.go (entry: TestExtractionBoundaries), README.md
+- Test: A2 negative: quoted-target remains rejected. A4 negative: malformed-markup remains rejected. The Go entry executes the unchanged JavaScript regression program; observe RED against its original defective revision and GREEN on current content.
+- Risk: agent-decided — finalization cannot collect JavaScript under the declared Go suite. A small Go test bridge makes the existing suite actually execute the earned regressions; retain Node failures and unchanged assertions. The adversary owns this program normalization.
+
 ## Simplicity check
 - none found
 
