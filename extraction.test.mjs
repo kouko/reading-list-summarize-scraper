@@ -88,6 +88,19 @@ test('A2 target bodies on three platforms exclude replies', async () => {
   const out = await extractArticle(doc(html), url); assert.match(out, /Target main post text\.\s+Next line\.\s+Separate block\./); assert.doesNotMatch(out, /reply/);
  }
 });
+test('A2/A3 explicit target previews fail while complete own bodies remain usable', async () => {
+ const marker = '<a data-testid="tweet-text-show-more-link">Show more</a>';
+ const own = '<a href="/a/status/123"><time>today</time></a><div data-testid="tweetText">Substantive target preview.</div>';
+ const canonical = '<link rel="canonical" href="https://x.com/a/status/123">';
+ for (const html of [
+  `<article data-testid="tweet">${own}${marker}</article>`,
+  `${canonical}<div data-testid="twitterArticleReadView"><div data-testid="twitterArticleRichTextView">Substantive article preview.${marker}</div></div>`,
+ ]) await assert.rejects(extractArticle(doc(html), 'https://x.com/a/status/123'), /preview|truncat/i);
+ const complete = await extractArticle(doc(`<article data-testid="tweet">${own}<div data-testid="quoteTweet">Quoted preview.${marker}</div></article>`), 'https://x.com/a/status/123');
+ assert.equal(complete, 'Substantive target preview.');
+ const fullArticle = await extractArticle(doc(`${canonical}<div data-testid="twitterArticleReadView"><div data-testid="twitterArticleRichTextView">Complete target article.</div></div><article data-testid="tweet">${own}${marker}</article>`), 'https://x.com/a/status/123');
+ assert.equal(fullArticle, 'Complete target article.');
+});
 test('A2 wrong target rejected', async () => {
  await assert.rejects(extractArticle(doc('<article data-testid="tweet"><a href="/a/status/999"><time>today</time></a><div data-testid="tweetText">Wrong post</div></article>'), 'https://x.com/a/status/123'), /target/i);
  await assert.rejects(extractArticle(doc('<div data-pagelet="threads_post_page_0"><div data-pressable-container><a href="/@b/post/REPLY"><time>today</time></a><span dir="auto">Other reply</span><div data-pressable-container><a href="/@a/post/ABC"><time>yesterday</time></a><span dir="auto">Quoted target</span></div></div></div>'), 'https://www.threads.com/@a/post/ABC'), /target/i);

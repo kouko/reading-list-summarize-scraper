@@ -28,6 +28,12 @@ charter: 1.1
 - Test: A1 positive: native-player-original-caption; negative: refreshed-wrong-target-or-ambiguous-language. A3 positive: empty-inline-recovers; negative: native-api-failure-remains-failed. A4 positive: refreshed-usable-auto-after-empty-human; negative: refreshed-empty-or-malformed-cues. Boundary: captions parse on pages enforcing Trusted Types without HTML string assignment.
 - Risk: agent-decided — live page URLs return zero bytes while upstream's first-party iOS/Android player requests return usable same-video captions. Refresh only through fixed official endpoints, reapply all identity/original-language/cue checks, and preserve timeouts and existing recovery settings.
 
+### Wave 4 — explicit social truncation
+**W4-01 Reject target-owned X preview text** after: W3-01 acceptance: 2, 3
+- Files: extraction.ts (entry: extractArticle), extraction.test.mjs, embed/defuddle.min.js
+- Test: A2 positive: complete-target-with-unrelated-quoted-preview; negative: target-owned-show-more. A3 positive: complete-canonical-read-view; negative: explicit-truncated-target-body.
+- Risk: agent-decided — both closing reviewers found explicit X truncation ignored before success. Reject remaining target-owned expansion markers; preserve complete bodies and ignore unrelated quoted markers. Bilibili scope and live X access remain unresolved, not dismissed.
+
 ## Simplicity check
 - none found
 

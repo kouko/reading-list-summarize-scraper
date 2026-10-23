@@ -176,7 +176,11 @@ function social(document: Document, url: URL): string {
         // XArticleExtractor 0.19.5 identifies these first-party read-view nodes.
         const richText = document.querySelector('[data-testid="twitterArticleReadView"] [data-testid="twitterArticleRichTextView"]');
         const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute('href') || document.querySelector('meta[property="og:url"]')?.getAttribute('content') || null;
-        if (richText && sameTarget(canonical, url)) text = bodyMarkdown(richText, url);
+        if (richText && sameTarget(canonical, url)) {
+            const own = ownTweet(richText);
+            if (own.querySelector('[data-testid="tweet-text-show-more-link"]')) fail('Inaccessible social target: truncated article preview');
+            text = bodyMarkdown(own, url);
+        }
         for (const article of Array.from(document.querySelectorAll('article[data-testid="tweet"]'))) {
             if (text) break;
             const own = ownTweet(article);
@@ -184,6 +188,7 @@ function social(document: Document, url: URL): string {
             const target = new URL(url.origin + url.pathname.replace(/\/article\/?$/, ''));
             const ownsTarget = permalinks.length > 0 && permalinks.every(a => sameTarget(a.getAttribute('href'), target));
             if (!ownsTarget) continue;
+            if (own.querySelector('[data-testid="tweet-text-show-more-link"]')) fail('Inaccessible social target: truncated post preview');
             const body = own.querySelector('[data-testid="twitterArticleRichTextView"]') || own.querySelector('[data-testid="tweetText"]');
             if (body) text = bodyMarkdown(body, url);
             break;
