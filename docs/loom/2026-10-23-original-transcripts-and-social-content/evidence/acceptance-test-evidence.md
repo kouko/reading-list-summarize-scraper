@@ -1138,3 +1138,81 @@ ok  	github.com/kouko/reading-list-summarize-scraper/internal/pipeline	0.404s
 
 Dispatch profile inherited overrides null, unobservable-main-profile; resolver initial completed redispatches 1 as supplied by the primary. The repeated task packet did not cause additional worktrees, product changes, identity/model switches or duplicated test runs; this completed one bounded W5 measurement. No agents spawned. Commit classification routine acceptance verification; exact final message privacy scan required and no ambiguous private-party text requires a semantic judge. Tester edits are report/evidence only.
 
+
+## Re-run on 2026-10-23, at 0cfa9ca534f302284740fda6018eed9d428e1e38 — setup and earned-regression integration only
+
+### Diff and fresh setup verification
+
+- Full checked range `e5782e0..0cfa9ca` contains only README test prerequisite documentation, plan, and new root `extraction_boundaries_test.go`. No product source, injection entry, generated bundle, original JavaScript probe, settings or Go production code changed. Product results and all 18 rows are carried over with checked reasons below.
+- Created fresh clean worktree `git worktree add /private/tmp/rlss-original-acceptance-w6 0cfa9ca534f302284740fda6018eed9d428e1e38`.
+- Followed README setup: `npm ci --ignore-scripts`, `npm run build:defuddle`, `GOCACHE=/private/tmp/rlss-go-build go build -o /private/tmp/rlss-original-w6-cli ./cmd/rlss/`. All passed; 26 locked packages, zero reported vulnerabilities, actual generated bundle 785.3kb. Clean `git status --short` after setup/rebuild.
+- Original earned JavaScript adversary blob is unchanged on both refs: `c2ea5d13e677b0b7482cf132bdb0cb146e5bc59c`. Product source hash `b0db4c3a075d2e7e1ae700a73a6b1cf879bf5f81`; bundle hash `dccc5faeb485b5aba24bec3da941e62e13333ab9`. Empty product diff confirms identical code to the prior recorded measurement, not just identical filenames.
+- Criterion-only command: `GOCACHE=/private/tmp/rlss-go-build go test . -run '^TestExtractionBoundaries$' -count=1 -v`. The root Go test actually executed `node --test extraction-boundaries.test.mjs`; both earned wrong-target and malformed-subtitle cases passed.
+- Reading the bridge confirms child nonzero returns `t.Fatalf`, rather than being swallowed or skipped. Current positive run proves the earned cases execute from the Go test collector. The primary's historical RED run is not represented as independently rerun here.
+- This is no new attack or product feature; the unchanged adversarial program is now reachable by the existing Go suite as well as npm/CI. No suite defaults, installed plugin or checker configuration changed.
+- Did not run the complete Go/npm suite, live URLs, watch cycles or another product/UI measurement. No reading list, browser profile, vault, root binary, output note, running process or summary provider touched. Test dependencies installed only inside the fresh copy.
+- README now explicitly says tests require Node.js (CI version 22) and `npm ci`; Go-only testing environments must supply those prerequisites. The independent setup above successfully satisfied them.
+
+### All carried-over rows, checked against the complete diff
+
+- 1: carried over — video original-language evidence and caption acquisition are byte-identical.
+- 2: carried over — all three social-body and target-identity paths are byte-identical.
+- 3: carried over — failure wrapper, challenge identification, configured retries and no-substitute behavior are byte-identical; W5 actual disabled/enabled Medium proof retained.
+- 4: carried over — human/automatic cue parser and content validation are byte-identical.
+- 5: carried over — video success, provenance labels and saving are unchanged.
+- 6: carried over — empty-human to usable-automatic fallback is unchanged.
+- 7: carried over — multiple-track selection and validation are unchanged.
+- 8: carried over — unverified-original-language failure is unchanged.
+- 9: carried over — unavailable/unusable caption rejection is unchanged.
+- 10: carried over — unsupported-platform routing is unchanged.
+- 11: carried over — all three social positive paths and saving are unchanged; earlier real Threads/Medium witnesses retained with access limits.
+- 12: carried over — challenge identification and headed_on_block effects are unchanged; prior actual setting comparison retained.
+- 13: carried over — wrong-target and explicit-preview rejection are unchanged; earned social regression additionally executes through the new bridge.
+- 14: carried over — progress, timeout, challenge identity and retry policy are unchanged.
+- 15: carried over — batch/watch accounting, continuation and scheduling are unchanged.
+- 16: carried over — pending-video cache re-extraction and preservation are unchanged.
+- 17: carried over — completed-summary skipping is unchanged.
+- 18: carried over — empty-source and dry-run paths are unchanged.
+
+### Current limitations and findings
+
+- **important, unresolved — Bilibili scope contradiction**, `extraction.ts:236`, retained Video success/support promise: still no implemented success path. Grounded original-language evidence and independently witnessed success or explicit scope revision remains required.
+- **important verification limitation — X live success**, retained Social success: no new access evidence; prior public X failure is not a proven product defect. Accessible-target CLI success/save witness still needed.
+- W5 actual Medium challenge proof remains: retry disabled suppresses headed retry; enabled performs one retry; both still failed with no files. Prior real Medium successes stay historical successes, not a guaranteed current access claim.
+- No important finding dismissed. Setup/regression integration success does not resolve product-scope limits or declare acceptance/readiness.
+- No steps skipped by instruction. Complete package checks and finalization remain primary-owned and not skipped.
+
+### Captured criterion output
+
+```text
+=== RUN   TestExtractionBoundaries
+    extraction_boundaries_test.go:12: JavaScript extraction regressions:
+        TAP version 13
+        # Subtest: test_social_quotedpermalink_rejectswrongbody
+        ok 1 - test_social_quotedpermalink_rejectswrongbody
+          ---
+          duration_ms: 2.687792
+          type: 'test'
+          ...
+        # Subtest: test_transcript_mismatchedmarkup_rejectsrepair
+        ok 2 - test_transcript_mismatchedmarkup_rejectsrepair
+          ---
+          duration_ms: 8.447333
+          type: 'test'
+          ...
+        1..2
+        # tests 2
+        # suites 0
+        # pass 2
+        # fail 0
+        # cancelled 0
+        # skipped 0
+        # todo 0
+        # duration_ms 160.695583
+--- PASS: TestExtractionBoundaries (0.21s)
+PASS
+ok  	github.com/kouko/reading-list-summarize-scraper	0.557s
+```
+
+Dispatch remains inherited overrides null, unobservable-main-profile. No agents or model changes. Routine evidence-only commit classification; exact final message privacy scan required, with no ambiguous private-party content requiring semantic judge. Tester edits only report/evidence.
+
