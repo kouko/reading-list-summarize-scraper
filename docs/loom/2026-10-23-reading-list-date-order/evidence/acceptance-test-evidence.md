@@ -3,6 +3,8 @@
 Tried on 2026-10-23 in a clean detached worktree at 9157f23bd76119990dd1b772d9314305213dce6c.
 Runner profile: ordinary inherited; overrides: null; unobservable-main-profile.
 
+The sections below preserve the first-run record at 9157f23. The dated re-run at the end supersedes its permanent test names and source-coverage description: current tests drive runList through real Safari XML and local RSS collection, not direct synthetic Chrome items; the former standalone duplicate test is removed and folded into first-url-occurrence.
+
 ## Setup and scope
 
 Commands (all exited 0):
@@ -177,3 +179,74 @@ Total: 2; Success: 0; Skipped: 2; Partial: 0; Failed: 0
 ```
 
 Exit 0. tie-second remained beyond the limit, not backfilled. Real skip check is internal/pipeline/runner.go:187, after shared selection. No real summaries were read or modified.
+
+## Re-run on 2026-10-23, at 761b78bb008c577ad72cc33a75053433d7fecc22
+
+Checked `git diff c1919ac..761b78bb008c577ad72cc33a75053433d7fecc22`: only cmd/rlss/process_test.go and the plan entry changed. No production code changed. This justifies every carryover below. A fresh detached worktree was created at /private/tmp/rlss-date-acceptance-retest; it reused only the explicitly synthetic fixture/output/config from the earlier temporary worktree.
+
+Setup and current focused command, all exit 0:
+
+```text
+git worktree add --detach /private/tmp/rlss-date-acceptance-retest 761b78bb008c577ad72cc33a75053433d7fecc22
+GOCACHE=/private/tmp/rlss-go-build go build -o rlss ./cmd/rlss/
+GOCACHE=/private/tmp/rlss-go-build go test ./cmd/rlss -run '^TestApplyFiltersDateOrder$' -count=1 -v
+```
+
+The README quick-build setup succeeded again, with the same nonfatal stat-cache warning. Focused test escalation allowed a loopback HTTP RSS fixture server only; no external network or AI service was used. Actual observed result at 11:18:08 +08:00:
+
+```text
+--- PASS: TestApplyFiltersDateOrder (0.01s)
+    --- PASS: TestApplyFiltersDateOrder/precise-newest-first
+    --- PASS: TestApplyFiltersDateOrder/stable-ties-undated
+    --- PASS: TestApplyFiltersDateOrder/mixed-sources
+    --- PASS: TestApplyFiltersDateOrder/first-url-occurrence
+    --- PASS: TestApplyFiltersDateOrder/filtered-top-n
+    --- PASS: TestApplyFiltersDateOrder/empty
+    --- PASS: TestApplyFiltersDateOrder/unlimited-invalid-since
+PASS
+ok github.com/kouko/reading-list-summarize-scraper/cmd/rlss 0.441s
+```
+
+Current tests invoke runList, load temporary YAML, parse temporary Safari XML and optional local RSS, perform real deduplication/filtering/ordering/limit, and assert displayed URL order. Mixed-sources fetched Safari count=2 and RSS count=1; first-url-occurrence fetched Safari count=1 and RSS count=2 and asserts retained first title, Safari source and date. Current source coverage is Safari/RSS; no Chrome integration is claimed. Precision, ties, missing dates, filter limit, empty and invalid-date cases now exercise this real collection entry. TestDateOrderKeepsFirstURLMetadata is historical only and no longer invoked.
+
+Also inspected supplied RED/GREEN logs directly: /private/tmp/rlss-date-entry-red.log shows old-behavior-copy failures in precise-newest-first, stable-ties-undated, mixed-sources, first-url-occurrence, filtered-top-n and unlimited-invalid-since (empty passes), ending FAIL. For example mixed sources got `[safari new-safari rss]`, wanted `[new-safari rss safari]`; filtered limit got `[older-qualifying newest]`, wanted `[newest second]`. /private/tmp/rlss-date-entry-green.log shows all seven current cases PASS and package result 0.236s. Those are supplied build evidence, not a claim that this witness performed the old-behavior mutation. This witness independently reran GREEN above.
+
+Actual CLI re-run commands from the fresh worktree:
+
+```text
+./rlss list --config /private/tmp/rlss-date-acceptance/acceptance.yaml
+fetched items source=safari count=7
+1. [new] newest-read; 2. [done] newest; 3. [done] tie-first;
+4. [new] tie-second; 5. [new] old; 6. [new] undated
+Total: 6 items
+
+./rlss list --config /private/tmp/rlss-date-acceptance/acceptance.yaml --unread-only --since 2026-10-23 --limit 2
+1. [done] * newest (safari, 2026-10-23)
+2. [done] * tie-first (safari, 2026-10-23)
+Total: 2 items
+
+./rlss process --config /private/tmp/rlss-date-acceptance/acceptance.yaml --no-summary --dry-run --force --unread-only --since 2026-10-23 --limit 2
+processing item index=1 total=2 url=https://example.invalid/newest title=newest
+dry-run: would process url=https://example.invalid/newest sha8=30975863
+processing item index=2 total=2 url=https://example.invalid/tie-first title=tie-first
+dry-run: would process url=https://example.invalid/tie-first sha8=d8cf3e6f
+Total: 2; Success: 0; Skipped: 2; Partial: 0; Failed: 0
+```
+
+All exit 0. Force was limited to dry-run to expose selection despite synthetic completed records; no content was fetched or written. Full-list output retained existing calendar formatting, tie-first before tie-second and undated last at 0001-01-01.
+
+- 1: re-tested — full current table plus actual list and batch dry-run exercise newest-first and exact timestamp boundaries. Watch production remains identical; its previous actual-cycle evidence remains valid.
+- 2: re-tested — actual runList collection from temporary Safari XML and loopback RSS verifies shared order and first-occurrence metadata; no real user source claimed.
+- 3: re-tested — current filtered-top-n table plus actual list and batch dry-run verify filtering, ordering and limit. Previous watch-cycle evidence retained because production unchanged.
+- 4: re-tested — current table and actual full list cover displayed order/format and multiple enabled sources.
+- 5: carried over — diff changes tests and plan only; batch and watch implementations, callback and skip paths identical. Supplemental batch dry-run above does not pretend a new watch run.
+- 6: re-tested — current stable-ties-undated table and actual list keep equal-time order.
+- 7: re-tested — current stable-ties-undated table and actual list keep undated items last and retain zero-date display.
+- 8: re-tested — current filtered-top-n plus actual filtered CLI list/batch cover unread/date eligibility and ordered limit.
+- 9: re-tested — current first-url-occurrence collection case checks retained first title/source/date, and actual Safari duplicate retains old date.
+- 10: carried over — empty-result list and batch handling unchanged by inspected diff; current focused empty test also passed, but prior full-surface evidence is retained.
+- 11: carried over — production logs and watch unchanged; no new watch cycle claimed.
+- 12: carried over — date parsing and source error recovery unchanged; current invalid-date test also passed, but prior missing-source CLI evidence is retained.
+- 13: carried over — selection and completed-item detection unchanged; prior actual skipped batch without backfill remains applicable.
+
+No full-suite run by this witness; package-tests not skipped and finalize-review will execute `go test ./...` and block acceptance on failure. No important-or-worse dismissed findings supplied. No new finding.
