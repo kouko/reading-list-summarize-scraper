@@ -1,6 +1,9 @@
 package extract
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestResolveNextURL(t *testing.T) {
 	base := "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096.html"
@@ -111,11 +114,8 @@ func TestPaginate_MaxPagesCap(t *testing.T) {
 		"https://s/3": {content: "p3", next: "https://s/4"},
 	})
 	got, err := paginate("https://s/1", 2, fetch)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got != "p1\n\np2" {
-		t.Errorf("got %q, want only first 2 pages", got)
+	if err == nil || got != "" {
+		t.Errorf("cap must reject incomplete content: %q, %v", got, err)
 	}
 	if *calls != 2 {
 		t.Errorf("fetched %d pages, want 2 (maxPages cap)", *calls)
@@ -132,19 +132,16 @@ func TestPaginate_VisitedLoopGuard(t *testing.T) {
 		"https://s/2": {content: "p2", next: "https://s/1"}, // back-link
 	})
 	got, err := paginate("https://s/1", 100, fetch)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got != "p1\n\np2" {
-		t.Errorf("got %q, want p1\\n\\np2 (stopped at revisit)", got)
+	if err == nil || got != "" {
+		t.Errorf("loop must reject incomplete content: %q, %v", got, err)
 	}
 	if *calls != 2 {
 		t.Errorf("fetched %d pages, want 2 (loop guard)", *calls)
 	}
 }
 
-func TestPaginate_FailSoftKeepsPriorPages(t *testing.T) {
-	// page1 ok, page2 errors → keep page1, no error returned (fail-soft).
+func TestPaginate_LaterFailureRejectsPriorPages(t *testing.T) {
+	// Preserve the cause so existing challenge/retry classification still works.
 	fetch, _ := scriptedFetcher(map[string]struct {
 		content, next string
 		err           error
@@ -153,11 +150,8 @@ func TestPaginate_FailSoftKeepsPriorPages(t *testing.T) {
 		"https://s/2": {err: errTest("boom")},
 	})
 	got, err := paginate("https://s/1", 10, fetch)
-	if err != nil {
-		t.Fatalf("partial failure should be fail-soft (nil err), got %v", err)
-	}
-	if got != "p1" {
-		t.Errorf("got %q, want p1 (prior page kept despite later failure)", got)
+	if !errors.Is(err, errTest("boom")) || got != "" {
+		t.Errorf("later failure must reject partial body and preserve cause: %q, %v", got, err)
 	}
 }
 
@@ -175,8 +169,7 @@ func TestPaginate_AllFail_ReturnsError(t *testing.T) {
 }
 
 func TestPaginate_StopsOnUnfollowableNext(t *testing.T) {
-	// A non-empty next href that resolveNextURL rejects (javascript:) must stop
-	// the loop after the current page, not error or loop.
+	// A non-empty but unusable continuation is not evidence of a final page.
 	fetch, calls := scriptedFetcher(map[string]struct {
 		content, next string
 		err           error
@@ -184,13 +177,22 @@ func TestPaginate_StopsOnUnfollowableNext(t *testing.T) {
 		"https://s/1": {content: "p1", next: "javascript:void(0)"},
 	})
 	got, err := paginate("https://s/1", 10, fetch)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got != "p1" {
-		t.Errorf("got %q, want p1 (unfollowable next → stop)", got)
+	if err == nil || got != "" {
+		t.Errorf("unfollowable continuation must reject partial body: %q, %v", got, err)
 	}
 	if *calls != 1 {
 		t.Errorf("fetched %d pages, want 1", *calls)
+	}
+}
+
+func TestPaginate_EmptyPage(t *testing.T) {
+	fetch, _ := scriptedFetcher(map[string]struct {
+		content, next string
+		err           error
+	}{
+		"https://s/1": {content: "p1", next: "/2"}, "https://s/2": {content: "  "},
+	})
+	if got, err := paginate("https://s/1", 10, fetch); err == nil || got != "" {
+		t.Fatalf("empty page must fail: %q, %v", got, err)
 	}
 }
