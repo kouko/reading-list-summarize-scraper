@@ -1,4 +1,4 @@
-import Defuddle from 'defuddle/full';
+import Defuddle, { createMarkdownContent } from 'defuddle/full';
 
 const family = (language: string) => language.toLowerCase().replace(/_/g, '-').split('-')[0];
 const substantive = (text: string) => /\p{L}/u.test(text);
@@ -61,17 +61,24 @@ async function youtube(document: Document, url: URL, fetcher: typeof fetch): Pro
     const renderer = data?.captions?.playerCaptionsTracklistRenderer;
     const tracks = renderer?.captionTracks;
     if (!Array.isArray(tracks) || !tracks.length) fail('Unavailable subtitles');
-    // The default audio/caption index is a user preference, not original-audio evidence.
-    const originals = (renderer.audioTracks || []).filter((a: any) => {
-        const label = typeof a.displayName === 'string' ? a.displayName : a.displayName?.simpleText || a.displayName?.runs?.map((r: any) => r.text).join('');
-        return /\(original\)/i.test(label || '');
-    });
-    if (originals.length !== 1) fail('Unverified original language: no unambiguous original audio association');
-    const audio = originals[0];
+    // YouTube documents ASR captions in the original audio language:
+    // https://support.google.com/youtube/answer/13338784?hl=en
+    // Multiple-language audio may instead use the default language, so require
+    // a single caption-audio association and reject contrary streaming evidence.
+    // Neither defaultCaptionTrackIndex nor a localized display label proves it.
+    const audioTracks = renderer.audioTracks;
+    const formats = [...(data.streamingData?.adaptiveFormats || []), ...(data.streamingData?.formats || [])];
+    const audioIds = new Set(formats.map((f: any) => f.audioTrack?.id).filter(Boolean));
+    const dubbed = formats.some((f: any) => /\bdubbed\b|\bdubbing\b/i.test(f.audioTrack?.displayName || ''));
+    if (!Array.isArray(audioTracks) || audioTracks.length !== 1 || audioIds.size > 1 || dubbed) fail('Unverified original language: ambiguous or dubbed audio association');
+    const audio = audioTracks[0];
     const associated = (audio.captionTrackIndices || []).map((i: number) => tracks[i]).filter(Boolean);
     const asr = associated.filter((t: any) => t.kind === 'asr' && typeof t.languageCode === 'string');
     const languages = new Set(asr.map((t: any) => family(t.languageCode)));
-    if (languages.size !== 1) fail('Unverified original language: missing or conflicting original-audio automatic captions');
+    if (asr.length !== 1 || languages.size !== 1) fail('Unverified original language: missing or conflicting original-audio automatic captions');
+    try {
+        if (new URL(asr[0].baseUrl).searchParams.has('tlang')) fail('Unverified original language: translated automatic caption association');
+    } catch { fail('Unverified original language: invalid automatic caption association'); }
     const originalLanguage = asr[0].languageCode;
     // A caption explicitly translated by URL is never eligible.
     const candidates = associated.filter((t: any) => typeof t.languageCode === 'string' && family(t.languageCode) === family(originalLanguage));
@@ -101,21 +108,46 @@ function sameTarget(candidate: string | null, target: URL): boolean {
     } catch { return false; }
 }
 
+function bodyMarkdown(element: Element, url: URL): string {
+    const clone = element.cloneNode(true) as Element;
+    clone.querySelectorAll('nav, aside, footer, script, style, [role="button"], [data-testid="simpleTweet"], [data-testid="post-preview"], [data-pressable-container]').forEach(el => el.remove());
+    return createMarkdownContent(clone.innerHTML, url.href).trim();
+}
+
 function social(document: Document, url: URL): string {
     const host = url.hostname.replace(/^www\./, '');
     let text = '';
     if (host === 'x.com' || host === 'twitter.com') {
-        const id = url.pathname.match(/^\/[^/]+\/status\/(\d+)(?:\/article)?\/?$/)?.[1];
+        const id = url.pathname.match(/^\/[^/]+\/(?:status|article)\/(\d+)(?:\/article)?\/?$/)?.[1];
         if (!id) fail('Inaccessible social target: invalid post URL');
+        // XArticleExtractor 0.19.5 identifies these first-party read-view nodes.
+        const richText = document.querySelector('[data-testid="twitterArticleReadView"] [data-testid="twitterArticleRichTextView"]');
+        const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute('href') || document.querySelector('meta[property="og:url"]')?.getAttribute('content') || null;
+        if (richText && sameTarget(canonical, url)) text = bodyMarkdown(richText, url);
         for (const article of Array.from(document.querySelectorAll('article[data-testid="tweet"]'))) {
+            if (text) break;
             const ownsTarget = Array.from(article.querySelectorAll('a')).some(a => a.querySelector('time') && sameTarget(a.getAttribute('href'), new URL(url.origin + url.pathname.replace(/\/article\/?$/, ''))));
             if (!ownsTarget) continue;
-            text = (article.querySelector('[data-testid="twitterArticleRichTextView"]') || article.querySelector('[data-testid="tweetText"]'))?.textContent || '';
+            const body = article.querySelector('[data-testid="twitterArticleRichTextView"]') || article.querySelector('[data-testid="tweetText"]');
+            if (body) text = bodyMarkdown(body, url);
             break;
         }
     } else if (host === 'threads.net' || host === 'threads.com') {
         if (!/^\/@[^/]+\/post\/[^/]+\/?$/.test(url.pathname)) fail('Inaccessible social target: invalid post URL');
+        // Scope to the exact permalink's post, never the entire conversation.
+        // These pagelet/region/pressable/span selectors follow upstream 0.19.5.
+        for (const link of Array.from(document.querySelectorAll('a[href*="/post/"]'))) {
+            if (!sameTarget(link.getAttribute('href'), url)) continue;
+            const container = link.closest('[data-pressable-container]') || link.closest('[data-pagelet^="threads_post_page_"], div[role="region"]');
+            if (!container) continue;
+            const clone = container.cloneNode(true) as Element;
+            clone.querySelectorAll('[data-pressable-container], a[href*="/post/"], a[href^="/@"], [role="button"], time').forEach(el => el.remove());
+            const spans = Array.from(clone.querySelectorAll('span[dir="auto"]')).filter(span => !span.parentElement?.closest('span[dir="auto"]'));
+            text = spans.map(span => bodyMarkdown(span, url)).filter(part => part && !['Author', '·', 'Top', 'View activity'].includes(part)).join('\n\n');
+            if (text) break;
+        }
         for (const script of Array.from(document.querySelectorAll('script[type="application/ld+json"]'))) {
+            if (text) break;
             let parsed;
             try { parsed = JSON.parse(script.textContent || ''); } catch { continue; }
             const objects = Array.isArray(parsed) ? parsed : parsed['@graph'] || [parsed];
@@ -123,11 +155,13 @@ function social(document: Document, url: URL): string {
         }
     } else {
         if (!sameTarget(document.querySelector('link[rel="canonical"]')?.getAttribute('href') || null, url)) fail('Inaccessible social target: canonical identity missing or different');
-        if (document.querySelector('[data-testid="paywall"], [data-testid="paywall-content"], [data-member-only="true"]')
-            || /member.only story|read the rest.*member|sign up to read|purchase.*membership/i.test(document.body.textContent || '')
-            || Array.from(document.querySelectorAll('script[type="application/ld+json"]')).some(s => /"isAccessibleForFree"\s*:\s*(?:false|"false")/.test(s.textContent || ''))) fail('Inaccessible social target: subscription or preview');
-        const article = document.querySelector('article');
-        if (article) text = Array.from(article.querySelectorAll('h1, h2, h3, p, blockquote, pre, li')).filter(el => !el.closest('nav, aside, footer')).map(el => el.textContent?.trim()).filter(Boolean).join('\n\n');
+        const visible = (element: Element) => !element.closest('[hidden], [aria-hidden="true"], [style*="display: none"], [style*="display:none"]');
+        const denial = Array.from(document.querySelectorAll('[data-testid="paywall"], [data-testid="paywall-content"], [data-member-only="true"]')).some(visible);
+        const denialText = Array.from(document.querySelectorAll('p, div, span')).some(el => visible(el) && !el.children.length && /read the rest.*member|sign up to read|purchase.*membership/i.test(el.textContent || ''));
+        if (denial || denialText) fail('Inaccessible social target: subscription or preview');
+        // isAccessibleForFree describes the resource, not this viewer's access.
+        const article = document.querySelector('article.meteredContent') || document.querySelector('article');
+        if (article) text = bodyMarkdown(article, url);
     }
     text = text.trim();
     if (!substantive(text) || /^(?:log in|sign in|sign up)\b/i.test(text)) fail('Inaccessible social target: main body unavailable');
