@@ -1,6 +1,6 @@
 # Reliable ITmedia pagination — spec
 intent: 2026-10-24-reliable-itmedia-pagination@c721bfb
-confirmed-behavior: 2026-10-24 @8eb779e
+confirmed-behavior: 2026-10-24 @535507e
 pre-build-review: required — Changes the observable completion and saved-content contract of an existing extraction path.
 
 ## Requirements
@@ -22,7 +22,7 @@ REQ-4 — Expand real-site evidence
 - agent-decided — A later-page error, empty/unusable page, known remaining continuation at the page cap, or repeated continuation is incomplete, not a normal last page. Return an error with the affected page/reason; never return the accumulated partial article as success. Principles Non-negotiables 1 and 3 settle this over retaining partial output.
 - agent-decided — Investigate the full-load wait separately from body extraction and narrowly correct pagination navigation readiness. The independent live diagnostic obtained five pages while the unchanged CLI timed out on page two; readiness must retain navigation errors, bounded waits and content validation, not simply assume any visible body is the article.
 - agent-decided — Keep the current caller's at-most-one headed retry and profile selection. A retry processes and validates the whole article; it must not append the failed attempt's partial pages. Preserve challenge classification so headed_on_block: false retains its effect.
-- agent-decided — A missing configured next-link match alone cannot distinguish a final page from a broken selector. Detect demonstrated contradictory continuation evidence where available; otherwise do not claim general missing-page detection. Newly discovered unsupported site-specific behavior is reported, not silently expanded into a new extractor.
+- agent-decided — If the configured selector has no match but the current document contains a nonempty standard next-link href (`link[rel~=next]` or `a[rel~=next]`), reject the result as incomplete pagination. The demonstrated ITmedia first page advertises `<link rel="next" href="news096_2.html">`, recorded in `/private/tmp/rlss-pagination-check/results/pcuser.html`. This hint only rejects contradictory completion; it never supplies a navigation target. Without that signal, a missing match remains indistinguishable from a final page; no general missing-selector detection is claimed. Newly discovered unsupported site-specific behavior is reported, not expanded into a new extractor.
 - agent-decided — Use isolated configs, profiles, executables and outputs for all live checks, with summarization and reading-list sources disabled. No new service, paid account, production configuration change, or existing-note migration is authorized.
 
 ## Alternatives considered
