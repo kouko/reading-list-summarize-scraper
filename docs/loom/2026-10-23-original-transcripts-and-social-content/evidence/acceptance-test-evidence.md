@@ -1216,3 +1216,47 @@ ok  	github.com/kouko/reading-list-summarize-scraper	0.557s
 
 Dispatch remains inherited overrides null, unobservable-main-profile. No agents or model changes. Routine evidence-only commit classification; exact final message privacy scan required, with no ambiguous private-party content requiring semantic judge. Tester edits only report/evidence.
 
+
+## Scope-confirmation reconciliation on 2026-10-23, at e816086f3c57bdba442f7e09405c8273483f5679
+
+### Explicit confirmation and meaning
+
+- The primary supplied the user's explicit answer **“好 先只做 youtube”** to **“本輪影片支援是否先限 YouTube，Bilibili 另案處理？”**. Confirmed intent now narrows video transcript support to YouTube only; Threads, Medium and X/Twitter remain unchanged.
+- Read actual confirmed intent `docs/loom/intent/2026-10-23-original-transcripts-and-social-content.md` (scope amendment ef0b597), retained spec (3713ba2, confirmed behavior ccdfd28), and reconciled plan at e816086.
+- Current Acceptance 1, verbatim: **YouTube 影片字幕使用與影片原始語言一致的內容，不以翻譯字幕替代。**
+- Current Video success names supported YouTube only. Other video platform flow explicitly includes Bilibili and allows unsupported extraction or unverifiable-original-language failure rather than descriptions.
+- This resolves the former Bilibili important finding by **explicit user-confirmed scope change**, not dismissal and not implementing or proving Bilibili success. Historical raw evidence and earlier scope-contradiction findings above are retained unchanged as records of the earlier agreed scope.
+- The scope confirmation does not authorize merge and does not narrow or remove any social-platform requirement.
+
+### Fresh clean setup and unchanged runtime evidence
+
+- New clean worktree `git worktree add /private/tmp/rlss-youtube-scope-acceptance e816086f3c57bdba442f7e09405c8273483f5679`.
+- Read README and followed clean setup with `npm ci --ignore-scripts`, `npm run build:defuddle`, and `GOCACHE=/private/tmp/rlss-go-build go build -o /private/tmp/rlss-youtube-scope-cli ./cmd/rlss/`. All passed. npm installed 26 locked packages and reported zero vulnerabilities; browser build 785.3kb; CLI built only in temporary location. Clean worktree status after rebuilding.
+- Checked full diff `398f4c2..e816086`: only README, intent/spec/plan and an existing attestation record differ. Checked `01da043..e816086`: only README and confirmed scope documents differ. No product source, generated bundle, test program, Go production code or runtime configuration changed. Tester did not edit attestation, intent, spec, plan, README or source.
+- Independent exact blob checks across e5782e0/current HEAD: `extraction.ts` remains `b0db4c3a075d2e7e1ae700a73a6b1cf879bf5f81`; `embed/defuddle.min.js` remains `dccc5faeb485b5aba24bec3da941e62e13333ab9`. Earned adversary remains `c2ea5d13e677b0b7482cf132bdb0cb146e5bc59c`.
+- No new live network extraction, UI, watch or full-suite run performed. No new runtime success is claimed. Previous independent CLI observations and named criterion results remain the runtime evidence because the complete product/program bytes are unchanged.
+- Full package tests/finalization are not skipped and remain primary-owned. No user-data/profile/vault/root binary or running batch touched. Setup dependency installation stayed inside the fresh worktree.
+
+### Current Acceptance verdicts under the newly confirmed scope
+
+1. **works — carried over, narrowed scope reassessed.** W3 independent actual YouTube single-URL CLI exit 0 saved substantive original English human captions with target-bound provenance; real batch also saved the same transcript, watch resumed verified content. A1 criterion and actual built-browser cases rejected translations, unknown/conflicting language and refreshed wrong-target metadata. Those exact product bytes are unchanged. Bilibili success is no longer a condition for this line.
+2. **partly — carried over.** All social branches are unchanged. Prior independently observed Threads and Medium CLI success/saved-body checks remain; later Medium Cloudflare failures also remain. X actual success remains unverified; the current amendment does not waive it.
+3. **works — carried over.** No-substitute failure wrapper, explicit preview rejection, original-language refusal and pipeline no-write behavior unchanged. W5 real Medium disabled/enabled headed retry proof is still the actual setting evidence; both later challenge attempts failed safely without files.
+4. **works — carried over.** Human/automatic cue checks, strict SAX, usable automatic fallback and empty/malformed/timestamp-only rejection unchanged; prior named tests and actual generated-browser outputs remain applicable.
+
+### UI-flow reconciliation
+
+- 5 **works — carried over, narrowed scope reassessed**: existing real YouTube single-URL/batch saved subtitles, language and source; watch resumed verified text. Existing command used no-summary setting, so no LLM/provider invocation is claimed; skipping summary follows that setting. Bilibili no longer creates a success-flow gap.
+- 6–9 **carried over**: empty-human, multiple-track, unknown original language and no usable original captions retain their specific prior verdicts and limits; caption selection/validation bytes unchanged.
+- 10 **works — carried over, newly clarified scope**: existing Bilibili unverified-evidence rejection and unsupported-platform failures now match the explicitly non-YouTube flow; no transcript-success claim added.
+- 11–13 **carried over**: social success/access/preview behavior unchanged; X remains partial, legitimate Medium/Threads successes and later Medium failure all retained.
+- 14–18 **carried over**: progress/timeout, batch/watch, pending-video cache, completed-summary skip and empty/dry-run code unchanged; each previous measured result and its unverified limits retained. No next watch recovery or timeout proof invented.
+
+### Current findings, distinct from historical findings above
+
+- **Former important Bilibili scope contradiction: RESOLVED by explicit confirmed scope.** The user chose YouTube-only video support. It is not dismissed and Bilibili implementation remains absent/outside scope; no success fixture or provenance was invented.
+- **Remaining important verification limitation — X actual success**, current spec Social success / Acceptance 2. Controlled target/preview cases pass, but the tested public target failed network/access/body retrieval. No code defect is inferred. Close with an independently witnessed legitimately accessible target through the existing CLI and correct saved body.
+- No new dismissed important finding, merge approval or current acceptance/readiness claim. Previous timestamps and raw records remain historical; only this current finding summary reflects the amended scope.
+
+Dispatch inherited overrides null, unobservable-main-profile; no agents or model changes. Routine report/evidence reconciliation classification. Exact final commit-message privacy scan required; only public platform names and explicit confirmed product scope appear, so no ambiguous private-party semantic judge needed.
+
