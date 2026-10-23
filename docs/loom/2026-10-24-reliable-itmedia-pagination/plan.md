@@ -32,12 +32,12 @@ charter: 1.1
 **W5-01 Validate each page before combining article content** after: W4-02 acceptance: 2, 3
 - Files: internal/extract/browser.go (entry: Browser.ExtractPaginated), internal/extract/browser_test.go, internal/extract/content.go (entry: ValidateContent), internal/pipeline/extraction.go, internal/pipeline/runner.go, internal/pipeline/pipeline_test.go, internal/pipeline/extraction_test.go
 - Test: A2 positive: article-discussing-login-is-retained; negative: real-extractor-later-login-wall. A3 positive: shared-validation-retains-retry-classification; negative: later-challenge-with-headed-retry-disabled. Extend the browser entry fixture using the real injected extractor; retain the graduated probe unchanged.
-- Risk: agent-decided — Class: earlier prose masks a recognized later-page wall. Search changed files plus actual TypeScript bridge, browser/walker, validation, retry and storage surfaces. Reuse the existing validation policy for both individual pages and combined output; avoid a second pattern list or a dependency cycle. Preserve current policy and ordinary extraction behavior.
+- Risk: agent-decided — Class: earlier prose masks a recognized later-page wall. Search changed files, TypeScript bridge, browser/walker, validation, retry and storage. Share existing validation before combining pages; avoid duplicate patterns or dependency cycles. Preserve current policy and ordinary extraction.
 
 **W6-01 Exercise incomplete sequences through the browser entry** after: W5-01 acceptance: 2, 3
 - Files: internal/extract/browser_test.go (entry: Browser.ExtractPaginated), internal/extract/pagination_test.go
 - Test: A2 positive: complete-sequence-retained; negative: table-of-incomplete-sequences. Move the changed private-walker cap, loop, later failure, unusable continuation and empty-page tests into one table-driven subtest of the existing browser entry test.
-- Risk: agent-decided — Class: changed tests bypass the declared browser entry. Search every changed test and the affected Acceptance surfaces. Remove corresponding direct tests and only helpers/imports this move makes unused; leave pre-existing unrelated tests and the independent probe unchanged. This task changes tests only.
+- Risk: agent-decided — Class: changed tests bypass the declared browser entry. Search changed tests and affected Acceptance surfaces. Remove corresponding direct tests and newly unused helpers/imports; retain unrelated tests and the independent probe. Change tests only.
 
 ## Simplicity check
 - none found
