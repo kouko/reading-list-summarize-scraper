@@ -230,7 +230,7 @@ function social(document: Document, url: URL): string {
     return text;
 }
 
-export async function extractArticle(document: Document = globalThis.document, address: string = globalThis.location.href, fetcher: typeof fetch = globalThis.fetch): Promise<string> {
+async function extractContent(document: Document, address: string, fetcher: typeof fetch): Promise<string> {
     const url = new URL(address), host = url.hostname.replace(/^www\./, '');
     if (['youtube.com', 'm.youtube.com', 'youtu.be'].includes(host)) return youtube(document, url, fetcher);
     if (['bilibili.com', 'm.bilibili.com'].includes(host)) fail('Unverified original language: Bilibili exposes subtitle language but no verified original-audio association');
@@ -239,4 +239,21 @@ export async function extractArticle(document: Document = globalThis.document, a
     const result = new Defuddle(document, { markdown: true }).parse();
     if (!result?.content?.trim()) fail('Ordinary article extraction failed: empty content');
     return result.content;
+}
+
+export async function extractArticle(document: Document = globalThis.document, address: string = globalThis.location.href, fetcher: typeof fetch = globalThis.fetch): Promise<string> {
+    try {
+        return await extractContent(document, address, fetcher);
+    } catch (error) {
+        // Preserve challenge identity for the existing headed_on_block policy.
+        // Classify only explicit challenge UI after failure, never article text.
+        const title = document.title.trim();
+        let challenge = '';
+        if (/^(?:attention required!?|just a moment(?:\.\.\.)?|security verification)\s*[|\-–]\s*cloudflare$/i.test(title)
+            || document.querySelector('#cf-challenge-running, #cf-challenge-error')) challenge = 'Cloudflare security challenge';
+        else if (/^(?:verify (?:you are|you're) (?:a )?human|captcha(?: security challenge)?)\s*[.!]?$/i.test(title)
+            && document.querySelector('form#captcha, iframe[src*="hcaptcha.com/"], iframe[src*="recaptcha/"]')) challenge = 'CAPTCHA security challenge';
+        if (challenge) fail(`${challenge}: ${error instanceof Error ? error.message : 'extraction failed'}`);
+        throw error;
+    }
 }

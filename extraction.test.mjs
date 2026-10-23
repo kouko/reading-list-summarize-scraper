@@ -112,6 +112,16 @@ test('A3 verified social content succeeds without network fallback', async () =>
  const paid = await extractArticle(doc('<link rel="canonical" href="https://medium.com/@a/title-abcdef123456"><script type="application/ld+json">{"@type":"Article","isAccessibleForFree":false}</script><article><h1>Member-only story</h1><p>Full legitimately accessible article text.</p></article>'), 'https://medium.com/@a/title-abcdef123456');
  assert.match(paid, /Full legitimately accessible article text/);
 });
+test('A3 challenge identity survives actual adapter failures without classifying article mentions', async () => {
+ const page = (title, body) => parseHTML(`<html><head><title>${title}</title></head><body>${body}</body></html>`).document;
+ for (const url of ['https://x.com/a/status/123', 'https://medium.com/@a/title-abcdef123456', 'https://www.youtube.com/watch?v=abc']) {
+  await assert.rejects(extractArticle(page('Attention Required! | Cloudflare', '<main>Private challenge details</main>'), url), error => /Cloudflare security challenge/.test(error.message) && !/Private challenge details/.test(error.message));
+  await assert.rejects(extractArticle(page('Verify you are human', '<form id="captcha"><iframe src="https://hcaptcha.com/challenge"></iframe></form>'), url), /CAPTCHA security challenge/);
+  await assert.rejects(extractArticle(page('Article about Cloudflare CAPTCHA', '<article>Cloudflare and CAPTCHA explain internet access.</article>'), url), error => !/security challenge/.test(error.message));
+ }
+ const out = await extractArticle(doc('<article data-testid="tweet"><a href="/a/status/123"><time>today</time></a><div data-testid="tweetText">Cloudflare CAPTCHA security challenge is this article topic.</div></article>'), 'https://x.com/a/status/123');
+ assert.equal(out, 'Cloudflare CAPTCHA security challenge is this article topic.');
+});
 test('A3 login, preview and unsupported video fail', async () => {
  for (const [url, html] of [['https://medium.com/@a/title-abcdef123456','<link rel="canonical" href="https://medium.com/@a/title-abcdef123456"><article><p>Preview</p></article><div data-testid="paywall">Sign up to read the rest.</div>'],['https://x.com/a/status/123','<main>Log in to X</main>'],['https://vimeo.com/123','<article>Video description</article>'],['https://www.bilibili.com/video/BV123','<article>description</article>']]) await assert.rejects(extractArticle(doc(html),url), /preview|target|video|original language/i);
 });

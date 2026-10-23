@@ -34,6 +34,12 @@ charter: 1.1
 - Test: A2 positive: complete-target-with-unrelated-quoted-preview; negative: target-owned-show-more. A3 positive: complete-canonical-read-view; negative: explicit-truncated-target-body.
 - Risk: agent-decided — both closing reviewers found explicit X truncation ignored before success. Reject remaining target-owned expansion markers; preserve complete bodies and ignore unrelated quoted markers. Bilibili scope and live X access remain unresolved, not dismissed.
 
+### Wave 5 — preserve challenge retry policy
+**W5-01 Retain challenge identity through specialized extraction errors** after: W4-01 acceptance: 3
+- Files: extraction.ts (entry: extractArticle), extraction.test.mjs, embed/defuddle.min.js
+- Test: A3 positive: ordinary-access-error-keeps-normal-retry; negative: specialized-challenge-retains-block-signal. Boundary: X, Medium and YouTube challenge pages; existing ProcessItem specialized-challenge-disabled case confirms the retry-policy consumer.
+- Risk: agent-decided — live Medium's Cloudflare page becomes a generic canonical error, hiding the signal used by headed_on_block:false. Preserve a bounded challenge classification on extraction failure without returning page text or treating legitimate article mentions as challenges.
+
 ## Simplicity check
 - none found
 
