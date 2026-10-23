@@ -1,6 +1,6 @@
 # Real Japanese news pagination validation
 
-Validated on 2026-10-24 (Asia/Taipei), using code commit `07bf97e59b93899fb50030bd98617b74291ef8c4`. All twelve real CLI runs completed successfully and passed the stated body and page-order checks. Two intentional incomplete-pagination runs failed with exit code 1 and saved no content.
+Validated on 2026-10-24 (Asia/Taipei), using code commit `07bf97e59b93899fb50030bd98617b74291ef8c4`. The twelve first-page CLI runs passed the stated body and page-order checks, and two intentional incomplete-pagination runs failed with exit code 1 and saved no content. Four subsequent non-first-page runs exposed an unresolved correctness defect: incomplete articles were saved and reported successful. The first-page results do not establish correct handling of arbitrary entry pages.
 
 The corpus contains twelve articles, ten distinct site groups and 34 observed source pages. ITmedia PC USER, Business and Mobile count as one group. Yahoo is a distribution site; ten site groups does not mean ten independent original publishers. Public article URLs, selectors, per-page counts, output hashes and individual results are in [news-pagination-cases.json](news-pagination-cases.json).
 
@@ -49,3 +49,18 @@ Broad ITmedia Defuddle snapshots also contained changing advertising links, reco
 Both controls used fresh isolated profiles and outputs. Logs identify the cap or missing-selector reason, including the existing retry attempt, and the final single-URL failure. No partial content or summary was saved.
 
 A missing configured selector without an independent standard next-link hint remains indistinguishable from a terminal page. No automatic pagination discovery is claimed. The controlled version of that limitation belongs to the package-level verification; this report does not present it as a successful real-site detection. Live pages, extraction noise and access controls can change after this observation. Full package tests, adversarial checks and closing review are separate evidence.
+
+## Unresolved finding: entry URL is not the first page
+
+After the user asked about starting from a later page, four additional actual CLI runs at the same code revision reproduced false completion. Every run exited 0, reported Success 1 / Partial 0 / Failed 0, and wrote one content file despite missing earlier target-body pages. This violates the confirmed requirement to avoid presenting known incomplete extraction as success; it is an unresolved correctness failure requiring a fix, not acceptable unsupported behavior.
+
+| Entry URL | Seconds | Target prose saved from pages | Missing pages | Outcome |
+| --- | ---: | --- | --- | --- |
+| [ITmedia page 3](https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_3.html) | 14.39 | 3–5 | 1–2 | FAIL, unresolved |
+| [ITmedia page 5](https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_5.html) | 3.74 | 5 | 1–4 | FAIL, unresolved |
+| [PRESIDENT page 3](https://president.jp/articles/-/120600?page=3) | 20.54 | 3–6 | 1–2 | FAIL, unresolved |
+| [Yahoo page 2](https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129?page=2) | 4.67 | 2 | 1 | FAIL, unresolved |
+
+These are additional entry URLs for existing corpus articles, not four new articles or publishers. Total actual CLI runs are now eighteen: twelve first-page corpus runs, two intentional incomplete controls and four failing later-page entries. The earlier twelve PASS results remain valid within their stated first-page coverage.
+
+The additional runs used isolated configs and outputs under `/private/tmp/rlss-pagination-fix/nonfirst/<case>/`, following the same `--config ... --no-summary url <public-url>` command pattern. Their `cli.log`, `result.json` and `output/` artifacts were inspected, and per-page qualifying target-prose comparisons confirmed the saved and missing page ranges above. Source pages and raw article content remain temporary; the JSON records sanitized results and content hashes. No automatic navigation back to page one has been added. This finding records the pre-fix behavior before independent adversarial review; no production code, tests or acceptance scope changed in this evidence update.

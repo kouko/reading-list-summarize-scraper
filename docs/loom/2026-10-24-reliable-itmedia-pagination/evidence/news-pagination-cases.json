@@ -797,6 +797,68 @@
       "outcome": "PASS"
     }
   ],
+  "additional_entry_validation": {
+    "code_commit": "07bf97e59b93899fb50030bd98617b74291ef8c4",
+    "total_actual_cli_runs": 18,
+    "new_articles": 0,
+    "new_site_groups": 0,
+    "overall_finding": "UNRESOLVED correctness failure: later-page entry saves incomplete article as success",
+    "verification_method": "Actual CLI logs and saved outputs inspected; qualifying per-page target prose compared against the independently observed corpus pages",
+    "cases": [
+      {
+        "id": "itmedia-page3",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_3.html",
+        "exit_code": 0,
+        "elapsed_seconds": 14.39,
+        "cli_stats": {"success": 1, "partial": 0, "failed": 0},
+        "content_files": 1,
+        "content_sha256": "c849d04b3b949451573199c1b78bb53a2f0eea923ed8c0eb966c8b41e87def85",
+        "pages_with_target_prose": [3, 4, 5],
+        "missing_earlier_pages": [1, 2],
+        "outcome": "FAIL",
+        "status": "UNRESOLVED"
+      },
+      {
+        "id": "itmedia-page5",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_5.html",
+        "exit_code": 0,
+        "elapsed_seconds": 3.74,
+        "cli_stats": {"success": 1, "partial": 0, "failed": 0},
+        "content_files": 1,
+        "content_sha256": "398940d551c72cade16aa374978399dced56eea73bd6493c27aa8a47e783284b",
+        "pages_with_target_prose": [5],
+        "missing_earlier_pages": [1, 2, 3, 4],
+        "outcome": "FAIL",
+        "status": "UNRESOLVED"
+      },
+      {
+        "id": "president-page3",
+        "url": "https://president.jp/articles/-/120600?page=3",
+        "exit_code": 0,
+        "elapsed_seconds": 20.54,
+        "cli_stats": {"success": 1, "partial": 0, "failed": 0},
+        "content_files": 1,
+        "content_sha256": "e6e926b9e21377dd01a312d9aa03e573c8c673ef4ed897683836c6da6f5fd92e",
+        "pages_with_target_prose": [3, 4, 5, 6],
+        "missing_earlier_pages": [1, 2],
+        "outcome": "FAIL",
+        "status": "UNRESOLVED"
+      },
+      {
+        "id": "yahoo-page2",
+        "url": "https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129?page=2",
+        "exit_code": 0,
+        "elapsed_seconds": 4.67,
+        "cli_stats": {"success": 1, "partial": 0, "failed": 0},
+        "content_files": 1,
+        "content_sha256": "6eff75ccc1468fd7b5f1065c37e0550189d4c29d28efaafeade153ae48bbc7ae",
+        "pages_with_target_prose": [2],
+        "missing_earlier_pages": [1],
+        "outcome": "FAIL",
+        "status": "UNRESOLVED"
+      }
+    ]
+  },
   "limits": [
     "PASS means the stated sampled or thresholded prose and page-order checks passed, not exhaustive identity of every source element.",
     "All three ITmedia sections count as one site group; Yahoo is a distribution site, so site groups are not a count of independent original publishers.",
