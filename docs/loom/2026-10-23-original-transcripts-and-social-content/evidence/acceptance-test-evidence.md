@@ -980,3 +980,161 @@ ok  	github.com/kouko/reading-list-summarize-scraper/internal/pipeline	0.372s
 
 Dispatch unchanged: inherited overrides null, unobservable-main-profile; no agents spawned. Commit classification routine fix-verification evidence, no new product decision. Exact commit-message privacy scan required; no private-party ambiguity requires semantic judge. Only report/evidence changed by this tester.
 
+
+## Re-run on 2026-10-23, at bf8b98ab8b0e91325f2b661600777b65efea0ac5
+
+Range checked in full: `c2543e1..bf8b98a`. The shared extraction entry is now an error wrapper around the same successful extraction function. Only after failure, explicit challenge UI/title adds a fixed Cloudflare/CAPTCHA identity to the existing error; no raw page body is forwarded. Source, regression, generated bundle and plan are the only changed files. Go settings/policy, all successful body paths, target preview guards, video language/quality and caches are unchanged. Retained reasons below were checked against the actual diff.
+
+### Fresh setup and bounded commands
+
+- Fresh clean worktree `git worktree add /private/tmp/rlss-original-acceptance-w5 bf8b98ab8b0e91325f2b661600777b65efea0ac5`.
+- Followed README with `npm ci --ignore-scripts`, `npm run build:defuddle`, `GOCACHE=/private/tmp/rlss-go-build go build -o /private/tmp/rlss-original-w5-cli ./cmd/rlss/`. Passed; 26 locked packages, zero npm vulnerabilities, actual browser bundle 785.3kb. Worktree remained clean after setup.
+- Criterion only: `node --test --test-name-pattern='A3' extraction.test.mjs` → 6/6 pass. Consumer criteria only: `GOCACHE=/private/tmp/rlss-go-build go test ./internal/pipeline -run 'TestProcessItemWithFallback|TestExtractionRejectsObservedWalls' -v` → pass, including `specialized_challenge_disabled`, retry policy variants and no-write-on-failure cases.
+- Actual generated browser entry: `go run /private/tmp/rlss-original-browser.go > /private/tmp/rlss-original-w5-browser.log` in fresh worktree. Uses actual current bundle and `window.extractArticle()`, not a substituted extractor. Only navigation/caption resources controlled. All 21 fixture cases passed, including Cloudflare failures for X/Medium/YouTube, CAPTCHA X, and a successful article mentioning those words. Other existing platform/preview/video cases also passed.
+- New fixture page bodies are synthetic. Their text did not leak into returned errors. The same words in a complete target article remain successful. The wrapper does not promise every possible vendor challenge is recognized.
+- Real CLI settings comparison: same public URL `https://ev.medium.com/welcome-to-medium-9e53ca408c48`, separate fresh profiles/output for each setting, headless true, load wait 2s, headless/headed bounds 30s, no reading-list sources or copying, always `--no-summary`. Exact command `/private/tmp/rlss-original-w5-cli url 'https://ev.medium.com/welcome-to-medium-9e53ca408c48' --config /private/tmp/rlss-original-w5-disabled.yaml --no-summary`, then enabled config at analogous path.
+- No user profiles, vault, active batch, root binary or providers used. No full Go/npm package suite or watch-recovery cycle attempted. There were no skipped-by-instruction steps; finalization belongs to the primary and unresolved important Bilibili scope still prevents declaring the original promise complete.
+
+### Independently reproduced live setting effect
+
+- **headed_on_block false:** real CLI sees `Cloudflare security challenge: Inaccessible social target: canonical identity missing or different`; a single headless extraction attempt, **zero** `retrying with headed mode` logs, exit 1, Success 0 / Failed 1, zero Markdown files.
+- **headed_on_block true:** same fixed challenge identity in initial failure; exactly one `retrying with headed mode` log. Headed retry also sees the challenge, exit 1, Success 0 / Failed 1, zero Markdown files.
+- This independently verifies policy compatibility through the actual browser/CLI boundary. It does not claim true guarantees successful bypass or legitimate access recovery. Earlier W3/W4 Medium saved-body successes remain valid observations for those runs; this run's access result is unsuccessful.
+- Existing consumer recognizes the fixed challenge identity, preserving configured suppression; no Go implementation change was necessary.
+- Captured logs contain only fixed classification and existing diagnostic, no challenge body, cookie, token or signed caption URL.
+
+### Per-row rerun record
+
+- 1: carried over — original-language evidence, video selection and returned content are unchanged; wrapper changes errors only after a rejection.
+- 2: carried over — all successful social-body extraction branches, target checks and saving are unchanged. Prior independent Threads/Medium saved-body evidence remains historical success; current public Medium access can still fail as observed below.
+- 3: re-tested — A3 criteria across native-video and social error surfaces, actual rebuilt-browser challenge cases, and existing pipeline retry/no-write consumer tests all pass. Real Medium disabled/enabled CLI failures save no content.
+- 4: carried over — human/automatic cue parsing and validation unchanged.
+- 5: carried over — video success and saving unchanged; old confirmed YouTube success remains and Bilibili implementation gap remains.
+- 6: carried over — empty-human fallback and refreshed automatic subtitles unchanged.
+- 7: carried over — multiple original-track selection unchanged.
+- 8: carried over — ambiguous original-audio rejection unchanged; wrapper only decorates explicit challenge pages.
+- 9: carried over — original subtitle unusability/translation checks unchanged; selected A3 tests also exercised failure propagation.
+- 10: carried over — supported/unsupported video routing and direct CLI error status unchanged.
+- 11: carried over — successful social content return and save unchanged; prior Threads/Medium positive witness retained, not a guarantee of current access.
+- 12: re-tested — real Medium explicit challenge with headed_on_block false has one headless failure and no headed retry; true has one headed retry. Both fail safely because challenge persists. Controlled Cloudflare/CAPTCHA and login/preview error cases pass. No credential recovery attempted.
+- 13: carried over — target identity and truncation/preview rules unchanged; current actual browser incidental preview/negative controls also passed.
+- 14: re-tested — actual CLI processing/failure logs and policy-dependent retry witnessed with retained challenge identity; no stalled request or timeout enforcement test added.
+- 15: carried over — no Go batch/watch/failure accounting change, and consumer retry policy is directly retested; no recovery cycle expansion.
+- 16: carried over — video cache invalidation/resume and writes unchanged.
+- 17: carried over — completed-summary skipping unchanged.
+- 18: carried over — source selection, no-items and dry-run unchanged.
+
+### Current finding status
+
+- **Challenge-setting compatibility issue resolved for witnessed case**, `extraction.ts:244-259`, consumer `TestProcessItemWithFallback/specialized_challenge_disabled`: actual public Medium explicit challenge now preserves identity and suppresses headed retry when disabled; enabled setting performs the existing retry.
+- **important, unresolved — Bilibili scope contradiction**, `extraction.ts:236`, retained supported-video / Video success promise. The success path is absent, rather than merely failing current access. Grounded implementation and independent success or explicit user scope revision still required.
+- **important verification limitation — X live success**, retained Social success. Prior actual public X failure and controlled positive tests remain; this wrapper fix does not prove current X availability or an extraction defect.
+- No important finding dismissed. No readiness, acceptance or merge claim made.
+
+### Current generated-browser challenge evidence
+
+```text
+test_bundle_x_cloudflare_failure_classified expected=false pass=true transport=<nil> result={"ok":false,"error":"Cloudflare security challenge: Inaccessible social target: main body unavailable"}
+test_bundle_medium_cloudflare_failure_classified expected=false pass=true transport=<nil> result={"ok":false,"error":"Cloudflare security challenge: Inaccessible social target: canonical identity missing or different"}
+test_bundle_youtube_cloudflare_failure_classified expected=false pass=true transport=<nil> result={"ok":false,"error":"Cloudflare security challenge: Unavailable subtitles: missing player data"}
+test_bundle_x_captcha_failure_classified expected=false pass=true transport=<nil> result={"ok":false,"error":"CAPTCHA security challenge: Inaccessible social target: main body unavailable"}
+test_bundle_x_article_mentions_preserved expected=true pass=true transport=<nil> result={"ok":true,"text":"Cloudflare CAPTCHA security challenge is this article topic."}
+```
+
+### Actual live CLI, retry disabled
+
+```text
+Pipeline completed in 3s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+time=2026-10-23T14:54:43.078+08:00 level=INFO msg="processing item" index=1 total=1 url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 title=""
+time=2026-10-23T14:54:45.955+08:00 level=ERROR msg="item failed" url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 err="extract https://ev.medium.com/welcome-to-medium-9e53ca408c48: exception \"Uncaught (in promise) Error: Cloudflare security challenge: Inaccessible social target: canonical identity missing or different\" (344:4148): Error: Cloudflare security challenge: Inaccessible social target: canonical identity missing or different\n    at st (<anonymous>:344:4148)\n    at zo (<anonymous>:353:2622)"
+CLI_EXIT=1
+```
+
+### Actual live CLI, retry enabled
+
+```text
+Pipeline completed in 6s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+time=2026-10-23T14:54:45.963+08:00 level=INFO msg="processing item" index=1 total=1 url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 title=""
+time=2026-10-23T14:54:48.778+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 err="exception \"Uncaught (in promise) Error: Cloudflare security challenge: Inaccessible social target: canonical identity missing or different\" (344:4148): Error: Cloudflare security challenge: Inaccessible social target: canonical identity missing or different\n    at st (<anonymous>:344:4148)\n    at zo (<anonymous>:353:2622)"
+time=2026-10-23T14:54:51.512+08:00 level=ERROR msg="item failed" url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 err="extract https://ev.medium.com/welcome-to-medium-9e53ca408c48: headless attempt: exception \"Uncaught (in promise) Error: Cloudflare security challenge: Inaccessible social target: canonical identity missing or different\" (344:4148): Error: Cloudflare security challenge: Inaccessible social target: canonical identity missing or different\n    at st (<anonymous>:344:4148)\n    at zo (<anonymous>:353:2622); headed retry: exception \"Uncaught (in promise) Error: Cloudflare security challenge: Inaccessible social target: canonical identity missing or different\" (344:4148): Error: Cloudflare security challenge: Inaccessible social target: canonical identity missing or different\n    at st (<anonymous>:344:4148)\n    at zo (<anonymous>:353:2622)"
+CLI_EXIT=1
+```
+
+### Criterion-only tests
+
+```text
+# Subtest: A1/A3 native player refresh recovers empty inline captions with bounded first-party requests
+ok 1 - A1/A3 native player refresh recovers empty inline captions with bounded first-party requests
+# Subtest: A1/A3 refreshed invalid identity, language and API failures stay unsuccessful
+ok 2 - A1/A3 refreshed invalid identity, language and API failures stay unsuccessful
+# Subtest: A2/A3 explicit target previews fail while complete own bodies remain usable
+ok 3 - A2/A3 explicit target previews fail while complete own bodies remain usable
+# Subtest: A3 verified social content succeeds without network fallback
+ok 4 - A3 verified social content succeeds without network fallback
+# Subtest: A3 challenge identity survives actual adapter failures without classifying article mentions
+ok 5 - A3 challenge identity survives actual adapter failures without classifying article mentions
+# Subtest: A3 login, preview and unsupported video fail
+ok 6 - A3 login, preview and unsupported video fail
+# tests 6
+# pass 6
+# fail 0
+=== RUN   TestProcessItemWithFallback
+=== RUN   TestProcessItemWithFallback/success
+=== RUN   TestProcessItemWithFallback/video_verified
+=== RUN   TestProcessItemWithFallback/video_description
+=== RUN   TestProcessItemWithFallback/video_metadata_only
+=== RUN   TestProcessItemWithFallback/video_wrong_target
+=== RUN   TestProcessItemWithFallback/social_body
+=== RUN   TestProcessItemWithFallback/specialized_challenge_disabled
+=== RUN   TestProcessItemWithFallback/load_error
+=== RUN   TestProcessItemWithFallback/empty
+=== RUN   TestProcessItemWithFallback/challenge
+=== RUN   TestProcessItemWithFallback/login_wall
+=== RUN   TestProcessItemWithFallback/headed_failure
+=== RUN   TestProcessItemWithFallback/headed_challenge
+=== RUN   TestProcessItemWithFallback/retry_failure
+=== RUN   TestProcessItemWithFallback/retry_empty
+=== RUN   TestProcessItemWithFallback/retry_challenge
+=== RUN   TestProcessItemWithFallback/retry_login_wall
+=== RUN   TestProcessItemWithFallback/block_disabled_challenge
+=== RUN   TestProcessItemWithFallback/block_disabled_navigation
+=== RUN   TestProcessItemWithFallback/block_disabled_empty
+--- PASS: TestProcessItemWithFallback (0.02s)
+    --- PASS: TestProcessItemWithFallback/success (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_verified (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_description (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_metadata_only (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_wrong_target (0.00s)
+    --- PASS: TestProcessItemWithFallback/social_body (0.00s)
+    --- PASS: TestProcessItemWithFallback/specialized_challenge_disabled (0.00s)
+    --- PASS: TestProcessItemWithFallback/load_error (0.00s)
+    --- PASS: TestProcessItemWithFallback/empty (0.00s)
+    --- PASS: TestProcessItemWithFallback/challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/login_wall (0.00s)
+    --- PASS: TestProcessItemWithFallback/headed_failure (0.00s)
+    --- PASS: TestProcessItemWithFallback/headed_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_failure (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_empty (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_login_wall (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_navigation (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_empty (0.00s)
+=== RUN   TestExtractionRejectsObservedWalls
+--- PASS: TestExtractionRejectsObservedWalls (0.00s)
+PASS
+ok  	github.com/kouko/reading-list-summarize-scraper/internal/pipeline	0.404s
+```
+
+Dispatch profile inherited overrides null, unobservable-main-profile; resolver initial completed redispatches 1 as supplied by the primary. The repeated task packet did not cause additional worktrees, product changes, identity/model switches or duplicated test runs; this completed one bounded W5 measurement. No agents spawned. Commit classification routine acceptance verification; exact final message privacy scan required and no ambiguous private-party text requires a semantic judge. Tester edits are report/evidence only.
+
