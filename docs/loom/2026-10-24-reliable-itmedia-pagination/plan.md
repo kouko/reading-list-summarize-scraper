@@ -19,6 +19,16 @@ charter: 1.1
 - Test: A1 positive: demonstrated-itmedia-five-pages; negative: real-itmedia-cap-incomplete. A3 positive: prior-working-publishers; negative: inaccessible-page-not-counted-success. A4 positive: new-publishers-and-itmedia-articles; negative: unverified-candidate-not-counted-pass.
 - Risk: agent-decided — Aim for twelve articles across ten publishers, retaining original seven plus three new publishers and two more ITmedia articles. Use isolated live CLI and independent per-page observations; report restrictions and incomplete evidence honestly. Commit sanitized metadata only.
 
+**W4-01 Graduate the earned later-entry regression unchanged** after: W3-01 acceptance: 2
+- Files: docs/loom/2026-10-24-reliable-itmedia-pagination/evidence/probes/pagination_entry_probe_test.go, internal/extract/pagination_entry_probe_test.go
+- Test: A2 positive: reject-known-incomplete-entry; negative: later-entry-returns-suffix. The independent probe owner moves its committed RED program byte-for-byte into the normal Go package suite before the product fix.
+- Risk: agent-decided — User-requested non-first-page testing and the independent adversary exposed the same omission. Only the probe owner moves its program; neither its assertion nor the demonstrated failure is weakened.
+
+**W4-02 Reject known missing earlier pages** after: W4-01 acceptance: 2
+- Files: internal/extract/browser.go (entry: Browser.ExtractPaginated), internal/extract/browser_test.go
+- Test: A2 positive: first-page-traversal-with-earlier-links-on-later-pages; negative: initial-earlier-page-evidence. Retain the graduated regression unchanged; cover standard first/previous metadata and same-article lower numbered page navigation observed on the four real later-entry examples.
+- Risk: agent-decided — Class: known incomplete initial entry returns success. Search all changed files and initial/next navigation surfaces. Reject justified earlier-page evidence only at initial entry; do not add automatic first-page recovery, new settings or site-specific extractors.
+
 ## Simplicity check
 - none found
 
@@ -32,3 +42,4 @@ charter: 1.1
 3. user-decided — Preserve existing headed retry configuration and headed_on_block: false. The user confirmed no automatic pagination discovery and no batch rewrite of old notes; successful saves retain existing overwrite behavior.
 4. agent-decided — New examples verify the common fix, not a promise to implement every publisher's special extractor. No paid account, proxy, provider review, real browser-profile reuse or existing-data modification is authorized.
 5. agent-decided — A probe that catches a defect must graduate into the Go package suite before review finalization; the probe owner retains its content. Existing source extraction tests and earlier earned JavaScript regressions remain in the complete suite.
+6. agent-decided — Non-first entry is another instance of confirmed incomplete-success failure, not a new automatic-discovery feature. Explicit earlier-page evidence requires failure with no partial save; insufficient evidence remains a documented limitation. W4 records the newly demonstrated boundary.
