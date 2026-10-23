@@ -39,6 +39,11 @@ charter: 1.1
 - Test: A2 positive: complete-sequence-retained; negative: table-of-incomplete-sequences. Move the changed private-walker cap, loop, later failure, unusable continuation and empty-page tests into one table-driven subtest of the existing browser entry test.
 - Risk: agent-decided — Class: changed tests bypass the declared browser entry. Search changed tests and affected Acceptance surfaces. Remove corresponding direct tests and newly unused helpers/imports; retain unrelated tests and the independent probe. Change tests only.
 
+**W7-01 Isolate Chrome fixture startup and graceful cleanup** after: W6-01 acceptance: 2, 3
+- Files: internal/extract/browser_test.go (entry: Browser.ExtractPaginated), internal/extract/pagination_entry_probe_test.go (independent owner only)
+- Test: A2 positive: actual-browser-ready-before-negative-cases; negative: startup-error-cannot-pass-rejection. A3 positive: existing-navigation-deadlines-retained; negative: profile-cleanup-race. Reuse existing regressions that failed CI; retain all extraction assertions and navigation deadlines.
+- Risk: agent-decided — Class: cold startup consumes navigation timeout and abrupt cleanup races profile removal. Search changed files and browser lifecycle surfaces. Initialize one test-owned browser and close it gracefully. The independent probe owner updates setup only; production remains unchanged.
+
 ## Simplicity check
 - none found
 
@@ -53,3 +58,4 @@ charter: 1.1
 4. agent-decided — New examples verify the common fix, not a promise to implement every publisher's special extractor. No paid account, proxy, provider review, real browser-profile reuse or existing-data modification is authorized.
 5. agent-decided — A probe that catches a defect must graduate into the Go package suite before review finalization; the probe owner retains its content. Existing source extraction tests and earlier earned JavaScript regressions remain in the complete suite.
 6. agent-decided — Non-first entry is another instance of confirmed incomplete-success failure, not a new automatic-discovery feature. Explicit earlier-page evidence requires failure with no partial save; insufficient evidence remains a documented limitation. W4 records the newly demonstrated boundary.
+7. agent-decided — CI 39995109168 exposed cold startup consuming fixture deadlines and asynchronous profile cleanup. W7 changes tests only; independent acceptance at 7e7069a retains its product results. Complete tests and the existing probe must pass again before terminal review.
