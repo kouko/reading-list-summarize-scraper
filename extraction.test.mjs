@@ -21,6 +21,29 @@ const doc = (body) => parseHTML(`<html><head></head><body>${body}</body></html>`
 // caption-audio label or ID; discard all transient signed URL parameters.
 const yt = (verified = true, tracks = [{baseUrl:'https://www.youtube.com/api/timedtext?v=abc',languageCode:'en',...(verified ? {kind:'asr'} : {})}], extra = {}) => doc(`<script>var ytInitialPlayerResponse = ${JSON.stringify({videoDetails:{videoId:'abc'}, captions:{playerCaptionsTracklistRenderer:{captionTracks:tracks,audioTracks:[{captionTrackIndices:tracks.map((_, i) => i),defaultCaptionTrackIndex:0,hasDefaultTrack:true,captionsInitialState:'CAPTIONS_INITIAL_STATE_OFF_RECOMMENDED'}],defaultAudioTrackIndex:0,...extra}}})};</script>`);
 const cues = '<transcript><text start="0" dur="2">Actual spoken subtitle text.</text></transcript>';
+test('A1/A3 native player refresh recovers empty inline captions with bounded first-party requests', async () => {
+ const fresh = JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));
+ fresh.playabilityStatus = {status:'OK'};
+ fresh.captions.playerCaptionsTracklistRenderer.captionTracks[0].baseUrl += '&fresh=1';
+ const calls = [];
+ const out = await extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async (u, options) => {
+  calls.push(String(u));
+  if (String(u).includes('/youtubei/')) {
+   assert.equal(String(u), 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false');
+   assert.equal(options.method, 'POST'); assert.equal(options.credentials, 'include'); assert.equal(options.redirect, 'error'); assert.ok(options.signal);
+   assert.deepEqual(JSON.parse(options.body), {context:{client:{clientName:'IOS',clientVersion:'20.10.3'}},videoId:'abc'});
+   return Response.json(fresh);
+  }
+  return new Response(String(u).includes('fresh=1') ? cues : '');
+ });
+ assert.match(out, /Actual spoken subtitle text/); assert.equal(calls.length, 3);
+});
+test('A4 captions work when Trusted Types rejects HTML parsing sinks', async () => {
+ const d = yt();
+ d.createElement = () => { throw Error('TrustedHTML required'); };
+ const out = await extractArticle(d, 'https://www.youtube.com/watch?v=abc', async () => new Response('<timedtext><body><p t="320" d="14260"><s>Actual &amp; spoken</s> subtitle text.</p></body></timedtext>'));
+ assert.match(out, /Actual & spoken subtitle text/);
+});
 test('A1 verified original audio association', async () => {
  const tracks = ['en','de-DE','ja','pt-BR','es-419'].map(languageCode => ({baseUrl:`https://www.youtube.com/api/timedtext?v=abc&lang=${languageCode}`,languageCode}));
  tracks.push({baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en&kind=asr',languageCode:'en',kind:'asr'});
@@ -29,6 +52,30 @@ test('A1 verified original audio association', async () => {
 });
 test('A1 unverified default language rejected', async () => {
  for (const d of [yt(false), yt(true, undefined, {audioTracks:[{captionTrackIndices:[0]},{captionTrackIndices:[0]}]}), yt(true,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&tlang=ja',languageCode:'ja',kind:'asr'},{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ja',languageCode:'ja'}])]) await assert.rejects(extractArticle(d, 'https://www.youtube.com/watch?v=abc', async () => new Response(cues)), /original language|unusable/i);
+});
+test('A1/A3 refreshed invalid identity, language and API failures stay unsuccessful', async () => {
+ const valid = JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));
+ valid.playabilityStatus = {status:'OK'};
+ for (const change of [
+  d => { d.videoDetails.videoId = 'other'; },
+  d => { d.captions.playerCaptionsTracklistRenderer.audioTracks.push({captionTrackIndices:[0]}); },
+  d => { d.captions.playerCaptionsTracklistRenderer.captionTracks[0].baseUrl += '&tlang=ja'; },
+  d => { d.captions.playerCaptionsTracklistRenderer.captionTracks[0].languageCode = 'ja'; },
+ ]) {
+  const fresh = structuredClone(valid); change(fresh); let apiCalls = 0;
+  await assert.rejects(extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async u => {
+   if (String(u).includes('/youtubei/')) { apiCalls++; return Response.json(fresh); }
+   return new Response('');
+  }), /unusable original-language/i);
+  assert.equal(apiCalls, 2);
+ }
+ for (const response of [() => new Response('', {status:503}), () => new Response(''), () => new Response('{'), () => Response.json({})]) {
+  let calls = 0;
+  await assert.rejects(extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async u => {
+   if (String(u).includes('/youtubei/')) { calls++; return response(); }
+   return new Response('');
+  }), /unusable original-language/i); assert.equal(calls, 2);
+ }
 });
 test('A2 target bodies on three platforms exclude replies', async () => {
  for (const [url, html] of [
@@ -58,7 +105,21 @@ test('A3 login, preview and unsupported video fail', async () => {
 test('A4 blank human track does not block usable automatic track', async () => {
  const d = yt(true,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&manual=1',languageCode:'en'},{baseUrl:'https://www.youtube.com/api/timedtext?v=abc',languageCode:'en',kind:'asr'}]);
  const out = await extractArticle(d,'https://www.youtube.com/watch?v=abc',async u => new Response(String(u).includes('manual')?'<transcript></transcript>':cues)); assert.match(out,/automatic/);
+ const fresh = JSON.parse(d.querySelector('script').textContent.split(' = ')[1].slice(0,-1)); fresh.playabilityStatus = {status:'OK'};
+ for (const track of fresh.captions.playerCaptionsTracklistRenderer.captionTracks) track.baseUrl += '&fresh=1';
+ const requests = [];
+ const recovered = await extractArticle(d, 'https://www.youtube.com/watch?v=abc', async (u, options) => {
+  if (String(u).includes('/youtubei/')) {
+   requests.push(JSON.parse(options.body).context.client.clientName);
+   return requests.length === 1 ? new Response('', {status:500}) : Response.json(fresh);
+  }
+  return new Response(String(u).includes('fresh=1') && !String(u).includes('manual') ? cues : '');
+ });
+ assert.match(recovered, /Subtitle source: automatic/); assert.deepEqual(requests, ['IOS','ANDROID']);
 });
 test('A4 malformed, truncated and timestamp-only cues fail', async () => {
- for (const xml of ['<transcript><text start="-1" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech</text>','<transcript><text start="0" dur="2">00:01</text></transcript>','<!DOCTYPE transcript SYSTEM "https://example.com/external.dtd"><transcript><text start="0" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech &unknown;</text></transcript>']) await assert.rejects(extractArticle(yt(),'https://www.youtube.com/watch?v=abc',async()=>new Response(xml)), /unusable/i);
+ for (const xml of ['','<transcript><text start="-1" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech</text>','<transcript><text start="0" dur="2">00:01</text></transcript>','<!DOCTYPE transcript SYSTEM "https://example.com/external.dtd"><transcript><text start="0" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech &unknown;</text></transcript>']) {
+  const fresh = JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1)); fresh.playabilityStatus = {status:'OK'};
+  await assert.rejects(extractArticle(yt(),'https://www.youtube.com/watch?v=abc',async u => String(u).includes('/youtubei/') ? Response.json(fresh) : new Response(xml)), /unusable/i);
+ }
 });

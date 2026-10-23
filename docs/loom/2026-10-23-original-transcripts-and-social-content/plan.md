@@ -22,6 +22,12 @@ charter: 1.1
 - Test: A2 positive: own-post-permalink; negative: quoted-target-permalink. A4 positive: valid-caption-markup; negative: mismatched-inner-markup. Run the existing adversarial program RED before the fix, retain its bytes unchanged as extraction-boundaries.test.mjs, and include it in npm test.
 - Risk: agent-decided — reject descendant identity mistaken for ownership and HTML repair mistaken for XML validity. Search changed files and social/caption surfaces; preserve valid content, regenerate the bundle, and graduate the adversary's regression unchanged into CI.
 
+### Wave 3 — fresh first-party caption URLs
+**W3-01 Refresh unusable inline caption URLs through the native player API** after: W2-01 acceptance: 1, 3, 4
+- Files: extraction.ts (entry: extractArticle), extraction.test.mjs, embed/defuddle.min.js, README.md
+- Test: A1 positive: native-player-original-caption; negative: refreshed-wrong-target-or-ambiguous-language. A3 positive: empty-inline-recovers; negative: native-api-failure-remains-failed. A4 positive: refreshed-usable-auto-after-empty-human; negative: refreshed-empty-or-malformed-cues. Boundary: captions parse on pages enforcing Trusted Types without HTML string assignment.
+- Risk: agent-decided — live page URLs return zero bytes while upstream's first-party iOS/Android player requests return usable same-video captions. Refresh only through fixed official endpoints, reapply all identity/original-language/cue checks, and preserve timeouts and existing recovery settings.
+
 ## Simplicity check
 - none found
 

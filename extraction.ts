@@ -27,12 +27,25 @@ function playerData(document: Document): any {
     fail('Unavailable subtitles: missing player data');
 }
 
-function transcript(document: Document, xml: string): string {
-    // Validate XML before any HTML DOM handling can repair malformed nesting.
+function transcript(xml: string): string {
+    const cues: {name: string; attributes: Record<string, string>; text: string}[] = [];
+    let cue: typeof cues[number] | undefined;
+    // Parse cue text directly: YouTube enforces Trusted Types on HTML sinks.
     // Saxes performs no resource loading; disallow DTDs/entities explicitly.
     try {
         const parser = new SaxesParser();
         parser.on('doctype', () => { throw new Error('DTD is not permitted'); });
+        parser.on('opentag', tag => {
+            if (tag.name === 'text' || tag.name === 'p') {
+                if (cue) throw new Error('Nested cues');
+                cue = {name: tag.name, attributes: tag.attributes as Record<string, string>, text: ''};
+                cues.push(cue);
+            }
+        });
+        const append = (text: string) => { if (cue) cue.text += text; };
+        parser.on('text', append);
+        parser.on('cdata', append);
+        parser.on('closetag', tag => { if (cue?.name === tag.name) cue = undefined; });
         parser.write(xml).close();
     } catch (error) {
         fail(`Unusable subtitles: malformed XML (${error instanceof Error ? error.message : String(error)})`);
@@ -40,33 +53,27 @@ function transcript(document: Document, xml: string): string {
     // Reject partial XML rather than letting the HTML parser repair a cut response.
     if (!/^\s*(?:<\?xml[^>]*>\s*)?<(transcript|timedtext)\b[^>]*>[\s\S]*<\/\1>\s*$/.test(xml)
         || /(?:truncated|incomplete)\s*=\s*["'](?:true|1)["']/i.test(xml)) fail('Unusable subtitles: incomplete payload');
-    const holder = document.createElement('div');
-    holder.innerHTML = xml;
-    const cues = Array.from(holder.querySelectorAll('text, p'));
     const opening = (xml.match(/<(?:text|p)\b/g) || []).length;
     const closing = (xml.match(/<\/(?:text|p)>/g) || []).length;
     if (opening !== closing || cues.length !== opening) fail('Unusable subtitles: malformed cues');
     let previous = -1;
     const lines: string[] = [];
     for (const cue of cues) {
-        const startKey = cue.tagName.toLowerCase() === 'p' ? 't' : 'start';
+        const startKey = cue.name === 'p' ? 't' : 'start';
         const durationKey = startKey === 't' ? 'd' : 'dur';
-        const rawStart = cue.getAttribute(startKey), rawDuration = cue.getAttribute(durationKey);
-        const start = rawStart === null || rawStart.trim() === '' ? NaN : Number(rawStart);
-        const duration = rawDuration === null || rawDuration.trim() === '' ? NaN : Number(rawDuration);
+        const rawStart = cue.attributes[startKey], rawDuration = cue.attributes[durationKey];
+        const start = !rawStart?.trim() ? NaN : Number(rawStart);
+        const duration = !rawDuration?.trim() ? NaN : Number(rawDuration);
         if (!Number.isFinite(start) || !Number.isFinite(duration) || start < 0 || duration <= 0 || start < previous) fail('Unusable subtitles: invalid cue timing');
         previous = start;
-        const text = (cue.textContent || '').replace(/\s+/g, ' ').trim();
+        const text = cue.text.replace(/\s+/g, ' ').trim();
         if (substantive(text)) lines.push(text);
     }
     if (!lines.length) fail('Unusable subtitles: empty or timestamp-only cues');
     return lines.join('\n\n');
 }
 
-async function youtube(document: Document, url: URL, fetcher: typeof fetch): Promise<string> {
-    const id = url.hostname === 'youtu.be' ? url.pathname.slice(1) : url.searchParams.get('v') || url.pathname.split('/')[2];
-    if (!id) fail('Unavailable subtitles: missing video identity');
-    const data = playerData(document);
+function youtubeCandidates(data: any, id: string): {originalLanguage: string; candidates: any[]} {
     if (data?.videoDetails?.videoId !== id) fail('Unavailable subtitles: wrong target player');
     const renderer = data?.captions?.playerCaptionsTracklistRenderer;
     const tracks = renderer?.captionTracks;
@@ -92,19 +99,44 @@ async function youtube(document: Document, url: URL, fetcher: typeof fetch): Pro
     const originalLanguage = asr[0].languageCode;
     // A caption explicitly translated by URL is never eligible.
     const candidates = associated.filter((t: any) => typeof t.languageCode === 'string' && family(t.languageCode) === family(originalLanguage));
+    return {originalLanguage, candidates};
+}
+
+async function youtube(document: Document, url: URL, fetcher: typeof fetch): Promise<string> {
+    const id = url.hostname === 'youtu.be' ? url.pathname.slice(1) : url.searchParams.get('v') || url.pathname.split('/')[2];
+    if (!id) fail('Unavailable subtitles: missing video identity');
+    const initial = youtubeCandidates(playerData(document), id);
     const errors: string[] = [];
-    for (const track of candidates) {
+    // One inline attempt followed by at most two official native-player requests.
+    for (const client of [null, {clientName: 'IOS', clientVersion: '20.10.3'}, {clientName: 'ANDROID', clientVersion: '20.10.38'}]) {
         try {
-            const endpoint = new URL(track.baseUrl);
-            if (endpoint.protocol !== 'https:' || !['www.youtube.com', 'youtube.com'].includes(endpoint.hostname)
-                || endpoint.pathname !== '/api/timedtext' || endpoint.searchParams.has('tlang') || endpoint.searchParams.get('v') !== id) fail('Unusable subtitles: disallowed or translated caption endpoint');
-            endpoint.searchParams.set('fmt', 'srv3');
-            const response = await fetcher(endpoint.href, {credentials: 'include', redirect: 'error', signal: AbortSignal.timeout(10000)});
-            if (!response.ok) fail(`Unusable subtitles: HTTP ${response.status}`);
-            const body = transcript(document, await response.text());
-            const source = track.kind === 'asr' ? 'automatic' : 'human';
-            const provenance = {platform: 'youtube', target: id, language: track.languageCode, source, evidence: 'original-audio-asr-association'};
-            return `<!-- rlss-video-v1 ${JSON.stringify(provenance)} -->\n\nSubtitle language: ${track.languageCode}\nSubtitle source: ${source}\n\n${body}`;
+            let candidates = initial.candidates;
+            if (client) {
+                const response = await fetcher('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include', redirect: 'error',
+                    signal: AbortSignal.timeout(10000), body: JSON.stringify({context: {client}, videoId: id})
+                });
+                if (!response.ok) fail(`Unavailable subtitles: native player HTTP ${response.status}`);
+                const data = await response.json();
+                if (data?.playabilityStatus?.status !== 'OK') fail('Unavailable subtitles: native player not playable');
+                const refreshed = youtubeCandidates(data, id);
+                if (family(refreshed.originalLanguage) !== family(initial.originalLanguage)) fail('Unverified original language: refreshed player conflicts with inline evidence');
+                candidates = refreshed.candidates;
+            }
+            for (const track of candidates) {
+                try {
+                    const endpoint = new URL(track.baseUrl);
+                    if (endpoint.protocol !== 'https:' || !['www.youtube.com', 'youtube.com'].includes(endpoint.hostname)
+                        || endpoint.pathname !== '/api/timedtext' || endpoint.searchParams.has('tlang') || endpoint.searchParams.get('v') !== id) fail('Unusable subtitles: disallowed or translated caption endpoint');
+                    endpoint.searchParams.set('fmt', 'srv3');
+                    const response = await fetcher(endpoint.href, {credentials: 'include', redirect: 'error', signal: AbortSignal.timeout(10000)});
+                    if (!response.ok) fail(`Unusable subtitles: HTTP ${response.status}`);
+                    const body = transcript(await response.text());
+                    const source = track.kind === 'asr' ? 'automatic' : 'human';
+                    const provenance = {platform: 'youtube', target: id, language: track.languageCode, source, evidence: 'original-audio-asr-association'};
+                    return `<!-- rlss-video-v1 ${JSON.stringify(provenance)} -->\n\nSubtitle language: ${track.languageCode}\nSubtitle source: ${source}\n\n${body}`;
+                } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+            }
         } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
     }
     fail(`Unusable original-language subtitles: ${errors.join('; ') || 'no eligible tracks'}`);
