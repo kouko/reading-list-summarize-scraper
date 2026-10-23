@@ -859,6 +859,799 @@
       }
     ]
   },
+  "current_validation": {
+    "validated_at": "2026-10-24 Asia/Taipei",
+    "code_commit": "62c4765c7c670530356403f201b7b70af455896e",
+    "corpus": {
+      "articles": 12,
+      "distinct_site_groups": 10,
+      "source_pages": 34
+    },
+    "configuration": {
+      "timeout": "30s",
+      "headed_timeout": "60s",
+      "wait_after_load": "2s",
+      "headed_on_block": false,
+      "max_pages": 10,
+      "fresh_per_case_profiles": true,
+      "summarization": false,
+      "reading_list_sources": false,
+      "copy_to": false
+    },
+    "cases": [
+      {
+        "id": "pcuser",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096.html",
+        "next_page_selector": "link[rel=next]",
+        "observed_source_pages": 5,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 24.58,
+          "content_file": "pcuser/output/www_itmedia_co_jp/2026-10-24__cc2789cc__content.md",
+          "content_bytes": 79365,
+          "content_sha256": "90da7a59dc1b5e31554f3476743fe7b38013365cb7ce505ec06ebfb4d42a9456"
+        },
+        "body_check": {
+          "method": "Independent live HTML cmsBodyMainStart..End p/h2/h3 blocks longer than 35 characters",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096.html",
+              "paragraphs_checked": 13,
+              "paragraphs_present": 13
+            },
+            {
+              "page": 2,
+              "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_2.html",
+              "paragraphs_checked": 9,
+              "paragraphs_present": 9
+            },
+            {
+              "page": 3,
+              "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_3.html",
+              "paragraphs_checked": 12,
+              "paragraphs_present": 12
+            },
+            {
+              "page": 4,
+              "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_4.html",
+              "paragraphs_checked": 9,
+              "paragraphs_present": 9
+            },
+            {
+              "page": 5,
+              "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_5.html",
+              "paragraphs_checked": 18,
+              "paragraphs_present": 18
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "1441ea7c610b8df428573a3b13a187dd77a11529f349e312a0fa4eadb2623da6",
+              "occurrences": 1,
+              "normalized_offset": 1652
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "b90d0a1d00ad808b487620d56fe8519ecd36c2455374ecaa6b0a81e4c2d0bfce",
+              "occurrences": 1,
+              "normalized_offset": 7185
+            },
+            {
+              "page": 3,
+              "anchor_sha256": "a1812ce7d7372de4a207a4118900fc25a4d3a46963584e14afbc91a166a878de",
+              "occurrences": 1,
+              "normalized_offset": 10751
+            },
+            {
+              "page": 4,
+              "anchor_sha256": "a9bf71c5a7e097ecea795cefa2bd4e0d5c69b7a0a1b7f93c34155e67df7a2c2f",
+              "occurrences": 1,
+              "normalized_offset": 16980
+            },
+            {
+              "page": 5,
+              "anchor_sha256": "caf28ba397790336400336cfdd536b2dc42c2da96774bd626f7834a43144ab58",
+              "occurrences": 1,
+              "normalized_offset": 22612
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "president",
+        "url": "https://president.jp/articles/-/120600",
+        "next_page_selector": "a.next",
+        "observed_source_pages": 6,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 26.18,
+          "content_file": "president/output/president_jp/2026-10-24__32d9a0b8__content.md",
+          "content_bytes": 22367,
+          "content_sha256": "3c648689a243b594495107c3f3fa71a844a9e86e7641c8f8cd3cfc432f85efb4"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://president.jp/articles/-/120600",
+              "paragraphs_checked": 6,
+              "paragraphs_present": 6
+            },
+            {
+              "page": 2,
+              "url": "https://president.jp/articles/-/120600?page=2",
+              "paragraphs_checked": 7,
+              "paragraphs_present": 7
+            },
+            {
+              "page": 3,
+              "url": "https://president.jp/articles/-/120600?page=3",
+              "paragraphs_checked": 6,
+              "paragraphs_present": 6
+            },
+            {
+              "page": 4,
+              "url": "https://president.jp/articles/-/120600?page=4",
+              "paragraphs_checked": 6,
+              "paragraphs_present": 6
+            },
+            {
+              "page": 5,
+              "url": "https://president.jp/articles/-/120600?page=5",
+              "paragraphs_checked": 6,
+              "paragraphs_present": 6
+            },
+            {
+              "page": 6,
+              "url": "https://president.jp/articles/-/120600?page=6",
+              "paragraphs_checked": 7,
+              "paragraphs_present": 7
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "f32178f6cf9f758482e203bcacb8dcee6554f25884b46c2bb3f4aa52738bef58",
+              "occurrences": 1,
+              "normalized_offset": 195
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "0d8d2a7fe1e2168e902c03f8a27f6e5b32a0cceaa064b30f7717bb027866e1a9",
+              "occurrences": 1,
+              "normalized_offset": 1661
+            },
+            {
+              "page": 3,
+              "anchor_sha256": "4dca554647226aa07841755ed4669fe3f17a6299a274a2b1727016a919d4d5ed",
+              "occurrences": 1,
+              "normalized_offset": 2517
+            },
+            {
+              "page": 4,
+              "anchor_sha256": "817bf74e4ed295f956a4c1f5d574425c367501647af32e735c4331fa4589c143",
+              "occurrences": 1,
+              "normalized_offset": 3563
+            },
+            {
+              "page": 5,
+              "anchor_sha256": "dfaa5166ecdcb276555ebcc17c34cc925f445195855aaedbabb85ee6f93eedca",
+              "occurrences": 1,
+              "normalized_offset": 4749
+            },
+            {
+              "page": 6,
+              "anchor_sha256": "aa66a83fe3f71864f47c9add52f8f236726eb11a4afccfc46601550bb5220e41",
+              "occurrences": 1,
+              "normalized_offset": 6110
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "gendai",
+        "url": "https://gendai.media/articles/-/172201",
+        "next_page_selector": "a[data-testid=\"pagination-next-page-link\"]",
+        "observed_source_pages": 2,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 7.37,
+          "content_file": "gendai/output/gendai_media/2026-10-24__bfc82492__content.md",
+          "content_bytes": 7121,
+          "content_sha256": "76d99892373d0a41d3b4594f09d8bd0a5687e12dd0fc6085576609373ae555f2"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://gendai.media/articles/-/172201",
+              "paragraphs_checked": 7,
+              "paragraphs_present": 7
+            },
+            {
+              "page": 2,
+              "url": "https://gendai.media/articles/-/172201?page=2",
+              "paragraphs_checked": 7,
+              "paragraphs_present": 7
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "e28b0ba2cd424993f6048f86a317e62120552d2f6e7bf5e4d78900cd843504be",
+              "occurrences": 1,
+              "normalized_offset": 194
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "7bbba3a27d16ef312eb6e86a7948564060d04d0bd068b287607c9fbf69cb79d5",
+              "occurrences": 1,
+              "normalized_offset": 1432
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "bunshun",
+        "url": "https://bunshun.jp/articles/-/84967",
+        "next_page_selector": "a.goto-next",
+        "observed_source_pages": 2,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 11.64,
+          "content_file": "bunshun/output/bunshun_jp/2026-10-24__e61586b6__content.md",
+          "content_bytes": 8283,
+          "content_sha256": "eb378e082ad6adb2586c2009709e31e04d67426ee67ec5f5f6e62d85cc588494"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://bunshun.jp/articles/-/84967",
+              "paragraphs_checked": 6,
+              "paragraphs_present": 6
+            },
+            {
+              "page": 2,
+              "url": "https://bunshun.jp/articles/-/84967?page=2",
+              "paragraphs_checked": 8,
+              "paragraphs_present": 8
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "e1d4b69cf61173c52903a4477ff32d2b037592d272f17d371e003ff8d91aa892",
+              "occurrences": 1,
+              "normalized_offset": 189
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "c7383c905ee3fff6d6b095706481095adec659a21df7f214538941196c765d4a",
+              "occurrences": 1,
+              "normalized_offset": 1419
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "jbpress",
+        "url": "https://jbpress.ismedia.jp/articles/-/97650",
+        "next_page_selector": "link[rel=next]",
+        "observed_source_pages": 2,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 6.15,
+          "content_file": "jbpress/output/jbpress_ismedia_jp/2026-10-24__e4b70962__content.md",
+          "content_bytes": 6713,
+          "content_sha256": "9dfdcbcfb6fd85dfdedb8aa7ac238bcfb2d364a17424f6e578651c72739233df"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://jbpress.ismedia.jp/articles/-/97650",
+              "paragraphs_checked": 12,
+              "paragraphs_present": 12
+            },
+            {
+              "page": 2,
+              "url": "https://jbpress.ismedia.jp/articles/-/97650?page=2",
+              "paragraphs_checked": 9,
+              "paragraphs_present": 9
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "e574bdb420b72615fad4c95ccec9f28ad2c2da7e039c0c8e5d0f2c58d625506c",
+              "occurrences": 1,
+              "normalized_offset": 385
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "744388e1d948d01e5ee35e5eb487c5faa48174d05a90d9dadaf5c46baf53617a",
+              "occurrences": 1,
+              "normalized_offset": 1631
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "toyokeizai",
+        "url": "https://toyokeizai.net/articles/-/859253?display=b",
+        "next_page_selector": "a.lead-heading__link",
+        "observed_source_pages": 3,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 13.18,
+          "content_file": "toyokeizai/output/toyokeizai_net/2026-10-24__40fbf3f3__content.md",
+          "content_bytes": 8152,
+          "content_sha256": "ae8c01e8b3a4f41d5f6156da6232305acc9e16159c306708b66957d0cc2a0955"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://toyokeizai.net/articles/-/859253?display=b",
+              "paragraphs_checked": 6,
+              "paragraphs_present": 6
+            },
+            {
+              "page": 2,
+              "url": "https://toyokeizai.net/articles/-/859253?page=2",
+              "paragraphs_checked": 8,
+              "paragraphs_present": 8
+            },
+            {
+              "page": 3,
+              "url": "https://toyokeizai.net/articles/-/859253?page=3",
+              "paragraphs_checked": 8,
+              "paragraphs_present": 8
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "da34f44995ba422aac5179b246e7f9df7efd5bde32787e65e8953fddcbe8e5e8",
+              "occurrences": 1,
+              "normalized_offset": 324
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "356c9f4df8157d2a357b14c81691362cd8f7ddfce69a0ee96fd47231a8ca004c",
+              "occurrences": 1,
+              "normalized_offset": 1018
+            },
+            {
+              "page": 3,
+              "anchor_sha256": "ffc29a6f917f64f9928ff3a828550bfb519c60f811175d2a57b171f3864c59ff",
+              "occurrences": 1,
+              "normalized_offset": 1964
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "yahoo",
+        "url": "https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129",
+        "next_page_selector": "a[data-cl-params*=\"_cl_link:next;\"]",
+        "observed_source_pages": 2,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 6.89,
+          "content_file": "yahoo/output/news_yahoo_co_jp/2026-10-24__2fd9b136__content.md",
+          "content_bytes": 6272,
+          "content_sha256": "2709aaa30a30718d58635c5ae63290855ed484ed1311baca10fba47b872bb7f2"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129",
+              "paragraphs_checked": 4,
+              "paragraphs_present": 4
+            },
+            {
+              "page": 2,
+              "url": "https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129?page=2",
+              "paragraphs_checked": 1,
+              "paragraphs_present": 1
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "cef2513b63ca9d726dfed4e3c4d5b5153737e1fa0fce769be9c014295cdba441",
+              "occurrences": 1,
+              "normalized_offset": 477
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "53a2134ed61ecb377bb32c8644c510d594d2c6dfcc652a1e2c2e786878278199",
+              "occurrences": 1,
+              "normalized_offset": 1512
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "itmedia-business",
+        "url": "https://www.itmedia.co.jp/business/articles/2610/23/news006.html",
+        "next_page_selector": "link[rel~=next]",
+        "observed_source_pages": 3,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 10.77,
+          "content_file": "itmedia-business/output/www_itmedia_co_jp/2026-10-24__08e3192b__content.md",
+          "content_bytes": 70668,
+          "content_sha256": "dac072f98ab942e1664449532c4df1a79f81759cf7e93c1cea265be8a2b664b8"
+        },
+        "body_check": {
+          "method": "Independent live HTML cmsBodyMainStart..End p/h2/h3 blocks longer than 35 characters",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://www.itmedia.co.jp/business/articles/2610/23/news006.html",
+              "paragraphs_checked": 10,
+              "paragraphs_present": 10
+            },
+            {
+              "page": 2,
+              "url": "https://www.itmedia.co.jp/business/articles/2610/23/news006_2.html",
+              "paragraphs_checked": 10,
+              "paragraphs_present": 10
+            },
+            {
+              "page": 3,
+              "url": "https://www.itmedia.co.jp/business/articles/2610/23/news006_3.html",
+              "paragraphs_checked": 12,
+              "paragraphs_present": 12
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "59053c6c394510fd49bdbd1b065b53b5bac0976a7629dcf5ce19edb715e1d67c",
+              "occurrences": 1,
+              "normalized_offset": 2181
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "d265bc3a2455bf0980bd56376831c09fe0f9c59e7aca07a1edc911fad2d97124",
+              "occurrences": 1,
+              "normalized_offset": 16244
+            },
+            {
+              "page": 3,
+              "anchor_sha256": "12b958715113df0dcec6c1ab8c3f704743179e5289c887d6d0916b41bbd4e948",
+              "occurrences": 1,
+              "normalized_offset": 31189
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "itmedia-mobile",
+        "url": "https://www.itmedia.co.jp/mobile/articles/2610/23/news053.html",
+        "next_page_selector": "link[rel~=next]",
+        "observed_source_pages": 3,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 9.35,
+          "content_file": "itmedia-mobile/output/www_itmedia_co_jp/2026-10-24__3b458bda__content.md",
+          "content_bytes": 34542,
+          "content_sha256": "fbb39c0196aa51ca50d9f7b6950e2a6604813b2d84c8556e4ebe600d86587e9b"
+        },
+        "body_check": {
+          "method": "Independent live HTML cmsBodyMainStart..End p/h2/h3 blocks longer than 35 characters",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://www.itmedia.co.jp/mobile/articles/2610/23/news053.html",
+              "paragraphs_checked": 2,
+              "paragraphs_present": 2
+            },
+            {
+              "page": 2,
+              "url": "https://www.itmedia.co.jp/mobile/articles/2610/23/news053_2.html",
+              "paragraphs_checked": 3,
+              "paragraphs_present": 3
+            },
+            {
+              "page": 3,
+              "url": "https://www.itmedia.co.jp/mobile/articles/2610/23/news053_3.html",
+              "paragraphs_checked": 5,
+              "paragraphs_present": 5
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "618ad62e5f45fe46b3851b00d7648e177d9004aa72f5c19652ad46196e1f4df4",
+              "occurrences": 1,
+              "normalized_offset": 1119
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "f534f4628c74155a0e9e9a44e4ea5f7670cc949489da4ac55b24f89aadfc18e4",
+              "occurrences": 1,
+              "normalized_offset": 4638
+            },
+            {
+              "page": 3,
+              "anchor_sha256": "aef55f51863b3b6a903dbd46d6c8f6f78dbdd4112049925ce66b982e6df139fa",
+              "occurrences": 1,
+              "normalized_offset": 9070
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "ascii",
+        "url": "https://ascii.jp/elem/000/004/431/4431424/",
+        "next_page_selector": "link[rel~=next]",
+        "observed_source_pages": 2,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 6.86,
+          "content_file": "ascii/output/ascii_jp/2026-10-24__9797cf49__content.md",
+          "content_bytes": 22033,
+          "content_sha256": "ed3fa842ee775e44ee0a2bd71a179283747ac23bb8d6d4f292ffef6ba7968d50"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://ascii.jp/elem/000/004/431/4431424/",
+              "paragraphs_checked": 16,
+              "paragraphs_present": 16
+            },
+            {
+              "page": 2,
+              "url": "https://ascii.jp/elem/000/004/431/4431424/2/",
+              "paragraphs_checked": 18,
+              "paragraphs_present": 18
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "181445ec5cd902a0233e94a73e753b39465d904e944194e4dc8020eabcd95318",
+              "occurrences": 1,
+              "normalized_offset": 356
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "36322cf326e8af24422decebfe8c41106d1c01558aa0a1e35d4b5f190dd2030e",
+              "occurrences": 1,
+              "normalized_offset": 3899
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "mynavi",
+        "url": "https://news.mynavi.jp/article/20160130-businessnote/",
+        "next_page_selector": "link[rel~=next]",
+        "observed_source_pages": 2,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 6.71,
+          "content_file": "mynavi/output/news_mynavi_jp/2026-10-24__0598f9b7__content.md",
+          "content_bytes": 13076,
+          "content_sha256": "cc7c37bb896861a50f0448f1d9569ef6a89e81a2df02caf3c6ebacadd1eb81e1"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://news.mynavi.jp/article/20160130-businessnote/",
+              "paragraphs_checked": 11,
+              "paragraphs_present": 11
+            },
+            {
+              "page": 2,
+              "url": "https://news.mynavi.jp/article/20160130-businessnote/2",
+              "paragraphs_checked": 16,
+              "paragraphs_present": 16
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "63acfeecc010d76770c5096a4eb06f8a1d1cae6268ed6a32eb247bb90cae0569",
+              "occurrences": 1,
+              "normalized_offset": 251
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "acfee148f97f160cc2013a2f3d051c78ad07bf3a13c18a5f67b1d3abd5d94711",
+              "occurrences": 1,
+              "normalized_offset": 2020
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      },
+      {
+        "id": "nikkan",
+        "url": "https://www.nikkan-gendai.com/articles/view/money/394477",
+        "next_page_selector": "link[rel~=next]",
+        "observed_source_pages": 2,
+        "cli": {
+          "exit_code": 0,
+          "elapsed_seconds": 13.31,
+          "content_file": "nikkan/output/www_nikkan-gendai_com/2026-10-24__3a768c97__content.md",
+          "content_bytes": 21396,
+          "content_sha256": "7d9335fb8252f6807ce27e65c60ab64a8414fe092a3e7970d2bff7414564ab25"
+        },
+        "body_check": {
+          "method": "Earlier per-page DOM/Defuddle Markdown prose blocks with at least 60 normalized characters; images, HTML, tables, headings and lists excluded",
+          "pages": [
+            {
+              "page": 1,
+              "url": "https://www.nikkan-gendai.com/articles/view/money/394477",
+              "paragraphs_checked": 1,
+              "paragraphs_present": 1
+            },
+            {
+              "page": 2,
+              "url": "https://www.nikkan-gendai.com/articles/view/money/394477/2",
+              "paragraphs_checked": 1,
+              "paragraphs_present": 1
+            }
+          ],
+          "page_anchors": [
+            {
+              "page": 1,
+              "anchor_sha256": "8c4d1981733ea964e30b16d84fed9e9db19693f796e6958a832718f5fe769829",
+              "occurrences": 1,
+              "normalized_offset": 416
+            },
+            {
+              "page": 2,
+              "anchor_sha256": "9c9927c2ccd502d3e99a8b23d264e3c8644bc4011537c7dc7d21d04708c1256d",
+              "occurrences": 1,
+              "normalized_offset": 2993
+            }
+          ],
+          "page_anchors_in_order_once": true
+        },
+        "outcome": "PASS"
+      }
+    ],
+    "negative_cases": [
+      {
+        "id": "pcuser-cap1",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096.html",
+        "max_pages": 1,
+        "next_page_selector": "link[rel=next]",
+        "exit_code": 1,
+        "elapsed_seconds": 7.5,
+        "content_files": 0,
+        "reason": "Continuation beyond maxPages 1",
+        "outcome": "PASS"
+      },
+      {
+        "id": "pcuser-missing-selector",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096.html",
+        "max_pages": 10,
+        "next_page_selector": "a.nonexistent-pagination-w3",
+        "exit_code": 1,
+        "elapsed_seconds": 6.65,
+        "content_files": 0,
+        "reason": "Configured next link missing with standard next hint",
+        "outcome": "PASS"
+      }
+    ],
+    "limits": [
+      "PASS means the stated sampled or thresholded prose and page-order checks passed, not exhaustive identity of every source element.",
+      "All three ITmedia sections count as one site group; Yahoo is a distribution site, so site groups are not a count of independent original publishers.",
+      "No automatic pagination discovery: missing selector without standard next hint can remain indistinguishable from a terminal page.",
+      "Live content, ads, recommendations and access restrictions can change. Raw documents and browser profiles remain temporary and are not committed."
+    ],
+    "actual_cli_runs": 18,
+    "historical_actual_cli_runs": 18,
+    "cumulative_actual_cli_runs": 36,
+    "later_page_entries": [
+      {
+        "id": "itmedia-page3",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_3.html",
+        "exit_code": 1,
+        "elapsed_seconds": 6.67,
+        "content_files": 0,
+        "summary_files": 0,
+        "cli_stats": {
+          "success": 0,
+          "partial": 0,
+          "failed": 1
+        },
+        "reason": "Initial page advertises an earlier page",
+        "outcome": "PASS",
+        "resolves_historical_case": "itmedia-page3"
+      },
+      {
+        "id": "itmedia-page5",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_5.html",
+        "exit_code": 1,
+        "elapsed_seconds": 6.35,
+        "content_files": 0,
+        "summary_files": 0,
+        "cli_stats": {
+          "success": 0,
+          "partial": 0,
+          "failed": 1
+        },
+        "reason": "Initial page advertises an earlier page",
+        "outcome": "PASS",
+        "resolves_historical_case": "itmedia-page5"
+      },
+      {
+        "id": "president-page3",
+        "url": "https://president.jp/articles/-/120600?page=3",
+        "exit_code": 1,
+        "elapsed_seconds": 11.73,
+        "content_files": 0,
+        "summary_files": 0,
+        "cli_stats": {
+          "success": 0,
+          "partial": 0,
+          "failed": 1
+        },
+        "reason": "Initial page links to a lower article page",
+        "outcome": "PASS",
+        "resolves_historical_case": "president-page3"
+      },
+      {
+        "id": "yahoo-page2",
+        "url": "https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129?page=2",
+        "exit_code": 1,
+        "elapsed_seconds": 9.56,
+        "content_files": 0,
+        "summary_files": 0,
+        "cli_stats": {
+          "success": 0,
+          "partial": 0,
+          "failed": 1
+        },
+        "reason": "Initial page links to a lower article page",
+        "outcome": "PASS",
+        "resolves_historical_case": "yahoo-page2"
+      }
+    ]
+  },
   "limits": [
     "PASS means the stated sampled or thresholded prose and page-order checks passed, not exhaustive identity of every source element.",
     "All three ITmedia sections count as one site group; Yahoo is a distribution site, so site groups are not a count of independent original publishers.",

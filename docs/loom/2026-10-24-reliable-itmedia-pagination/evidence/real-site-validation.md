@@ -1,6 +1,6 @@
 # Real Japanese news pagination validation
 
-Validated on 2026-10-24 (Asia/Taipei), using code commit `07bf97e59b93899fb50030bd98617b74291ef8c4`. The twelve first-page CLI runs passed the stated body and page-order checks, and two intentional incomplete-pagination runs failed with exit code 1 and saved no content. Four subsequent non-first-page runs exposed an unresolved correctness defect: incomplete articles were saved and reported successful. The first-page results do not establish correct handling of arbitrary entry pages.
+Latest validation on 2026-10-24 (Asia/Taipei), using code commit `62c4765c7c670530356403f201b7b70af455896e`: twelve first-page articles passed body and ordering checks; two incomplete controls and all four later-page entries exited 1 without content or summaries. The historical runs below at `07bf97e59b93899fb50030bd98617b74291ef8c4` preserve the original later-page false-success defect. The final section records its resolved behavior; neither run set guarantees detection of every arbitrary entry page.
 
 The corpus contains twelve articles, ten distinct site groups and 34 observed source pages. ITmedia PC USER, Business and Mobile count as one group. Yahoo is a distribution site; ten site groups does not mean ten independent original publishers. Public article URLs, selectors, per-page counts, output hashes and individual results are in [news-pagination-cases.json](news-pagination-cases.json).
 
@@ -50,9 +50,9 @@ Both controls used fresh isolated profiles and outputs. Logs identify the cap or
 
 A missing configured selector without an independent standard next-link hint remains indistinguishable from a terminal page. No automatic pagination discovery is claimed. The controlled version of that limitation belongs to the package-level verification; this report does not present it as a successful real-site detection. Live pages, extraction noise and access controls can change after this observation. Full package tests, adversarial checks and closing review are separate evidence.
 
-## Unresolved finding: entry URL is not the first page
+## Historical failure at 07bf97e: entry URL is not the first page
 
-After the user asked about starting from a later page, four additional actual CLI runs at the same code revision reproduced false completion. Every run exited 0, reported Success 1 / Partial 0 / Failed 0, and wrote one content file despite missing earlier target-body pages. This violates the confirmed requirement to avoid presenting known incomplete extraction as success; it is an unresolved correctness failure requiring a fix, not acceptable unsupported behavior.
+After the user asked about starting from a later page, four additional actual CLI runs at that code revision reproduced false completion. Every run exited 0, reported Success 1 / Partial 0 / Failed 0, and wrote one content file despite missing earlier target-body pages. This violated the confirmed requirement to avoid presenting known incomplete extraction as success and was recorded as an unresolved correctness failure before the subsequent fix. The historical FAIL results below remain unchanged; current resolution is recorded separately.
 
 | Entry URL | Seconds | Target prose saved from pages | Missing pages | Outcome |
 | --- | ---: | --- | --- | --- |
@@ -61,6 +61,42 @@ After the user asked about starting from a later page, four additional actual CL
 | [PRESIDENT page 3](https://president.jp/articles/-/120600?page=3) | 20.54 | 3–6 | 1–2 | FAIL, unresolved |
 | [Yahoo page 2](https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129?page=2) | 4.67 | 2 | 1 | FAIL, unresolved |
 
-These are additional entry URLs for existing corpus articles, not four new articles or publishers. Total actual CLI runs are now eighteen: twelve first-page corpus runs, two intentional incomplete controls and four failing later-page entries. The earlier twelve PASS results remain valid within their stated first-page coverage.
+These are additional entry URLs for existing corpus articles, not four new articles or publishers. That historical run set contained eighteen actual CLI runs: twelve first-page corpus runs, two intentional incomplete controls and four failing later-page entries. The earlier twelve PASS results remain valid within their stated first-page coverage.
 
 The additional runs used isolated configs and outputs under `/private/tmp/rlss-pagination-fix/nonfirst/<case>/`, following the same `--config ... --no-summary url <public-url>` command pattern. Their `cli.log`, `result.json` and `output/` artifacts were inspected, and per-page qualifying target-prose comparisons confirmed the saved and missing page ranges above. Source pages and raw article content remain temporary; the JSON records sanitized results and content hashes. No automatic navigation back to page one has been added. This finding records the pre-fix behavior before independent adversarial review; no production code, tests or acceptance scope changed in this evidence update.
+
+## Current verification at 62c4765
+
+After the later-page fix, all eighteen cases were rerun with a new binary and fresh per-case profiles, configs and outputs. Historical logs and failing outputs were preserved. Twelve first-page articles across the same ten site groups still passed: 280/280 qualifying target-body blocks and all 34 unique page anchors matched in source order. This specifically checks that detection of earlier pages did not reject the working first-page corpus.
+
+| Case | Source pages | CLI exit | Seconds | Body blocks present / checked | Outcome |
+| --- | ---: | ---: | ---: | ---: | --- |
+| pcuser | 5 | 0 | 24.58 | 61 / 61 | PASS |
+| president | 6 | 0 | 26.18 | 38 / 38 | PASS |
+| gendai | 2 | 0 | 7.37 | 14 / 14 | PASS |
+| bunshun | 2 | 0 | 11.64 | 14 / 14 | PASS |
+| jbpress | 2 | 0 | 6.15 | 21 / 21 | PASS |
+| toyokeizai | 3 | 0 | 13.18 | 22 / 22 | PASS |
+| yahoo | 2 | 0 | 6.89 | 5 / 5 | PASS |
+| itmedia-business | 3 | 0 | 10.77 | 32 / 32 | PASS |
+| itmedia-mobile | 3 | 0 | 9.35 | 10 / 10 | PASS |
+| ascii | 2 | 0 | 6.86 | 34 / 34 | PASS |
+| mynavi | 2 | 0 | 6.71 | 27 / 27 | PASS |
+| nikkan | 2 | 0 | 13.31 | 2 / 2 | PASS |
+
+The same prior per-page observations and normalization rules were used. For ITmedia, all eleven target HTML pages were independently fetched again and compared using the same target-body boundary parser: PC USER 61/61, Business 32/32 and Mobile 10/10. Other sites retained the earlier independent per-page prose comparisons. Current output hashes, per-page counts, unique anchor hashes and offsets are in the JSON's `current_validation` section. Broad snapshot differences remain confined to non-target page furniture, including pagination navigation, ads, recommendations and comment prompts; the target-body check did not waive missing article prose.
+
+| Current incomplete control | CLI exit | Seconds | Content / summaries saved | Outcome |
+| --- | ---: | ---: | --- | --- |
+| ITmedia cap1 | 1 | 7.50 | 0 / 0 | PASS |
+| ITmedia missing selector with standard next hint | 1 | 6.65 | 0 / 0 | PASS |
+| ITmedia page 3 | 1 | 6.67 | 0 / 0 | PASS; historical false success resolved |
+| ITmedia page 5 | 1 | 6.35 | 0 / 0 | PASS; historical false success resolved |
+| PRESIDENT page 3 | 1 | 11.73 | 0 / 0 | PASS; historical false success resolved |
+| Yahoo page 2 | 1 | 9.56 | 0 / 0 | PASS; historical false success resolved |
+
+All four later-page logs report Success 0 / Partial 0 / Failed 1. ITmedia rejects an initial page advertising an earlier page; PRESIDENT and Yahoo reject an initial page linking to a lower article page. Existing generic headed retry ran and retained the failure; no partial body or summary was saved. Rejection is the verified outcome: the tool does not automatically return to page one. A later-page entry without recognizable earlier-page evidence remains outside this demonstrated detection coverage.
+
+Actual commands were `go build -o /private/tmp/rlss-pagination-fix/rlss-w3-final ./cmd/rlss` and `/private/tmp/rlss-pagination-fix/rlss-w3-final --config /private/tmp/rlss-pagination-fix/w3-final/<case>/config.yaml --no-summary url <public-url>`. The same 30s/60s timeouts, 2s wait, `headed_on_block: false`, per-domain selectors, disabled reading-list/RSS/copy sources and max-pages settings were retained. Temporary helpers `run-w3-final.py`, `check-w3-final.py`, `check-itmedia-final.py` and `prepare-evidence-final.py` produced the current observations and checks. Logs, `run.json` and raw outputs remain under the fresh temporary case directories. Output-directory inspection found no files for the six rejected controls.
+
+There are eighteen current CLI runs and eighteen historical runs, thirty-six in total. They cover the same twelve articles and ten site groups, not additional publishers. This evidence-only update changes no production code or tests; the stated threshold, live-access and missing-hint limitations still apply.
