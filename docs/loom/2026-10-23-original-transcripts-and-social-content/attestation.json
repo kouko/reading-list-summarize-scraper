@@ -1,7 +1,7 @@
 {
   "schema": "loom-attestation/v2",
   "change_id": "2026-10-23-original-transcripts-and-social-content",
-  "content_digest": "adb780780efc4f0b33b5dfebd30504e06e7ec30b",
+  "content_digest": "9eef6c0d8f94d6a979c3659f7ec0dae7ad9a371f",
   "executions": [
     {
       "kind": "package-tests",
@@ -22,49 +22,75 @@
   ],
   "verdicts": [
     {
-      "reviewer": "original_closing_code",
+      "reviewer": "youtube_scope_code_review",
       "vendor": "codex",
       "model": "inherited",
       "lens": "code",
       "verdict": "PASS_WITH_NOTES",
       "reviewed_sha": "412deb870e5975a16e238075d48c26242700c8d8",
-      "review_target_sha": "398f4c2d294c90e0c8fadb97d12063fadce77d39",
+      "review_target_sha": "3ab5380ffd2d30727158bf4b9213eed748103ba4",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS_WITH_NOTES",
+        "naming": "PASS",
+        "tests": "PASS_WITH_NOTES",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md exists",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
       "findings": [
         {
           "severity": "important",
-          "dimension": "cross-task-coherence",
-          "anchor": "extraction.ts:236",
-          "text": "issue (blocking): Bilibili is unconditionally rejected while the retained specification promises initial support and a successful video flow.",
-          "fix": "Implement grounded original-language support and independent success evidence, or explicitly renegotiate the named-platform scope with the user."
+          "dimension": "tests",
+          "anchor": "docs/loom/2026-10-23-original-transcripts-and-social-content/evidence/acceptance-test-evidence.md:1258",
+          "text": "issue (non-blocking): X target extraction passes controlled entry tests, but successful extraction through the actual CLI remains independently unwitnessed. Acceptance 2 therefore remains partly verified; the observed access failures do not establish a code defect.",
+          "fix": "Independently process one legitimately accessible X target through the existing CLI, verify that the saved body belongs to that target and excludes replies or previews, and record the result in the existing acceptance evidence and report."
         }
       ],
       "notes": [
-        "The prior fatal X truncation finding is fixed; 13 ordinary JavaScript tests passed. No fix-induced regression found.",
-        "Bilibili remains important and unfixed. X live success remains unverified.",
-        "Terminal review confirmed the Go bridge executes unchanged earned regressions; Bilibili remains unfixed."
+        "Ran node --test extraction.test.mjs: 13 passed, none skipped. Focused Go pipeline extraction, resume and wall tests passed using a writable temporary Go cache.",
+        "Read historical RED evidence and the handed current-target probe output: both earned regressions executed and passed. Did not rerun the probe or complete suites.",
+        "Bilibili’s former mismatch is resolved by explicit user-confirmed YouTube-only scope. Historical Medium success and later Cloudflare failures remain distinct; the existing attestation requires publication-metadata regeneration."
       ]
     },
     {
-      "reviewer": "original_closing_spec",
+      "reviewer": "youtube_scope_spec_review",
       "vendor": "codex",
       "model": "inherited",
       "lens": "spec+adversarial",
       "verdict": "PASS_WITH_NOTES",
       "reviewed_sha": "412deb870e5975a16e238075d48c26242700c8d8",
-      "review_target_sha": "398f4c2d294c90e0c8fadb97d12063fadce77d39",
+      "review_target_sha": "3ab5380ffd2d30727158bf4b9213eed748103ba4",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS_WITH_NOTES",
+        "design-conformance": "N/A — no DESIGN.md exists; applicable spec UI flows were reviewed.",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
       "findings": [
         {
           "severity": "important",
-          "dimension": "inconsistency",
-          "anchor": "extraction.ts:236",
-          "text": "issue (blocking): Bilibili still has no successful transcript path, contradicting the retained initial support promise.",
-          "fix": "Implement grounded original-language verification and a successful transcript path, or obtain explicit user agreement to remove Bilibili from initial support and reconcile the artifacts."
+          "dimension": "spec-conformance",
+          "anchor": "docs/loom/2026-10-23-original-transcripts-and-social-content/evidence/acceptance-test-evidence.md:1258",
+          "text": "issue (verification): Acceptance 2 retains X/Twitter target-body extraction, but independent live CLI success and correct saved-body evidence remain absent. Controlled positive tests pass; the observed live access failure does not establish an implementation defect.",
+          "fix": "Independently process a legitimately accessible X target through the existing CLI using isolated output and authorized access; record exit status, saved target-body correctness, and exclusion of replies/navigation, then update the acceptance evidence and report."
         }
       ],
       "notes": [
-        "The prior fatal X preview finding is fixed; both focused fix tests passed.",
-        "Independent CLI evidence verifies the configured challenge retry distinction. Bilibili remains unfixed.",
-        "Terminal review confirmed the Go bridge executes unchanged earned regressions; Bilibili remains unfixed."
+        "The explicit user confirmation “好 先只做 youtube” resolves the former Bilibili contradiction by revised scope. Threads, Medium and X/Twitter remain required; historical findings are clearly distinguished from current findings.",
+        "Ran node --test extraction.test.mjs: 13 passed, zero failed or skipped. Its ordinary-article fixture emitted the documented upstream Invalid URL warning while passing its substantive-content assertion.",
+        "Judged the handed target-SHA raw JSON: TestExtractionBoundaries actually executed both earned JavaScript cases and passed. No probe or complete suite was rerun. Existing publication attestation metadata still requires regeneration by finalization."
       ]
     }
   ],
