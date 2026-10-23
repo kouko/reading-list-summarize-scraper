@@ -777,3 +777,206 @@ No complete Go/npm package suite or workflow-helper test was run by this tester.
 
 Commit classification: routine acceptance rerun with corrected observations; no product implementation or new product design decision. Exact final commit-message deterministic privacy scan is required, and no ambiguous private-party text requires a semantic judge.
 
+
+## Re-run on 2026-10-23, at 595326adefaa8669732ebda43bc09eb35b76aaa5
+
+Fix range checked in full: `515086f..595326a`. Only `extraction.ts` X branch, its test, generated bundle, and plan changed. The X branch now rejects an explicit show-more marker owned by the target post or long article; its cloned own-body filter removes quoted/nested posts before this check. Threads, Medium, all video functions, Go CLI/pipeline, settings and cache/watch/skip code are unchanged. The carried-over rows below were checked against that diff, not inferred from commit title.
+
+### Clean setup and bounds
+
+- New clean worktree: `git worktree add /private/tmp/rlss-original-acceptance-w4 595326adefaa8669732ebda43bc09eb35b76aaa5`.
+- README quick Go build: `GOCACHE=/private/tmp/rlss-go-build go build -o /private/tmp/rlss-original-w4-cli ./cmd/rlss/`. Also `npm ci --ignore-scripts` and `npm run build:defuddle`. All passed; 26 locked packages / zero npm vulnerabilities, generated bundle 784.7kb. Worktree remained clean after setup/rebuild.
+- Independent criterion commands: `node --test --test-name-pattern='A2' extraction.test.mjs` (3/3 pass), then `node --test --test-name-pattern='A3' extraction.test.mjs` (5/5 pass). Selected pipeline command `GOCACHE=/private/tmp/rlss-go-build go test ./internal/pipeline -run 'TestProcessItemWithFallback|TestExtractionRejectsObservedWalls' -v` passed.
+- Actual shipped browser bundle: `go run /private/tmp/rlss-original-browser.go > /private/tmp/rlss-original-w4-browser.log` from clean worktree. Harness still injects rebuilt bundle and invokes actual `window.extractArticle()`; only navigation/caption network resources intercepted. Added four synthetic X cases named below. All 16 cases passed.
+- Current direct CLI uses fresh `/private/tmp/rlss-original-w4-profile` and fresh output `/private/tmp/rlss-original-w4-output`, 35s browser timeouts, 2s load wait, existing headed retry, no sources or copying, always `--no-summary`. No user profiles, vault, root binary or running batches touched; no provider calls.
+- Exact command pattern: `/private/tmp/rlss-original-w4-cli url <public-url> --config /private/tmp/rlss-original-w4.yaml --no-summary`. Independently reran full real CLI for Threads `https://www.threads.com/@zuck/post/DeZtp-TkQHh`, Medium `https://ev.medium.com/welcome-to-medium-9e53ca408c48`, X `https://x.com/jack/status/20`, and ambiguous-audio YouTube `https://www.youtube.com/watch?v=rfscVS0vtbw`.
+- Threads and Medium again exit 0 and save 136 / 6825 character bodies with expected target introduction/title and no recommendation labels. No summaries saved. Public X and ambiguous-audio YouTube exit 1; zero X or failed-video output files. X failure is still an environmental/access observation, not proof of an adapter defect.
+- No full Go/npm package suite, second watch recovery cycle, private credentials or workflow-helper work was added. No skipped-by-instruction step. Full suite/finalization remains owned by primary and cannot imply acceptance while unresolved important scope remains.
+
+### Per-row rerun record
+
+- 1: carried over — full diff confirms original-language candidate evidence, native requests, cue parser and video saving unchanged; prior real YouTube success and unresolved Bilibili limitation remain.
+- 2: re-tested — actual built browser target/negative cases on all three platforms; full real CLI Threads/Medium saved bodies and X failure repeated.
+- 3: re-tested — current A3 includes native-video failures and all social rejection surfaces; current actual built browser checks post/article preview, Medium wall, wrong X, unsupported video and ambiguous language; pipeline no-write/retry criteria pass; real failed video/X saved nothing.
+- 4: carried over — strict SAX, cue validation and human/automatic candidate selection unchanged.
+- 5: carried over — video implementation, CLI, pipeline and source labels unchanged; prior direct/batch success remains.
+- 6: carried over — empty-human/native-refresh automatic fallback implementation unchanged.
+- 7: carried over — multiple original-track ordering/validation unchanged.
+- 8: re-tested — real ambiguous-language video direct CLI exit 1 with explicit original-language cause and no output.
+- 9: carried over — video unavailable/unusable checks and fallback exhaustion unchanged.
+- 10: carried over — unsupported-video branch and direct-command failure handling unchanged.
+- 11: re-tested — current real Threads/Medium exit 0 and target-body saved; X exit 1, no new body.
+- 12: re-tested — current Medium preview rejection and positive fallback, all login/challenge/retry criterion cases passed; no credential restoration attempted; remains partly.
+- 13: re-tested — current actual built browser X post/article preview errors, wrong-target X, Medium preview, Threads positive/exclusion fixtures and criterion negatives passed. Quoted/irrelevant truncation markers did not block complete target; no full three-platform negative CLI matrix, remains partly.
+- 14: carried over — progress, browser timeout and retry policy unchanged; this fix adds only extraction failures handled by the existing path.
+- 15: carried over — no Go batch/watch code or failure accounting changed; new preview errors use the previously witnessed failed-extraction path. No next-cycle recovery claim.
+- 16: carried over — pending-cache invalidation, video provenance and preserving old text on failure unchanged.
+- 17: carried over — completed-summary skip behavior unchanged.
+- 18: carried over — source selection, no-items and dry-run paths unchanged.
+
+### Explicit preview behavior observed in real Chrome
+
+- `test_bundle_x_post_preview_rejected`: substantive target post with its own `tweet-text-show-more-link` fails `Inaccessible social target: truncated post preview`.
+- `test_bundle_x_article_preview_rejected`: canonical target long article with its own marker fails `Inaccessible social target: truncated article preview`.
+- `test_bundle_x_quoted_preview_complete_target_accepted`: complete own target remains exactly `Complete own target body.`; quote's marker/body excluded.
+- `test_bundle_x_complete_article_unrelated_preview_accepted`: complete canonical long article remains exactly `Complete target article.`; unrelated post's marker does not block it.
+- These controlled page cases prove current generated-entry behavior, not current public-X availability or a witnessed full CLI preview scenario. New criterion regression asserts the exact returned text for both positives.
+
+### Current finding status
+
+- **Review's explicit-X-preview rejection issue: resolved for tested target-owned post and long-article markers**, `extraction.ts:179-195`; independently verified in current generated browser entry plus regression.
+- **important, unresolved — Bilibili scope contradiction**, `extraction.ts:236`, retained spec supported-video decision / Video success. Still unconditional rejection with no positive implementation; prior partly verdict persists. Requires grounded success implementation or explicit scope revision with user.
+- **important verification limitation — live X success**, retained spec Social success: current public target still failed; controlled X positive/negative cases pass. No claim that network/access failure is a code defect. Requires legitimate accessible-target positive CLI/save witness; A2 and Social success remain partly.
+- Earlier real YouTube success gap stays resolved by independent W3 evidence because video implementation is unchanged. Current run does not make any broader availability promise.
+- No important finding was dismissed and no acceptance/ready verdict is issued.
+
+### Captured output — actual rebuilt browser
+
+```text
+test_bundle_original_automatic_saved expected=true pass=true transport=<nil> result={"ok":true,"text":"<!-- rlss-video-v1 {\"platform\":\"youtube\",\"target\":\"abc\",\"language\":\"en\",\"source\":\"automatic\",\"evidence\":\"original-audio-asr-association\"} -->\n\nSubtitle language: en\nSubtitle source: automatic\n\nActual original spoken words."}
+test_bundle_empty_human_automatic_used expected=true pass=true transport=<nil> result={"ok":true,"text":"<!-- rlss-video-v1 {\"platform\":\"youtube\",\"target\":\"abc\",\"language\":\"en\",\"source\":\"automatic\",\"evidence\":\"original-audio-asr-association\"} -->\n\nSubtitle language: en\nSubtitle source: automatic\n\nActual original spoken words."}
+test_bundle_multiple_usable_validated expected=true pass=true transport=<nil> result={"ok":true,"text":"<!-- rlss-video-v1 {\"platform\":\"youtube\",\"target\":\"abc\",\"language\":\"en\",\"source\":\"human\",\"evidence\":\"original-audio-asr-association\"} -->\n\nSubtitle language: en\nSubtitle source: human\n\nActual original spoken words."}
+test_bundle_unknown_original_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Unverified original language: missing or conflicting original-audio automatic captions"}
+test_bundle_malformed_cues_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Unusable original-language subtitles: Unusable subtitles: malformed XML (1:44: unexpected close tag.); Unexpected token '<', \"<!doctype \"... is not valid JSON; Unexpected token '<', \"<!doctype \"... is not valid JSON"}
+test_bundle_other_video_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Unsupported video transcript extraction"}
+test_bundle_bilibili_unverified_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Unverified original language: Bilibili exposes subtitle language but no verified original-audio association"}
+test_bundle_threads_target_selected expected=true pass=true transport=<nil> result={"ok":true,"text":"Original target body."}
+test_bundle_medium_target_selected expected=true pass=true transport=<nil> result={"ok":true,"text":"Original target body."}
+test_bundle_x_target_selected expected=true pass=true transport=<nil> result={"ok":true,"text":"Original target body."}
+test_bundle_medium_preview_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Inaccessible social target: subscription or preview"}
+test_bundle_wrong_x_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Inaccessible social target: main body unavailable"}
+test_bundle_x_post_preview_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Inaccessible social target: truncated post preview"}
+test_bundle_x_article_preview_rejected expected=false pass=true transport=<nil> result={"ok":false,"error":"Inaccessible social target: truncated article preview"}
+test_bundle_x_quoted_preview_complete_target_accepted expected=true pass=true transport=<nil> result={"ok":true,"text":"Complete own target body."}
+test_bundle_x_complete_article_unrelated_preview_accepted expected=true pass=true transport=<nil> result={"ok":true,"text":"Complete target article."}
+```
+
+### Captured output — all named social CLI surfaces and original-language failure
+
+```text
+--- threads ---
+Pipeline completed in 5s
+  Total:   1
+  Success: 1
+  Skipped: 0
+  Partial: 0
+  Failed:  0
+time=2026-10-23T14:45:01.207+08:00 level=INFO msg="processing item" index=1 total=1 url=https://www.threads.com/@zuck/post/DeZtp-TkQHh title=""
+time=2026-10-23T14:45:06.141+08:00 level=INFO msg="wrote content" path=/private/tmp/rlss-original-w4-output/www_threads_com/2026-10-23__f3772312__content.md
+CLI_EXIT=0
+
+--- medium ---
+Pipeline completed in 7s
+  Total:   1
+  Success: 1
+  Skipped: 0
+  Partial: 0
+  Failed:  0
+time=2026-10-23T14:45:06.149+08:00 level=INFO msg="processing item" index=1 total=1 url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 title=""
+time=2026-10-23T14:45:08.883+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url=https://ev.medium.com/welcome-to-medium-9e53ca408c48 err="exception \"Uncaught (in promise) Error: Inaccessible social target: canonical identity missing or different\" (344:4148): Error: Inaccessible social target: canonical identity missing or different\n    at ut (<anonymous>:344:4148)\n    at Xi (<anonymous>:353:407)\n    at zo (<anonymous>:353:1942)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:45:12.724+08:00 level=INFO msg="wrote content" path=/private/tmp/rlss-original-w4-output/ev_medium_com/2026-10-23__300cbc52__content.md
+CLI_EXIT=0
+
+--- x ---
+Pipeline completed in 5s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+time=2026-10-23T14:45:12.731+08:00 level=INFO msg="processing item" index=1 total=1 url=https://x.com/jack/status/20 title=""
+time=2026-10-23T14:45:13.420+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url=https://x.com/jack/status/20 err="page load error net::ERR_HTTP_RESPONSE_CODE_FAILURE"
+time=2026-10-23T14:45:17.299+08:00 level=ERROR msg="item failed" url=https://x.com/jack/status/20 err="extract https://x.com/jack/status/20: headless attempt: page load error net::ERR_HTTP_RESPONSE_CODE_FAILURE; headed retry: exception \"Uncaught (in promise) Error: Inaccessible social target: main body unavailable\" (344:4148): Error: Inaccessible social target: main body unavailable\n    at ut (<anonymous>:344:4148)\n    at Xi (<anonymous>:353:1123)\n    at zo (<anonymous>:353:1942)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+CLI_EXIT=1
+
+--- unknown ---
+Pipeline completed in 8s
+  Total:   1
+  Success: 0
+  Skipped: 0
+  Partial: 0
+  Failed:  1
+time=2026-10-23T14:45:17.306+08:00 level=INFO msg="processing item" index=1 total=1 url="https://www.youtube.com/watch?v=rfscVS0vtbw" title=""
+time=2026-10-23T14:45:21.240+08:00 level=WARN msg="headless extraction failed, retrying with headed mode" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at ut (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Gi (<anonymous>:346:1423)\n    at zo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+time=2026-10-23T14:45:25.260+08:00 level=ERROR msg="item failed" url="https://www.youtube.com/watch?v=rfscVS0vtbw" err="extract https://www.youtube.com/watch?v=rfscVS0vtbw: headless attempt: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at ut (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Gi (<anonymous>:346:1423)\n    at zo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8; headed retry: exception \"Uncaught (in promise) Error: Unverified original language: ambiguous or dubbed audio association\" (344:4148): Error: Unverified original language: ambiguous or dubbed audio association\n    at ut (<anonymous>:344:4148)\n    at Fo (<anonymous>:346:517)\n    at Gi (<anonymous>:346:1423)\n    at zo (<anonymous>:353:1391)\n    at window.extractArticle (<anonymous>:353:2118)\n    at <anonymous>:1:8"
+CLI_EXIT=1
+```
+
+### Captured output — criterion checks only
+
+```text
+A2
+# Subtest: A2 target bodies on three platforms exclude replies
+ok 1 - A2 target bodies on three platforms exclude replies
+# Subtest: A2/A3 explicit target previews fail while complete own bodies remain usable
+ok 2 - A2/A3 explicit target previews fail while complete own bodies remain usable
+# Subtest: A2 wrong target rejected
+ok 3 - A2 wrong target rejected
+# tests 3
+# pass 3
+# fail 0
+
+A3
+# Subtest: A1/A3 native player refresh recovers empty inline captions with bounded first-party requests
+ok 1 - A1/A3 native player refresh recovers empty inline captions with bounded first-party requests
+# Subtest: A1/A3 refreshed invalid identity, language and API failures stay unsuccessful
+ok 2 - A1/A3 refreshed invalid identity, language and API failures stay unsuccessful
+# Subtest: A2/A3 explicit target previews fail while complete own bodies remain usable
+ok 3 - A2/A3 explicit target previews fail while complete own bodies remain usable
+# Subtest: A3 verified social content succeeds without network fallback
+ok 4 - A3 verified social content succeeds without network fallback
+# Subtest: A3 login, preview and unsupported video fail
+ok 5 - A3 login, preview and unsupported video fail
+# tests 5
+# pass 5
+# fail 0
+=== RUN   TestProcessItemWithFallback
+=== RUN   TestProcessItemWithFallback/success
+=== RUN   TestProcessItemWithFallback/video_verified
+=== RUN   TestProcessItemWithFallback/video_description
+=== RUN   TestProcessItemWithFallback/video_metadata_only
+=== RUN   TestProcessItemWithFallback/video_wrong_target
+=== RUN   TestProcessItemWithFallback/social_body
+=== RUN   TestProcessItemWithFallback/specialized_challenge_disabled
+=== RUN   TestProcessItemWithFallback/load_error
+=== RUN   TestProcessItemWithFallback/empty
+=== RUN   TestProcessItemWithFallback/challenge
+=== RUN   TestProcessItemWithFallback/login_wall
+=== RUN   TestProcessItemWithFallback/headed_failure
+=== RUN   TestProcessItemWithFallback/headed_challenge
+=== RUN   TestProcessItemWithFallback/retry_failure
+=== RUN   TestProcessItemWithFallback/retry_empty
+=== RUN   TestProcessItemWithFallback/retry_challenge
+=== RUN   TestProcessItemWithFallback/retry_login_wall
+=== RUN   TestProcessItemWithFallback/block_disabled_challenge
+=== RUN   TestProcessItemWithFallback/block_disabled_navigation
+=== RUN   TestProcessItemWithFallback/block_disabled_empty
+--- PASS: TestProcessItemWithFallback (0.01s)
+    --- PASS: TestProcessItemWithFallback/success (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_verified (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_description (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_metadata_only (0.00s)
+    --- PASS: TestProcessItemWithFallback/video_wrong_target (0.00s)
+    --- PASS: TestProcessItemWithFallback/social_body (0.00s)
+    --- PASS: TestProcessItemWithFallback/specialized_challenge_disabled (0.00s)
+    --- PASS: TestProcessItemWithFallback/load_error (0.00s)
+    --- PASS: TestProcessItemWithFallback/empty (0.00s)
+    --- PASS: TestProcessItemWithFallback/challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/login_wall (0.00s)
+    --- PASS: TestProcessItemWithFallback/headed_failure (0.00s)
+    --- PASS: TestProcessItemWithFallback/headed_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_failure (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_empty (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/retry_login_wall (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_challenge (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_navigation (0.00s)
+    --- PASS: TestProcessItemWithFallback/block_disabled_empty (0.00s)
+=== RUN   TestExtractionRejectsObservedWalls
+--- PASS: TestExtractionRejectsObservedWalls (0.00s)
+PASS
+ok  	github.com/kouko/reading-list-summarize-scraper/internal/pipeline	0.372s
+```
+
+Dispatch unchanged: inherited overrides null, unobservable-main-profile; no agents spawned. Commit classification routine fix-verification evidence, no new product decision. Exact commit-message privacy scan required; no private-party ambiguity requires semantic judge. Only report/evidence changed by this tester.
+
