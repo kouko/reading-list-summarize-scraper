@@ -1,0 +1,73 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-23-original-transcripts-and-social-content",
+  "content_digest": "adb780780efc4f0b33b5dfebd30504e06e7ec30b",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json -count=1 -run '^TestExtractionBoundaries$' .",
+      "artifact": "extraction_boundaries_test.go",
+      "result": "pass",
+      "command_digest": "ff0a0691a3ab077b2549e2f4af6e3cf91a9ba881a4be1d465727e471f0db41e7",
+      "evidence": "parsed",
+      "passed": 1
+    }
+  ],
+  "verdicts": [
+    {
+      "reviewer": "original_closing_code",
+      "vendor": "codex",
+      "model": "inherited",
+      "lens": "code",
+      "verdict": "PASS_WITH_NOTES",
+      "reviewed_sha": "412deb870e5975a16e238075d48c26242700c8d8",
+      "review_target_sha": "398f4c2d294c90e0c8fadb97d12063fadce77d39",
+      "findings": [
+        {
+          "severity": "important",
+          "dimension": "cross-task-coherence",
+          "anchor": "extraction.ts:236",
+          "text": "issue (blocking): Bilibili is unconditionally rejected while the retained specification promises initial support and a successful video flow.",
+          "fix": "Implement grounded original-language support and independent success evidence, or explicitly renegotiate the named-platform scope with the user."
+        }
+      ],
+      "notes": [
+        "The prior fatal X truncation finding is fixed; 13 ordinary JavaScript tests passed. No fix-induced regression found.",
+        "Bilibili remains important and unfixed. X live success remains unverified.",
+        "Terminal review confirmed the Go bridge executes unchanged earned regressions; Bilibili remains unfixed."
+      ]
+    },
+    {
+      "reviewer": "original_closing_spec",
+      "vendor": "codex",
+      "model": "inherited",
+      "lens": "spec+adversarial",
+      "verdict": "PASS_WITH_NOTES",
+      "reviewed_sha": "412deb870e5975a16e238075d48c26242700c8d8",
+      "review_target_sha": "398f4c2d294c90e0c8fadb97d12063fadce77d39",
+      "findings": [
+        {
+          "severity": "important",
+          "dimension": "inconsistency",
+          "anchor": "extraction.ts:236",
+          "text": "issue (blocking): Bilibili still has no successful transcript path, contradicting the retained initial support promise.",
+          "fix": "Implement grounded original-language verification and a successful transcript path, or obtain explicit user agreement to remove Bilibili from initial support and reconcile the artifacts."
+        }
+      ],
+      "notes": [
+        "The prior fatal X preview finding is fixed; both focused fix tests passed.",
+        "Independent CLI evidence verifies the configured challenge retry distinction. Bilibili remains unfixed.",
+        "Terminal review confirmed the Go bridge executes unchanged earned regressions; Bilibili remains unfixed."
+      ]
+    }
+  ],
+  "findings": [],
+  "selection": null
+}
