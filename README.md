@@ -163,6 +163,24 @@ verification pages; load errors and empty content still retry. Explicitly headed
 attempts are not retried. Recognized walls fail without saving new content or
 summaries; existing notes are retained.
 
+YouTube extraction saves original-language subtitles only when first-party player
+data unambiguously associates the original audio with an automatic-caption
+language and a usable track matches that language. Both human and automatic
+tracks are accepted after checking actual cue text, timing and explicit incomplete
+responses; human tracks are not always preferred. Saved content identifies the
+subtitle language and source. This does not guarantee transcription accuracy or
+complete speech coverage. Bilibili currently fails because its original-audio
+language cannot be verified; recognized unsupported video platforms also fail
+instead of saving descriptions. Pending video caches without current target-bound
+validation are re-extracted; completed summaries retain existing skip behavior.
+
+Threads, Medium and X/Twitter extraction checks the target permalink or canonical
+identity before returning the main body. Missing targets, detected previews and
+access walls fail; unavailable private or member-only content is not promised.
+Existing social caches retain the normal wall checks but cannot retroactively
+prove target identity. Requests use first-party platform data and media endpoints
+with existing access, without outside mirrors, proxies or audio uploads.
+
 ## Output Structure
 
 ```
