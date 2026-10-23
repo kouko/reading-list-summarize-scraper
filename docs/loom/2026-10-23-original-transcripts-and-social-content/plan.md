@@ -12,7 +12,7 @@ charter: 1.1
 
 ### Wave 1 — saved-content and pipeline integration
 **W1-01 Enforce verified video content through saving and resume** after: W0-01 acceptance: 1, 2, 3, 4
-- Files: internal/pipeline/runner.go (entry: Pipeline.ProcessItem), internal/pipeline/extraction.go, internal/pipeline/extraction_test.go, README.md
+- Files: internal/pipeline/runner.go (entry: Pipeline.ProcessItem), internal/pipeline/extraction.go, internal/pipeline/extraction_test.go, README.md, .github/workflows/build.yml
 - Test: A1 positive: saved-language-source; negative: cached-unverified-video. A2 positive: saved-social-body; negative: wall-not-saved. A3 positive: continue-after-failure; boundary: completed-skip-dry-run. A4 positive: validated-transcript-saved; negative: unusable-transcript-not-summarized.
 - Risk: agent-decided — REQ-1/REQ-3 preserve structured video provenance inside the existing string content boundary; validate target-bound provenance before saving or resuming. Preserve and extend internal/pipeline/extraction_test.go coverage for headed_on_block, retries, ordinary caches, and failed writes; no migration or automatic completed-note rewrite.
 
@@ -29,5 +29,5 @@ charter: 1.1
 1. Original-audio evidence can be absent, ambiguous, or tied to a dubbed track; reject uncertainty instead of guessing from locale/default captions. No promise of audio-verified word accuracy or complete speech coverage.
 2. New platform requests remain first-party and existing-profile-bound. Disable external aggregation/proxy fallbacks; no paid services, new accounts, audio uploads, private fixture publication, or changes to the running batch.
 3. Fixture-backed tests exercise actual module entries; fake only network/resource boundaries. Independent acceptance also runs the built browser bundle and existing CLI pipeline in isolated output directories; live-site access limitations must remain explicit.
-4. Add only a small DOM test dependency if required, reusing esbuild and Node's built-in test runner. Keep JavaScript tests reproducible via npm test; run them alongside the standing complete Go suite before review/finalization.
+4. Add only a small DOM test dependency if required, reusing esbuild and Node's built-in test runner. Run npm test in existing CI and alongside the standing Go suite; finalization also executes the committed JavaScript adversarial command.
 5. The prior general article data-date defect is known and not fixed by upstream 0.19.5; this scope does not claim its correction. The existing extraction mode/profile settings and completed-summary skip behavior remain unchanged.
