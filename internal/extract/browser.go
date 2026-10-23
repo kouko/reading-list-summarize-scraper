@@ -85,6 +85,31 @@ func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, wait
 // markdown. Only a complete sequence returns content; failures, unusable
 // continuations, loops and a cap with remaining pages return an error.
 func (b *Browser) ExtractPaginated(startURL, jsCode, nextSelector string, maxPages int, timeout, waitAfterLoad time.Duration) (string, error) {
+	// This guard applies only to the entry document. Previous links on pages
+	// reached by our own forward traversal do not imply missing content.
+	entryJS := `(function(){
+var current=new URL(location.href);current.hash='';
+var earlier=document.querySelectorAll('link[rel~=first],a[rel~=first],link[rel~=prev],a[rel~=prev]');
+for(var e of earlier){
+ if(!(e.getAttribute('href')||'').trim())continue;
+ var target;try{target=new URL(e.getAttribute('href'),document.baseURI);}catch(_){continue;}
+ target.hash='';
+ if(target.origin===current.origin&&target.href!==current.href)
+  throw new Error('incomplete pagination: initial page advertises an earlier page');
+}
+var numbers=current.searchParams.getAll('page');
+if(numbers.length!==1||!/^\d+$/.test(numbers[0])||Number(numbers[0])<=1)return;
+var rest=new URLSearchParams(current.search);rest.delete('page');rest.sort();
+for(var a of document.querySelectorAll('a[href]')){
+ var target;try{target=new URL(a.getAttribute('href'),document.baseURI);}catch(_){continue;}
+ if(target.origin!==current.origin||target.pathname!==current.pathname)continue;
+ var pages=target.searchParams.getAll('page');
+ if(pages.length!==1||!/^\d+$/.test(pages[0])||Number(pages[0])<1||Number(pages[0])>=Number(numbers[0]))continue;
+ target.searchParams.delete('page');target.searchParams.sort();
+ if(target.searchParams.toString()===rest.toString())
+  throw new Error('incomplete pagination: initial page links to a lower article page');
+}
+})()`
 	// Embed the selector safely as a JS string literal.
 	selLit, _ := json.Marshal(nextSelector)
 	nextJS := `(function(){
@@ -144,6 +169,12 @@ return '';
 			}),
 			chromedp.WaitVisible(`body`, chromedp.ByQuery),
 			chromedp.Sleep(waitAfterLoad),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				if pageURL == startURL {
+					return chromedp.Evaluate(entryJS, nil).Do(ctx)
+				}
+				return nil
+			}),
 			chromedp.Evaluate(jsCode, nil),
 			chromedp.Evaluate(`window.extractArticle()`, &content, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
 				return p.WithAwaitPromise(true)

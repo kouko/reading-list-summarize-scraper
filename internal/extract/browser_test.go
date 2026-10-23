@@ -25,7 +25,13 @@ func TestBrowserExtractPaginated(t *testing.T) {
 		case "/1":
 			fmt.Fprint(w, `<body><article>first</article><a class="next" href="/2">next</a><img src="/pending"></body>`)
 		case "/2":
-			fmt.Fprint(w, `<body><article>second</article><img src="/pending"></body>`)
+			fmt.Fprint(w, `<link rel="prev" href="/1"><body><article>second</article><img src="/pending"></body>`)
+		case "/query":
+			if r.URL.Query().Get("page") == "2" {
+				fmt.Fprint(w, `<body><article>second</article><a href="?page=1&amp;id=article">1</a></body>`)
+			} else {
+				fmt.Fprint(w, `<link rel="first" href="?page=1&amp;id=article"><body><article>first</article><a href="?page=0&amp;id=other">other</a><a class="next" href="?page=2&amp;id=article">next</a></body>`)
+			}
 		case "/hint":
 			fmt.Fprint(w, `<link rel="next" href="/2"><body><article>first</article></body>`)
 		case "/empty-next":
@@ -39,6 +45,16 @@ func TestBrowserExtractPaginated(t *testing.T) {
 	}))
 	defer server.Close()
 	js := `window.extractArticle=()=>document.querySelector('article').textContent`
+	t.Run("initial earlier page evidence", func(t *testing.T) {
+		got, err := b.ExtractPaginated(server.URL+"/query?page=2&id=article", js, ".next", 10, 2*time.Second, 0)
+		if err == nil || got != "" {
+			t.Fatalf("later query entry: got %q, %v", got, err)
+		}
+		got, err = b.ExtractPaginated(server.URL+"/query?page=1&id=article", js, ".next", 10, 2*time.Second, 0)
+		if err != nil || got != "first\n\nsecond" {
+			t.Fatalf("first query entry: got %q, %v", got, err)
+		}
+	})
 	t.Run("ready body pending subresource", func(t *testing.T) {
 		got, err := b.ExtractPaginated(server.URL+"/1", js, ".next", 10, 2*time.Second, 0)
 		if err != nil || got != "first\n\nsecond" {
