@@ -88,6 +88,13 @@ rlss url <URL> [flags]     # Process a single URL
 rlss config                # Show current configuration
 ```
 
+Listing, batch processing, and each watch cycle order qualifying items from
+newest to oldest by their full addition timestamps across all enabled sources,
+before applying `--limit`. Equal timestamps keep their previous relative order;
+items without timestamps appear last. Duplicate URLs keep the first occurrence
+and its metadata. Already completed items are still skipped after selection,
+without filling their places with older items beyond the limit.
+
 ### Global Flags
 
 | Flag | Short | Description |
