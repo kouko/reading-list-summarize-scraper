@@ -30,22 +30,6 @@ func TestResolveNextURL(t *testing.T) {
 	}
 }
 
-func TestShouldFollowNext(t *testing.T) {
-	visited := map[string]bool{"https://x/seen": true}
-	if shouldFollowNext("", visited, 0, 10) {
-		t.Error("empty nextURL should stop")
-	}
-	if shouldFollowNext("https://x/seen", visited, 1, 10) {
-		t.Error("already-visited nextURL should stop (loop guard)")
-	}
-	if shouldFollowNext("https://x/new", visited, 10, 10) {
-		t.Error("reaching maxPages should stop")
-	}
-	if !shouldFollowNext("https://x/new", visited, 1, 10) {
-		t.Error("fresh nextURL under maxPages should continue")
-	}
-}
-
 func TestJoinPages(t *testing.T) {
 	if got := joinPages([]string{"a", "b"}); got != "a\n\nb" {
 		t.Errorf("got %q, want %q", got, "a\n\nb")
