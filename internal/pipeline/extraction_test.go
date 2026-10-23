@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
+	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 	"github.com/kouko/reading-list-summarize-scraper/internal/output"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
 )
@@ -212,12 +213,12 @@ func TestExtractionRejectsObservedWalls(t *testing.T) {
 		"[Log in](https://x.com/i/flow/login)\n[Sign up](https://x.com/i/flow/signup)",
 		xAuth,
 	} {
-		if err := validateExtractedContent(content); err == nil {
+		if err := extract.ValidateContent(content); err == nil {
 			t.Errorf("accepted wall: %q", content)
 		}
 	}
 	article := "## Designing worker teams\n\nWorkers exchange files and review results.\n\n" + xAuth
-	if err := validateExtractedContent(article); err != nil {
+	if err := extract.ValidateContent(article); err != nil {
 		t.Fatalf("rejected article with login chrome: %v", err)
 	}
 }

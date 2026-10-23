@@ -172,6 +172,9 @@ return '';
 			}),
 			chromedp.Evaluate(nextJS, &nextHref),
 		)
+		if err == nil {
+			err = ValidateContent(content)
+		}
 		return content, nextHref, err
 	}
 

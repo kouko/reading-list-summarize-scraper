@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	assets "github.com/kouko/reading-list-summarize-scraper/embed"
 )
 
 func TestBrowserExtractPaginated(t *testing.T) {
@@ -22,6 +24,17 @@ func TestBrowserExtractPaginated(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "text/html")
 		switch r.URL.Path {
+		case "/wall-start":
+			fmt.Fprintf(w, `<body><article><p>The investigation follows a complete account of the events and explains the evidence collected by the reporters.</p></article><a class="next" href="/wall-end?kind=%s">next</a></body>`, r.URL.Query().Get("kind"))
+		case "/wall-end":
+			switch r.URL.Query().Get("kind") {
+			case "challenge":
+				fmt.Fprint(w, `<body><article><p>Cloudflare security challenge. CAPTCHA.</p></article></body>`)
+			case "article":
+				fmt.Fprint(w, `<body><article><p>Please sign in to read is a phrase commonly used by publishers.</p><p>The researchers explain how publishers fund reporting through subscriptions and describe the effects on their readers.</p></article></body>`)
+			default:
+				fmt.Fprint(w, `<body><article><p>Please sign in to read the full article.</p></article></body>`)
+			}
 		case "/1":
 			fmt.Fprint(w, `<body><article>first</article><a class="next" href="/2">next</a><img src="/pending"></body>`)
 		case "/2":
@@ -49,6 +62,18 @@ func TestBrowserExtractPaginated(t *testing.T) {
 	}))
 	defer server.Close()
 	js := `window.extractArticle=()=>document.querySelector('article').textContent`
+	t.Run("real extractor validates later page", func(t *testing.T) {
+		for _, tc := range []struct{ kind, reason string }{{"login", "login required"}, {"challenge", "Cloudflare/CAPTCHA"}, {"article", ""}} {
+			got, err := b.ExtractPaginated(server.URL+"/wall-start?kind="+tc.kind, assets.DefuddleJS, ".next", 10, 2*time.Second, 0)
+			if tc.reason == "" {
+				if err != nil || !strings.Contains(got, "The researchers explain") {
+					t.Errorf("%s: got %q, %v", tc.kind, got, err)
+				}
+			} else if err == nil || got != "" || !strings.Contains(err.Error(), "/wall-end") || !strings.Contains(err.Error(), tc.reason) {
+				t.Errorf("%s: got %q, %v", tc.kind, got, err)
+			}
+		}
+	})
 	t.Run("initial earlier page evidence", func(t *testing.T) {
 		for _, path := range []string{"/query", "/query-base-prev", "/query-no-prev"} {
 			got, err := b.ExtractPaginated(server.URL+path+"?page=2&id=article", js, ".next", 10, 2*time.Second, 0)
