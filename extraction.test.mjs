@@ -43,6 +43,7 @@ test('A2 target bodies on three platforms exclude replies', async () => {
 });
 test('A2 wrong target rejected', async () => {
  await assert.rejects(extractArticle(doc('<article data-testid="tweet"><a href="/a/status/999"><time>today</time></a><div data-testid="tweetText">Wrong post</div></article>'), 'https://x.com/a/status/123'), /target/i);
+ await assert.rejects(extractArticle(doc('<div data-pagelet="threads_post_page_0"><div data-pressable-container><a href="/@b/post/REPLY"><time>today</time></a><span dir="auto">Other reply</span><div data-pressable-container><a href="/@a/post/ABC"><time>yesterday</time></a><span dir="auto">Quoted target</span></div></div></div>'), 'https://www.threads.com/@a/post/ABC'), /target/i);
 });
 test('A3 verified social content succeeds without network fallback', async () => {
  assert.equal(await extractArticle(doc('<article data-testid="tweet"><a href="/a/status/123"><time>now</time></a><div data-testid="tweetText">Actual target</div></article>'), 'https://x.com/a/status/123', () => {throw Error('external request');}), 'Actual target');
@@ -59,5 +60,5 @@ test('A4 blank human track does not block usable automatic track', async () => {
  const out = await extractArticle(d,'https://www.youtube.com/watch?v=abc',async u => new Response(String(u).includes('manual')?'<transcript></transcript>':cues)); assert.match(out,/automatic/);
 });
 test('A4 malformed, truncated and timestamp-only cues fail', async () => {
- for (const xml of ['<transcript><text start="-1" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech</text>','<transcript><text start="0" dur="2">00:01</text></transcript>']) await assert.rejects(extractArticle(yt(),'https://www.youtube.com/watch?v=abc',async()=>new Response(xml)), /unusable/i);
+ for (const xml of ['<transcript><text start="-1" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech</text>','<transcript><text start="0" dur="2">00:01</text></transcript>','<!DOCTYPE transcript SYSTEM "https://example.com/external.dtd"><transcript><text start="0" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech &unknown;</text></transcript>']) await assert.rejects(extractArticle(yt(),'https://www.youtube.com/watch?v=abc',async()=>new Response(xml)), /unusable/i);
 });

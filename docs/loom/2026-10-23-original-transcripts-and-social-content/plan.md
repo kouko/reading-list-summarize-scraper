@@ -16,6 +16,12 @@ charter: 1.1
 - Test: A1 positive: saved-language-source; negative: cached-unverified-video. A2 positive: saved-social-body; negative: wall-not-saved. A3 positive: continue-after-failure; boundary: completed-skip-dry-run. A4 positive: validated-transcript-saved; negative: unusable-transcript-not-summarized.
 - Risk: agent-decided — REQ-1/REQ-3 preserve structured video provenance inside the existing string content boundary; validate target-bound provenance before saving or resuming. Preserve and extend internal/pipeline/extraction_test.go coverage for headed_on_block, retries, ordinary caches, and failed writes; no migration or automatic completed-note rewrite.
 
+### Wave 2 — adversarial boundary corrections
+**W2-01 Reject quoted identity and malformed caption markup** after: W1-01 acceptance: 2, 4
+- Files: extraction.ts (entry: extractArticle), extraction.test.mjs, extraction-boundaries.test.mjs, package.json, package-lock.json, embed/defuddle.min.js
+- Test: A2 positive: own-post-permalink; negative: quoted-target-permalink. A4 positive: valid-caption-markup; negative: mismatched-inner-markup. Run the existing adversarial program RED before the fix, retain its bytes unchanged as extraction-boundaries.test.mjs, and include it in npm test.
+- Risk: agent-decided — reject descendant identity mistaken for ownership and HTML repair mistaken for XML validity. Search changed files and social/caption surfaces; preserve valid content, regenerate the bundle, and graduate the adversary's regression unchanged into CI.
+
 ## Simplicity check
 - none found
 

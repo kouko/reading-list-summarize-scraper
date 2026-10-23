@@ -1,4 +1,5 @@
 import Defuddle, { createMarkdownContent } from 'defuddle/full';
+import { SaxesParser } from 'saxes';
 
 const family = (language: string) => language.toLowerCase().replace(/_/g, '-').split('-')[0];
 const substantive = (text: string) => /\p{L}/u.test(text);
@@ -27,6 +28,15 @@ function playerData(document: Document): any {
 }
 
 function transcript(document: Document, xml: string): string {
+    // Validate XML before any HTML DOM handling can repair malformed nesting.
+    // Saxes performs no resource loading; disallow DTDs/entities explicitly.
+    try {
+        const parser = new SaxesParser();
+        parser.on('doctype', () => { throw new Error('DTD is not permitted'); });
+        parser.write(xml).close();
+    } catch (error) {
+        fail(`Unusable subtitles: malformed XML (${error instanceof Error ? error.message : String(error)})`);
+    }
     // Reject partial XML rather than letting the HTML parser repair a cut response.
     if (!/^\s*(?:<\?xml[^>]*>\s*)?<(transcript|timedtext)\b[^>]*>[\s\S]*<\/\1>\s*$/.test(xml)
         || /(?:truncated|incomplete)\s*=\s*["'](?:true|1)["']/i.test(xml)) fail('Unusable subtitles: incomplete payload');
@@ -114,6 +124,17 @@ function bodyMarkdown(element: Element, url: URL): string {
     return createMarkdownContent(clone.innerHTML, url.href).trim();
 }
 
+function ownTweet(article: Element): Element {
+    const clone = article.cloneNode(true) as Element;
+    clone.querySelectorAll('[data-testid="quoteTweet"], [data-testid="simpleTweet"], article[data-testid="tweet"]').forEach(el => el.remove());
+    // Upstream TwitterExtractor identifies quoted cards by their labelled
+    // container and nested author header. They cannot identify the outer post.
+    clone.querySelectorAll('[aria-labelledby*="id__"]').forEach(el => {
+        if (el.querySelector('[data-testid="User-Name"]')) el.remove();
+    });
+    return clone;
+}
+
 function social(document: Document, url: URL): string {
     const host = url.hostname.replace(/^www\./, '');
     let text = '';
@@ -126,9 +147,12 @@ function social(document: Document, url: URL): string {
         if (richText && sameTarget(canonical, url)) text = bodyMarkdown(richText, url);
         for (const article of Array.from(document.querySelectorAll('article[data-testid="tweet"]'))) {
             if (text) break;
-            const ownsTarget = Array.from(article.querySelectorAll('a')).some(a => a.querySelector('time') && sameTarget(a.getAttribute('href'), new URL(url.origin + url.pathname.replace(/\/article\/?$/, ''))));
+            const own = ownTweet(article);
+            const permalinks = Array.from(own.querySelectorAll('a')).filter(a => a.querySelector('time') && !a.closest('[data-testid="tweetText"], [data-testid="twitterArticleRichTextView"]'));
+            const target = new URL(url.origin + url.pathname.replace(/\/article\/?$/, ''));
+            const ownsTarget = permalinks.length > 0 && permalinks.every(a => sameTarget(a.getAttribute('href'), target));
             if (!ownsTarget) continue;
-            const body = article.querySelector('[data-testid="twitterArticleRichTextView"]') || article.querySelector('[data-testid="tweetText"]');
+            const body = own.querySelector('[data-testid="twitterArticleRichTextView"]') || own.querySelector('[data-testid="tweetText"]');
             if (body) text = bodyMarkdown(body, url);
             break;
         }
@@ -140,6 +164,7 @@ function social(document: Document, url: URL): string {
             if (!sameTarget(link.getAttribute('href'), url)) continue;
             const container = link.closest('[data-pressable-container]') || link.closest('[data-pagelet^="threads_post_page_"], div[role="region"]');
             if (!container) continue;
+            if (container.parentElement?.closest('[data-pressable-container]')) continue;
             const clone = container.cloneNode(true) as Element;
             clone.querySelectorAll('[data-pressable-container], a[href*="/post/"], a[href^="/@"], [role="button"], time').forEach(el => el.remove());
             const spans = Array.from(clone.querySelectorAll('span[dir="auto"]')).filter(span => !span.parentElement?.closest('span[dir="auto"]'));
