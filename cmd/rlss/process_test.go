@@ -1,5 +1,7 @@
 package main
 
+// concern: timestamp precision, stable undated placement, and limiting before date ordering can select the wrong reading items.
+
 import (
 	"reflect"
 	"testing"
