@@ -44,6 +44,11 @@ charter: 1.1
 - Test: A2 positive: actual-browser-ready-before-negative-cases; negative: startup-error-cannot-pass-rejection. A3 positive: existing-navigation-deadlines-retained; negative: profile-cleanup-race. Reuse existing regressions that failed CI; retain all extraction assertions and navigation deadlines.
 - Risk: agent-decided — Class: cold startup consumes navigation timeout and abrupt cleanup races profile removal. Search changed files and browser lifecycle surfaces. Initialize one test-owned browser and close it gracefully. The independent probe owner updates setup only; production remains unchanged.
 
+**W8-01 Use the production navigation budget in browser fixtures** after: W7-01 acceptance: 2, 3
+- Files: internal/extract/browser_test.go (entry: Browser.ExtractPaginated)
+- Test: A2 positive: incomplete-cases-retain-specific-page-and-reason; negative: blocked-load-mutation-still-fails. A3 positive: configured-default-navigation-budget; negative: actual-CI-two-second-deadline-failure. Keep all fixture bodies and assertions; demonstrate the pending-resource regression still fails with full-load waiting in an isolated temporary mutation.
+- Risk: agent-decided — Class: functional browser tests impose an unsupported two-second performance requirement. Search changed files, CI logs and configured timeout surfaces. Use the existing production default without changing production code. Preserve error/content assertions and indefinitely pending resource fixtures.
+
 ## Simplicity check
 - none found
 
@@ -59,3 +64,5 @@ charter: 1.1
 5. agent-decided — A probe that catches a defect must graduate into the Go package suite before review finalization; the probe owner retains its content. Existing source extraction tests and earlier earned JavaScript regressions remain in the complete suite.
 6. agent-decided — Non-first entry is another instance of confirmed incomplete-success failure, not a new automatic-discovery feature. Explicit earlier-page evidence requires failure with no partial save; insufficient evidence remains a documented limitation. W4 records the newly demonstrated boundary.
 7. agent-decided — CI 39995109168 exposed cold startup consuming fixture deadlines and asynchronous profile cleanup. W7 changes tests only; independent acceptance at 7e7069a retains its product results. Complete tests and the existing probe must pass again before terminal review.
+8. user-decided — On 2026-10-24, “繼續修補” resumes the same change beyond its previous three-digest review stop. Retain prior rounds and all checks; do not create another intent or pretend the review count reset.
+9. agent-decided — CI 39996474491 reached document retrieval but exceeded two-second fixture deadlines; production defaults to thirty seconds. No two-second product requirement exists. Recalibrate tests only and demonstrate that waiting for indefinitely pending resources still fails.
