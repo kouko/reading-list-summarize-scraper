@@ -12,6 +12,7 @@ import (
 	"github.com/chromedp/chromedp"
 
 	assets "github.com/kouko/reading-list-summarize-scraper/embed"
+	"github.com/kouko/reading-list-summarize-scraper/internal/config"
 )
 
 func newTestBrowser(t *testing.T) *Browser {
@@ -39,6 +40,9 @@ func newTestBrowser(t *testing.T) *Browser {
 
 func TestBrowserExtractPaginated(t *testing.T) {
 	b := newTestBrowser(t)
+	// Check extraction behavior within the production budget, not a two-second
+	// performance target. The pending resource remains blocked until canceled.
+	timeout := config.DefaultConfig().Extract.Timeout
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/pending" {
 			<-r.Context().Done()
@@ -115,7 +119,7 @@ func TestBrowserExtractPaginated(t *testing.T) {
 				if strings.HasPrefix(failedPage, "/") {
 					failedPage = server.URL + failedPage
 				}
-				got, err := b.ExtractPaginated(server.URL+"/incomplete-start?kind="+tc.kind, js, ".next", tc.maxPages, 2*time.Second, 0)
+				got, err := b.ExtractPaginated(server.URL+"/incomplete-start?kind="+tc.kind, js, ".next", tc.maxPages, timeout, 0)
 				if err == nil || got != "" || !strings.Contains(err.Error(), "page "+failedPage) || !strings.Contains(err.Error(), tc.reason) {
 					t.Fatalf("got %q, %v; want no body and failed page %s with %s", got, err, failedPage, tc.reason)
 				}
@@ -124,7 +128,7 @@ func TestBrowserExtractPaginated(t *testing.T) {
 	})
 	t.Run("real extractor validates later page", func(t *testing.T) {
 		for _, tc := range []struct{ kind, reason string }{{"login", "login required"}, {"challenge", "Cloudflare/CAPTCHA"}, {"article", ""}} {
-			got, err := b.ExtractPaginated(server.URL+"/wall-start?kind="+tc.kind, assets.DefuddleJS, ".next", 10, 2*time.Second, 0)
+			got, err := b.ExtractPaginated(server.URL+"/wall-start?kind="+tc.kind, assets.DefuddleJS, ".next", 10, timeout, 0)
 			if tc.reason == "" {
 				if err != nil || !strings.Contains(got, "The researchers explain") {
 					t.Errorf("%s: got %q, %v", tc.kind, got, err)
@@ -136,38 +140,38 @@ func TestBrowserExtractPaginated(t *testing.T) {
 	})
 	t.Run("initial earlier page evidence", func(t *testing.T) {
 		for _, path := range []string{"/query", "/query-base-prev", "/query-no-prev"} {
-			got, err := b.ExtractPaginated(server.URL+path+"?page=2&id=article", js, ".next", 10, 2*time.Second, 0)
+			got, err := b.ExtractPaginated(server.URL+path+"?page=2&id=article", js, ".next", 10, timeout, 0)
 			if err == nil || got != "" {
 				t.Errorf("%s later query entry: got %q, %v", path, got, err)
 			}
 		}
-		got, err := b.ExtractPaginated(server.URL+"/query?page=1&id=article", js, ".next", 10, 2*time.Second, 0)
+		got, err := b.ExtractPaginated(server.URL+"/query?page=1&id=article", js, ".next", 10, timeout, 0)
 		if err != nil || got != "first\n\nsecond" {
 			t.Fatalf("first query entry: got %q, %v", got, err)
 		}
 	})
 	t.Run("ready body pending subresource", func(t *testing.T) {
-		got, err := b.ExtractPaginated(server.URL+"/1", js, ".next", 10, 2*time.Second, 0)
+		got, err := b.ExtractPaginated(server.URL+"/1", js, ".next", 10, timeout, 0)
 		if err != nil || got != "first\n\nsecond" {
 			t.Fatalf("got %q, %v", got, err)
 		}
 	})
 	t.Run("DOMContentLoaded before extraction", func(t *testing.T) {
-		got, err := b.ExtractPaginated(server.URL+"/deferred", js, ".next", 10, 2*time.Second, 0)
+		got, err := b.ExtractPaginated(server.URL+"/deferred", js, ".next", 10, timeout, 0)
 		if err != nil || got != "ready" {
 			t.Fatalf("got %q, %v", got, err)
 		}
 	})
 	t.Run("unmatched selector with standard hint", func(t *testing.T) {
 		for _, path := range []string{"/hint", "/empty-next"} {
-			got, err := b.ExtractPaginated(server.URL+path, js, ".next", 10, 2*time.Second, 0)
+			got, err := b.ExtractPaginated(server.URL+path, js, ".next", 10, timeout, 0)
 			if err == nil || got != "" {
 				t.Fatalf("%s: got %q, %v", path, got, err)
 			}
 		}
 	})
 	t.Run("navigation error", func(t *testing.T) {
-		got, err := b.ExtractPaginated("http://127.0.0.1:1/", js, ".next", 10, 2*time.Second, 0)
+		got, err := b.ExtractPaginated("http://127.0.0.1:1/", js, ".next", 10, timeout, 0)
 		if err == nil || got != "" || !strings.Contains(err.Error(), "net::ERR_") {
 			t.Fatalf("got %q, %v", got, err)
 		}
