@@ -3,8 +3,10 @@ package extract
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 
@@ -80,15 +82,36 @@ func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, wait
 
 // ExtractPaginated extracts a multi-page article by following the next-page
 // link (matched by nextSelector) page-by-page and concatenating the per-page
-// markdown. It reuses this Browser across sequential navigations. The loop
-// stops at the first page with no next link, an already-visited URL (loop
-// guard), or maxPages (<=0 → defaultMaxPages). It is fail-soft: a page that
-// errors mid-sequence stops the loop but keeps the pages gathered so far;
-// only a total failure (nothing extracted) returns the error.
+// markdown. Only a complete sequence returns content; failures, unusable
+// continuations, loops and a cap with remaining pages return an error.
 func (b *Browser) ExtractPaginated(startURL, jsCode, nextSelector string, maxPages int, timeout, waitAfterLoad time.Duration) (string, error) {
+	// This guard applies only to the entry document. Previous links on pages
+	// reached by our own forward traversal do not imply missing content.
+	entryJS := `(function(){
+var current=new URL(location.href);current.hash='';
+var earlier=document.querySelectorAll('link[rel~=first],a[rel~=first],link[rel~=prev],a[rel~=prev]');
+for(var e of earlier){
+ if(!(e.getAttribute('href')||'').trim())continue;
+ var target;try{target=new URL(e.getAttribute('href'),document.baseURI);}catch(_){continue;}
+ target.hash='';
+ if(target.origin===current.origin&&target.href!==current.href)
+  throw new Error('incomplete pagination: initial page advertises an earlier page');
+}
+var numbers=current.searchParams.getAll('page');
+if(numbers.length===1&&/^\d+$/.test(numbers[0])&&Number(numbers[0])>1)
+ throw new Error('incomplete pagination: initial page number is greater than one');
+})()`
 	// Embed the selector safely as a JS string literal.
 	selLit, _ := json.Marshal(nextSelector)
-	nextJS := `(function(){var e=document.querySelector(` + string(selLit) + `);return e?e.href:"";})()`
+	nextJS := `(function(){
+var e=document.querySelector(` + string(selLit) + `);
+if(e&&(e.getAttribute('href')||'').trim())return e.href||e.getAttribute('href');
+var hints=document.querySelectorAll('link[rel~=next],a[rel~=next]');
+for(var h of hints){
+ if((h.getAttribute('href')||'').trim())throw new Error('incomplete pagination: configured next link missing or empty with standard next hint');
+}
+return '';
+})()`
 
 	// fetch loads one page and returns its markdown + the next-page href. The
 	// loop, stop conditions, and concatenation live in paginate (tested there);
@@ -99,16 +122,59 @@ func (b *Browser) ExtractPaginated(startURL, jsCode, nextSelector string, maxPag
 		defer cancel()
 		ctx, cancelT := context.WithTimeout(ctx, timeout)
 		defer cancelT()
+		// Match readiness to this navigation's loader: an old document or a
+		// visible body during parsing is not sufficient. DOMContentLoaded waits
+		// for deferred scripts, but not ancillary images or ads to finish.
+		ready := make(chan *page.EventLifecycleEvent, 16)
+		chromedp.ListenTarget(ctx, func(ev any) {
+			if e, ok := ev.(*page.EventLifecycleEvent); ok && e.Name == "DOMContentLoaded" {
+				select {
+				case ready <- e:
+				default:
+				}
+			}
+		})
 		err := chromedp.Run(ctx,
-			chromedp.Navigate(pageURL),
+			page.SetLifecycleEventsEnabled(true),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				_, loader, errorText, download, err := page.Navigate(pageURL).Do(ctx)
+				if err != nil {
+					return err
+				}
+				if errorText != "" {
+					return fmt.Errorf("navigate: %s", errorText)
+				}
+				if download || loader == "" {
+					return fmt.Errorf("navigate: no article document loaded")
+				}
+				for {
+					select {
+					case e := <-ready:
+						if e.LoaderID == loader {
+							return nil
+						}
+					case <-ctx.Done():
+						return ctx.Err()
+					}
+				}
+			}),
 			chromedp.WaitVisible(`body`, chromedp.ByQuery),
 			chromedp.Sleep(waitAfterLoad),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				if pageURL == startURL {
+					return chromedp.Evaluate(entryJS, nil).Do(ctx)
+				}
+				return nil
+			}),
 			chromedp.Evaluate(jsCode, nil),
 			chromedp.Evaluate(`window.extractArticle()`, &content, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
 				return p.WithAwaitPromise(true)
 			}),
 			chromedp.Evaluate(nextJS, &nextHref),
 		)
+		if err == nil {
+			err = ValidateContent(content)
+		}
 		return content, nextHref, err
 	}
 

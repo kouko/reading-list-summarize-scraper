@@ -1,0 +1,83 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-24-reliable-itmedia-pagination",
+  "content_digest": "dba11b431a7f5c60054ce171481481682277148c",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json -count=1 -run '^TestPagination_laterentry_rejectsincomplete$' ./internal/extract",
+      "artifact": "internal/extract/pagination_entry_probe_test.go",
+      "result": "pass",
+      "command_digest": "cea170f30fecefd6ddb1f942e8923dba6cdac7ca310e230e836d05b31da0d2c5",
+      "evidence": "parsed",
+      "passed": 2
+    }
+  ],
+  "verdicts": [
+    {
+      "reviewer": "pagination_closing_code",
+      "vendor": "codex",
+      "model": "inherited",
+      "lens": "code",
+      "verdict": "PASS",
+      "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
+      "review_target_sha": "811b3887cbe48efe61418e97224af196b4ecf414",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Reviewed only c272e61..811b388. Previous findings remain fixed. Eight fixture calls now use the existing 30-second production default; assertions, page fixtures and production code are unchanged.",
+        "Independently ran TestBrowserExtractPaginated: all subtests passed. Read CI failure evidence and the handed mutation log: full-load waiting still fails the pending-resource regression after 30.01 seconds, so the longer deadline preserves its functional check.",
+        "Handed target probe JSON records passing later-entry cases. No confirmation emitted because complete output lines lack the artifact filename stem. No probes, mutation programs or complete suite rerun."
+      ]
+    },
+    {
+      "reviewer": "pagination_closing_spec",
+      "vendor": "codex",
+      "model": "inherited",
+      "lens": "spec+adversarial",
+      "verdict": "PASS",
+      "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
+      "review_target_sha": "811b3887cbe48efe61418e97224af196b4ecf414",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS",
+        "design-conformance": "N/A — No DESIGN.md exists.",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Previous fatal finding remains fixed. The reviewed delta changes fixture navigation budgets to the existing thirty-second production default; production validation, fixture content and assertions remain unchanged.",
+        "Independently ran TestBrowserExtractPaginated successfully. Reviewed CI deadline failures and handed mutation output: the pending-resource regression still rejects full-load waiting after thirty seconds. No two-second product requirement is weakened.",
+        "W8 records the rationale and explicit user-directed continuation without resetting prior rounds. Handed target probe output passes but contains no artifact file stem; no probe confirmation is emitted. No full suite, probe or mutation was rerun."
+      ]
+    }
+  ],
+  "findings": [],
+  "selection": null
+}
