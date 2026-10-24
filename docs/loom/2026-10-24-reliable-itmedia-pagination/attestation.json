@@ -1,7 +1,7 @@
 {
   "schema": "loom-attestation/v2",
   "change_id": "2026-10-24-reliable-itmedia-pagination",
-  "content_digest": "edad9356e472f925c8b34e747ed5a90090566eca",
+  "content_digest": "dba11b431a7f5c60054ce171481481682277148c",
   "executions": [
     {
       "kind": "package-tests",
@@ -28,7 +28,7 @@
       "lens": "code",
       "verdict": "PASS",
       "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
-      "review_target_sha": "c272e61b0196e7a72501d1ae2508b3c062f3c415",
+      "review_target_sha": "811b3887cbe48efe61418e97224af196b4ecf414",
       "dimension_scores": {
         "security": "PASS",
         "architecture": "PASS",
@@ -45,9 +45,9 @@
       },
       "findings": [],
       "notes": [
-        "Reviewed only 08b61cd..c272e61. Previous finding remains fixed. Test startup now fails before assertions if Chrome cannot initialize; extraction assertions, fixtures and navigation deadlines are unchanged.",
-        "Independently ran TestBrowserExtractPaginated: every selected subtest passed, including cleanup. Inspected pinned chromedp.Cancel implementation and documented timeout usage; cleanup runs before temporary-profile removal. Production code is unchanged.",
-        "Handed target probe JSON records passing later-entry cases. No confirmation emitted because complete output lines lack the artifact filename stem. No probes or complete suite rerun."
+        "Reviewed only c272e61..811b388. Previous findings remain fixed. Eight fixture calls now use the existing 30-second production default; assertions, page fixtures and production code are unchanged.",
+        "Independently ran TestBrowserExtractPaginated: all subtests passed. Read CI failure evidence and the handed mutation log: full-load waiting still fails the pending-resource regression after 30.01 seconds, so the longer deadline preserves its functional check.",
+        "Handed target probe JSON records passing later-entry cases. No confirmation emitted because complete output lines lack the artifact filename stem. No probes, mutation programs or complete suite rerun."
       ]
     },
     {
@@ -57,7 +57,7 @@
       "lens": "spec+adversarial",
       "verdict": "PASS",
       "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
-      "review_target_sha": "c272e61b0196e7a72501d1ae2508b3c062f3c415",
+      "review_target_sha": "811b3887cbe48efe61418e97224af196b4ecf414",
       "dimension_scores": {
         "omission": "PASS",
         "ambiguity": "PASS",
@@ -72,9 +72,9 @@
       },
       "findings": [],
       "notes": [
-        "Previous fatal finding remains fixed: per-page ValidateContent still executes before pagination appends content. The terminal fix changes test startup and cleanup only; extraction assertions, fixtures and navigation deadlines remain unchanged.",
-        "Independently ran TestBrowserExtractPaginated: all subtests passed, including real-extractor later-wall rejection, legitimate article acceptance and all five incomplete sequences. W7 matches the observed CI failures and accurately preserves the earlier product acceptance evidence.",
-        "Handed target probe output records passing later-entry cases; no complete line contains the artifact file stem, so no probe confirmation is emitted. No full suite or adversarial program was rerun."
+        "Previous fatal finding remains fixed. The reviewed delta changes fixture navigation budgets to the existing thirty-second production default; production validation, fixture content and assertions remain unchanged.",
+        "Independently ran TestBrowserExtractPaginated successfully. Reviewed CI deadline failures and handed mutation output: the pending-resource regression still rejects full-load waiting after thirty seconds. No two-second product requirement is weakened.",
+        "W8 records the rationale and explicit user-directed continuation without resetting prior rounds. Handed target probe output passes but contains no artifact file stem; no probe confirmation is emitted. No full suite, probe or mutation was rerun."
       ]
     }
   ],
