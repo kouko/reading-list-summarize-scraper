@@ -1,5 +1,24 @@
 # Real-site recovery validation
 
+Latest validation at `910149b4b4a8c36e46919ce9ce0f99d0376a8c47` on 2026-10-25: all six later-page entries now recover the checked complete target prose, including Toyokeizai page two. Every source-page anchor appears once in order, the checked prose matches the corresponding first-page output, and the supplied URL remains the saved source and filename identity. The initial Toyokeizai failure and its original code-version evidence remain below and in the JSON; they have not been rewritten as success.
+
+| Corrected-code entry | CLI exit | Target blocks present / checked | Page anchors once in order |
+|---|---:|---:|---|
+| itmedia-page3 | 0 | 61 / 61 | Yes |
+| itmedia-page5 | 0 | 61 / 61 | Yes |
+| president-page2 | 0 | 38 / 38 | Yes |
+| president-page3 | 0 | 38 / 38 | Yes |
+| yahoo-page2 | 0 | 5 / 5 | Yes |
+| toyokeizai-page2 | 0 | 22 / 22 | Yes |
+
+The correction nominates an explicit page-one query for numeric query pagination. Toyokeizai's bare article URL did not lead through the requested page, whereas the corrected page-one candidate completes all three pages. The fresh Toyokeizai result contains all 22 independently checked target blocks from the earlier display=b first-page baseline and the same-day independently fetched source pages. Thus the query difference is resolved through observed body evidence rather than waived as page furniture.
+
+Six new CLI runs used fresh per-case configs, profiles and outputs under `/private/tmp/rlss-recovery-retest-910149b/`, with strictly at most two CLI processes at once and no timeouts. ITmedia page five retained max_pages 5; other cases retained 10 and the previously documented extraction settings. Commands were `GOCACHE=/private/tmp/rlss-go-build go build -o /private/tmp/rlss-first-page-recovery-cli-910149b ./cmd/rlss`, `python3 /private/tmp/rlss-recovery-retest.py` and `python3 /private/tmp/rlss-recovery-retest-check.py`. The checker compares the new outputs with the existing first-page outputs and the independent same-day source-block observations. Raw bodies and source text stay temporary.
+
+The twelve first-page and three negative-control results below are explicitly carried forward from `0ecf509`, since this correction changes candidate nomination for later entries. They were not rerun in this bounded evidence follow-up. A later independent acceptance run remains responsible for current-code coverage of the full corpus. The Mynavi limitation remains: only 26 of its 27 historical blocks were re-observed in fresh HTTP; that one unconfirmed block has not been promoted to confirmed evidence. These six new runs bring this task's recorded total to 27 CLI runs.
+
+## Initial validation before the correction
+
 At code `0ecf509` on 2026-10-25 (Asia/Taipei), five of six later-page entries recovered the complete checked target prose. Toyokeizai page two failed safely without output, so Acceptance #1 is not yet satisfied. All twelve first-page entries exited successfully. The individual URLs, selectors, page counts, hashes and results are in [recovery-cases.json](recovery-cases.json).
 
 | Entry | Source pages | CLI exit | Target blocks present / checked | Unique page anchors in order |

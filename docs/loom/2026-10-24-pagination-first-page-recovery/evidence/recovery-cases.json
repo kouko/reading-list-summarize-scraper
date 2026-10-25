@@ -1294,5 +1294,533 @@
     "Initial harness scheduled at most two CLI processes; the separate preservation control briefly raised total concurrency to three. No run timed out.",
     "Yahoo is a distributor; ten site groups are not ten independent publishers.",
     "No raw article text, browser profiles or production data are committed."
-  ]
+  ],
+  "current_validation": {
+    "validated_at": "2026-10-25 Asia/Taipei",
+    "code_commit": "910149b4b4a8c36e46919ce9ce0f99d0376a8c47",
+    "overall_result": "PASS for six later-entry recovery cases; earlier first-page Mynavi fresh-source limitation remains",
+    "cli_runs": 6,
+    "later_entry_cases": [
+      {
+        "id": "itmedia-page3",
+        "kind": "recovery",
+        "baseline_id": "pcuser",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_3.html",
+        "next_page_selector": "link[rel=next]",
+        "max_pages": 10,
+        "source_pages": 5,
+        "exit_code": 0,
+        "elapsed_seconds": 22.15,
+        "content_sha256": "a7a82a80e6a0626d21b43128f534daa245d2b4da3e92f4d86b674efb1fba0e28",
+        "content_bytes": 84757,
+        "original_url_identity_preserved": true,
+        "body_pages": [
+          {
+            "page": 1,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 13,
+            "blocks_present": 13,
+            "fresh_http_blocks_present": 13
+          },
+          {
+            "page": 2,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_2.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 9,
+            "blocks_present": 9,
+            "fresh_http_blocks_present": 9
+          },
+          {
+            "page": 3,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_3.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 12,
+            "blocks_present": 12,
+            "fresh_http_blocks_present": 12
+          },
+          {
+            "page": 4,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_4.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 9,
+            "blocks_present": 9,
+            "fresh_http_blocks_present": 9
+          },
+          {
+            "page": 5,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_5.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 18,
+            "blocks_present": 18,
+            "fresh_http_blocks_present": 18
+          }
+        ],
+        "page_anchors": [
+          {
+            "page": 1,
+            "sha256": "1441ea7c610b8df428573a3b13a187dd77a11529f349e312a0fa4eadb2623da6",
+            "occurrences": 1,
+            "offset": 1653
+          },
+          {
+            "page": 2,
+            "sha256": "b90d0a1d00ad808b487620d56fe8519ecd36c2455374ecaa6b0a81e4c2d0bfce",
+            "occurrences": 1,
+            "offset": 8317
+          },
+          {
+            "page": 3,
+            "sha256": "a1812ce7d7372de4a207a4118900fc25a4d3a46963584e14afbc91a166a878de",
+            "occurrences": 1,
+            "offset": 13692
+          },
+          {
+            "page": 4,
+            "sha256": "a9bf71c5a7e097ecea795cefa2bd4e0d5c69b7a0a1b7f93c34155e67df7a2c2f",
+            "occurrences": 1,
+            "offset": 19882
+          },
+          {
+            "page": 5,
+            "sha256": "caf28ba397790336400336cfdd536b2dc42c2da96774bd626f7834a43144ab58",
+            "occurrences": 1,
+            "offset": 25425
+          }
+        ],
+        "anchors_once_in_order": true,
+        "target_prose_sha256": "c69e34f5a7a0b5aaec87bf64878212ce8ab6d190f9e6b3b9405aa253514d7233",
+        "outcome": "PASS",
+        "target_prose_matches_first_page": true
+      },
+      {
+        "id": "itmedia-page5",
+        "kind": "recovery",
+        "baseline_id": "pcuser",
+        "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_5.html",
+        "next_page_selector": "link[rel=next]",
+        "max_pages": 5,
+        "source_pages": 5,
+        "exit_code": 0,
+        "elapsed_seconds": 28.07,
+        "content_sha256": "4bf2cab4ed8cb7bd54d79c5ad9093beb0c6f66023ef708223dce8e3d7f1f2f8e",
+        "content_bytes": 85141,
+        "original_url_identity_preserved": true,
+        "body_pages": [
+          {
+            "page": 1,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 13,
+            "blocks_present": 13,
+            "fresh_http_blocks_present": 13
+          },
+          {
+            "page": 2,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_2.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 9,
+            "blocks_present": 9,
+            "fresh_http_blocks_present": 9
+          },
+          {
+            "page": 3,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_3.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 12,
+            "blocks_present": 12,
+            "fresh_http_blocks_present": 12
+          },
+          {
+            "page": 4,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_4.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 9,
+            "blocks_present": 9,
+            "fresh_http_blocks_present": 9
+          },
+          {
+            "page": 5,
+            "url": "https://www.itmedia.co.jp/pcuser/articles/2606/08/news096_5.html",
+            "method": "fresh HTTP target body p/h2/h3 blocks >35 characters",
+            "blocks_checked": 18,
+            "blocks_present": 18,
+            "fresh_http_blocks_present": 18
+          }
+        ],
+        "page_anchors": [
+          {
+            "page": 1,
+            "sha256": "1441ea7c610b8df428573a3b13a187dd77a11529f349e312a0fa4eadb2623da6",
+            "occurrences": 1,
+            "offset": 1653
+          },
+          {
+            "page": 2,
+            "sha256": "b90d0a1d00ad808b487620d56fe8519ecd36c2455374ecaa6b0a81e4c2d0bfce",
+            "occurrences": 1,
+            "offset": 8317
+          },
+          {
+            "page": 3,
+            "sha256": "a1812ce7d7372de4a207a4118900fc25a4d3a46963584e14afbc91a166a878de",
+            "occurrences": 1,
+            "offset": 13692
+          },
+          {
+            "page": 4,
+            "sha256": "a9bf71c5a7e097ecea795cefa2bd4e0d5c69b7a0a1b7f93c34155e67df7a2c2f",
+            "occurrences": 1,
+            "offset": 19882
+          },
+          {
+            "page": 5,
+            "sha256": "caf28ba397790336400336cfdd536b2dc42c2da96774bd626f7834a43144ab58",
+            "occurrences": 1,
+            "offset": 25525
+          }
+        ],
+        "anchors_once_in_order": true,
+        "target_prose_sha256": "c69e34f5a7a0b5aaec87bf64878212ce8ab6d190f9e6b3b9405aa253514d7233",
+        "outcome": "PASS",
+        "target_prose_matches_first_page": true
+      },
+      {
+        "id": "president-page2",
+        "kind": "recovery",
+        "baseline_id": "president",
+        "url": "https://president.jp/articles/-/120600?page=2",
+        "next_page_selector": "a.next",
+        "max_pages": 10,
+        "source_pages": 6,
+        "exit_code": 0,
+        "elapsed_seconds": 27.97,
+        "content_sha256": "6d882ea2075a7478d8eae69f9a30775d905b1211136a340e0cf1d820bd93a51e",
+        "content_bytes": 22404,
+        "original_url_identity_preserved": true,
+        "body_pages": [
+          {
+            "page": 1,
+            "url": "https://president.jp/articles/-/120600",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 2,
+            "url": "https://president.jp/articles/-/120600?page=2",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 7,
+            "blocks_present": 7,
+            "fresh_http_blocks_present": 7
+          },
+          {
+            "page": 3,
+            "url": "https://president.jp/articles/-/120600?page=3",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 4,
+            "url": "https://president.jp/articles/-/120600?page=4",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 5,
+            "url": "https://president.jp/articles/-/120600?page=5",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 6,
+            "url": "https://president.jp/articles/-/120600?page=6",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 7,
+            "blocks_present": 7,
+            "fresh_http_blocks_present": 7
+          }
+        ],
+        "page_anchors": [
+          {
+            "page": 1,
+            "sha256": "f32178f6cf9f758482e203bcacb8dcee6554f25884b46c2bb3f4aa52738bef58",
+            "occurrences": 1,
+            "offset": 202
+          },
+          {
+            "page": 2,
+            "sha256": "0d8d2a7fe1e2168e902c03f8a27f6e5b32a0cceaa064b30f7717bb027866e1a9",
+            "occurrences": 1,
+            "offset": 1668
+          },
+          {
+            "page": 3,
+            "sha256": "4dca554647226aa07841755ed4669fe3f17a6299a274a2b1727016a919d4d5ed",
+            "occurrences": 1,
+            "offset": 2524
+          },
+          {
+            "page": 4,
+            "sha256": "817bf74e4ed295f956a4c1f5d574425c367501647af32e735c4331fa4589c143",
+            "occurrences": 1,
+            "offset": 3570
+          },
+          {
+            "page": 5,
+            "sha256": "dfaa5166ecdcb276555ebcc17c34cc925f445195855aaedbabb85ee6f93eedca",
+            "occurrences": 1,
+            "offset": 4756
+          },
+          {
+            "page": 6,
+            "sha256": "aa66a83fe3f71864f47c9add52f8f236726eb11a4afccfc46601550bb5220e41",
+            "occurrences": 1,
+            "offset": 6117
+          }
+        ],
+        "anchors_once_in_order": true,
+        "target_prose_sha256": "e5685abc8ba6231a9052b1fe0547d36d1005daac973a84ef6373f8ec090b5bae",
+        "outcome": "PASS",
+        "target_prose_matches_first_page": true
+      },
+      {
+        "id": "president-page3",
+        "kind": "recovery",
+        "baseline_id": "president",
+        "url": "https://president.jp/articles/-/120600?page=3",
+        "next_page_selector": "a.next",
+        "max_pages": 10,
+        "source_pages": 6,
+        "exit_code": 0,
+        "elapsed_seconds": 27.35,
+        "content_sha256": "afdbedca29217df79341093df64cc001f93183afdd0650a9e2dbc7697be295e0",
+        "content_bytes": 22404,
+        "original_url_identity_preserved": true,
+        "body_pages": [
+          {
+            "page": 1,
+            "url": "https://president.jp/articles/-/120600",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 2,
+            "url": "https://president.jp/articles/-/120600?page=2",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 7,
+            "blocks_present": 7,
+            "fresh_http_blocks_present": 7
+          },
+          {
+            "page": 3,
+            "url": "https://president.jp/articles/-/120600?page=3",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 4,
+            "url": "https://president.jp/articles/-/120600?page=4",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 5,
+            "url": "https://president.jp/articles/-/120600?page=5",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 6,
+            "url": "https://president.jp/articles/-/120600?page=6",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 7,
+            "blocks_present": 7,
+            "fresh_http_blocks_present": 7
+          }
+        ],
+        "page_anchors": [
+          {
+            "page": 1,
+            "sha256": "f32178f6cf9f758482e203bcacb8dcee6554f25884b46c2bb3f4aa52738bef58",
+            "occurrences": 1,
+            "offset": 202
+          },
+          {
+            "page": 2,
+            "sha256": "0d8d2a7fe1e2168e902c03f8a27f6e5b32a0cceaa064b30f7717bb027866e1a9",
+            "occurrences": 1,
+            "offset": 1668
+          },
+          {
+            "page": 3,
+            "sha256": "4dca554647226aa07841755ed4669fe3f17a6299a274a2b1727016a919d4d5ed",
+            "occurrences": 1,
+            "offset": 2524
+          },
+          {
+            "page": 4,
+            "sha256": "817bf74e4ed295f956a4c1f5d574425c367501647af32e735c4331fa4589c143",
+            "occurrences": 1,
+            "offset": 3570
+          },
+          {
+            "page": 5,
+            "sha256": "dfaa5166ecdcb276555ebcc17c34cc925f445195855aaedbabb85ee6f93eedca",
+            "occurrences": 1,
+            "offset": 4756
+          },
+          {
+            "page": 6,
+            "sha256": "aa66a83fe3f71864f47c9add52f8f236726eb11a4afccfc46601550bb5220e41",
+            "occurrences": 1,
+            "offset": 6117
+          }
+        ],
+        "anchors_once_in_order": true,
+        "target_prose_sha256": "e5685abc8ba6231a9052b1fe0547d36d1005daac973a84ef6373f8ec090b5bae",
+        "outcome": "PASS",
+        "target_prose_matches_first_page": true
+      },
+      {
+        "id": "yahoo-page2",
+        "kind": "recovery",
+        "baseline_id": "yahoo",
+        "url": "https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129?page=2",
+        "next_page_selector": "a[data-cl-params*=\"_cl_link:next;\"]",
+        "max_pages": 10,
+        "source_pages": 2,
+        "exit_code": 0,
+        "elapsed_seconds": 10.17,
+        "content_sha256": "5f6984843c6c75d93167a5b7da8e9148c70272c965ec012bf7b50143bda66898",
+        "content_bytes": 6279,
+        "original_url_identity_preserved": true,
+        "body_pages": [
+          {
+            "page": 1,
+            "url": "https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 4,
+            "blocks_present": 4,
+            "fresh_http_blocks_present": 4
+          },
+          {
+            "page": 2,
+            "url": "https://news.yahoo.co.jp/articles/04860bcd34a7f82d074799f216f7f76dbfd12129?page=2",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 1,
+            "blocks_present": 1,
+            "fresh_http_blocks_present": 1
+          }
+        ],
+        "page_anchors": [
+          {
+            "page": 1,
+            "sha256": "cef2513b63ca9d726dfed4e3c4d5b5153737e1fa0fce769be9c014295cdba441",
+            "occurrences": 1,
+            "offset": 484
+          },
+          {
+            "page": 2,
+            "sha256": "53a2134ed61ecb377bb32c8644c510d594d2c6dfcc652a1e2c2e786878278199",
+            "occurrences": 1,
+            "offset": 1519
+          }
+        ],
+        "anchors_once_in_order": true,
+        "target_prose_sha256": "e345f01c92009d5bd5ccf51e2207adec9dcd02122af715f391a5bacc3aca2d73",
+        "outcome": "PASS",
+        "target_prose_matches_first_page": true
+      },
+      {
+        "id": "toyokeizai-page2",
+        "kind": "recovery",
+        "baseline_id": "toyokeizai",
+        "url": "https://toyokeizai.net/articles/-/859253?page=2",
+        "next_page_selector": "a.lead-heading__link",
+        "max_pages": 10,
+        "source_pages": 3,
+        "exit_code": 0,
+        "elapsed_seconds": 17.58,
+        "content_sha256": "09d441b77035536554feab101126883bfdd3fde8da678faf4c446fb857016e97",
+        "content_bytes": 8149,
+        "original_url_identity_preserved": true,
+        "body_pages": [
+          {
+            "page": 1,
+            "url": "https://toyokeizai.net/articles/-/859253?display=b",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 6,
+            "blocks_present": 6,
+            "fresh_http_blocks_present": 6
+          },
+          {
+            "page": 2,
+            "url": "https://toyokeizai.net/articles/-/859253?page=2",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 8,
+            "blocks_present": 8,
+            "fresh_http_blocks_present": 8
+          },
+          {
+            "page": 3,
+            "url": "https://toyokeizai.net/articles/-/859253?page=3",
+            "method": "independent per-page browser prose >=60 normalized characters, rechecked against fresh HTTP text",
+            "blocks_checked": 8,
+            "blocks_present": 8,
+            "fresh_http_blocks_present": 8
+          }
+        ],
+        "page_anchors": [
+          {
+            "page": 1,
+            "sha256": "da34f44995ba422aac5179b246e7f9df7efd5bde32787e65e8953fddcbe8e5e8",
+            "occurrences": 1,
+            "offset": 321
+          },
+          {
+            "page": 2,
+            "sha256": "356c9f4df8157d2a357b14c81691362cd8f7ddfce69a0ee96fd47231a8ca004c",
+            "occurrences": 1,
+            "offset": 1015
+          },
+          {
+            "page": 3,
+            "sha256": "ffc29a6f917f64f9928ff3a828550bfb519c60f811175d2a57b171f3864c59ff",
+            "occurrences": 1,
+            "offset": 1961
+          }
+        ],
+        "anchors_once_in_order": true,
+        "target_prose_sha256": "6ccf1524590007c8c467fcdbc905229a82657694176de5bc2587756870dd9490",
+        "outcome": "PASS",
+        "target_prose_matches_first_page": true
+      }
+    ],
+    "carried_forward": {
+      "code_commit": "0ecf509a67d97078b74c3d63234696cd0fefd121",
+      "first_page_articles": 12,
+      "negative_controls": 3,
+      "reason": "The fix changes the first-page candidate for later entries only; existing first-page outputs, same-day fresh HTTP source checks and negative-control results are retained explicitly, not represented as rerun at the corrected commit."
+    },
+    "strict_maximum_concurrent_cli_processes": 2,
+    "timeouts": 0,
+    "all_original_url_identities_preserved": true,
+    "raw_artifacts": "/private/tmp/rlss-recovery-retest-910149b/"
+  }
 }
