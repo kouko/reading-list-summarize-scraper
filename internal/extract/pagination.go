@@ -14,14 +14,20 @@ const defaultMaxPages = 10
 
 var numberedArticlePath = regexp.MustCompile(`^(.*)_([0-9]+)(\.[^/.]+)$`)
 
-// Canonical URLs may omit query parameters but must not change article keys.
-func compatibleCanonical(identity, canonical string) bool {
-	canonicalIdentity, _, _, err := articlePage(canonical)
+// Canonical URLs may omit query parameters but must not change article keys
+// or contradict the actual document's position with an explicit page number.
+func compatibleCanonical(identity, canonical string, position int) bool {
+	canonicalIdentity, canonicalPage, _, err := articlePage(canonical)
 	if err != nil {
 		return false
 	}
 	a, _ := url.Parse(identity)
 	b, _ := url.Parse(canonicalIdentity)
+	actualCanonical, _ := url.Parse(canonical)
+	_, explicitQueryPage := actualCanonical.Query()["page"]
+	if (explicitQueryPage || numberedArticlePath.MatchString(actualCanonical.Path)) && canonicalPage != position {
+		return false
+	}
 	if a.Scheme != b.Scheme || a.Host != b.Host || a.Path != b.Path {
 		return false
 	}

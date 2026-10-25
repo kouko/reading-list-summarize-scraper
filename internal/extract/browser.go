@@ -231,7 +231,7 @@ return '';
 			return "", fmt.Errorf("article identity mismatch: page %s", current)
 		}
 		if metadata.Canonical != "" {
-			if !compatibleCanonical(identity, metadata.Canonical) {
+			if !compatibleCanonical(identity, metadata.Canonical, position) {
 				return "", fmt.Errorf("article identity mismatch: canonical on %s", current)
 			}
 		}
@@ -272,7 +272,7 @@ return '';
 			return "", "", fmt.Errorf("article identity mismatch: page %s", pageURL)
 		}
 		if requestedPage > 1 && metadata.Canonical != "" {
-			if !compatibleCanonical(identity, metadata.Canonical) {
+			if !compatibleCanonical(identity, metadata.Canonical, position) {
 				return "", "", fmt.Errorf("article identity mismatch: canonical on %s", pageURL)
 			}
 		}

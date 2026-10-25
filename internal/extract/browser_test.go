@@ -124,6 +124,8 @@ func TestBrowserExtractPaginated(t *testing.T) {
 				fmt.Fprintf(w, `<link rel="prev" href="%s"><body><article>second</article></body>`, prev)
 			} else if kind == "unavailable" {
 				fmt.Fprint(w, `<body><article> </article></body>`)
+			} else if kind == "canonical" {
+				fmt.Fprint(w, `<link rel="canonical" href="?page=2&amp;kind=canonical"><body><article>second</article><a class="next" href="?page=2&amp;kind=canonical">next</a></body>`)
 			} else {
 				fmt.Fprint(w, `<body><article>first</article></body>`)
 			}
@@ -191,7 +193,7 @@ func TestBrowserExtractPaginated(t *testing.T) {
 		for _, tc := range []struct {
 			kind, reason string
 			maxPages     int
-		}{{"foreign", "article identity mismatch", 2}, {"missing-entry", "omits requested page", 2}, {"unavailable", "empty content", 2}, {"limit", "recovery exceeds maxPages", 1}} {
+		}{{"foreign", "article identity mismatch", 2}, {"missing-entry", "omits requested page", 2}, {"unavailable", "empty content", 2}, {"limit", "recovery exceeds maxPages", 1}, {"canonical", "article identity mismatch: canonical", 2}} {
 			got, err := b.ExtractPaginated(server.URL+"/recover?page=2&kind="+tc.kind, js, ".next", tc.maxPages, timeout, 0)
 			if err == nil || got != "" || !strings.Contains(err.Error(), tc.reason) {
 				t.Errorf("%s recovery: got %q, %v; want %s", tc.kind, got, err, tc.reason)
