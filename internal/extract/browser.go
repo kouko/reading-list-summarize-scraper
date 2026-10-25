@@ -91,7 +91,7 @@ func (b *Browser) ExtractPaginated(startURL, jsCode, nextSelector string, maxPag
 	metadataJS := `(function(){
 var links=Array.from(document.querySelectorAll('link[rel~=first],a[rel~=first],link[rel~=prev],a[rel~=prev]'));
 var canonical=document.querySelector('link[rel~=canonical]');
-return {url:location.href,canonical:canonical&&canonical.href||'',text:document.body.innerText,earlier:links.filter(e=>(e.getAttribute('href')||'').trim()).map(e=>e.href)};
+return {url:location.href,canonical:canonical&&canonical.href||'',text:document.title+'\n'+document.body.innerText,earlier:links.filter(e=>(e.getAttribute('href')||'').trim()).map(e=>e.href)};
 })()`
 	var metadata struct {
 		URL, Canonical, Text string
