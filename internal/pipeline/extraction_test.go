@@ -19,6 +19,7 @@ import (
 type stubExtractor struct {
 	headed   bool
 	calls    []string
+	urls     []string
 	first    string
 	firstErr error
 	retry    string
@@ -28,12 +29,14 @@ type stubExtractor struct {
 const verifiedTranscript = `<!-- rlss-video-v1 {"platform":"youtube","target":"abc","language":"ja","source":"automatic","evidence":"original-audio-asr-association"} -->` + "\n\nSubtitle language: ja\nSubtitle source: automatic\n\n今日は字幕について話します。"
 
 func (s *stubExtractor) UsesHeaded(string) bool { return s.headed }
-func (s *stubExtractor) ExtractURL(string) (string, error) {
+func (s *stubExtractor) ExtractURL(url string) (string, error) {
 	s.calls = append(s.calls, "initial")
+	s.urls = append(s.urls, url)
 	return s.first, s.firstErr
 }
-func (s *stubExtractor) ExtractURLHeaded(string) (string, error) {
+func (s *stubExtractor) ExtractURLHeaded(url string) (string, error) {
 	s.calls = append(s.calls, "headed")
+	s.urls = append(s.urls, url)
 	return s.retry, s.retryErr
 }
 
@@ -76,6 +79,9 @@ func TestProcessItemWithFallback(t *testing.T) {
 			cfg := &config.Config{OutputDir: dir, Extract: config.ExtractConfig{HeadedOnBlock: !tt.blockDisabled}}
 			p := New(cfg, &tt.s, nil)
 			rawURL := "https://example.com/article"
+			if strings.HasPrefix(tt.name, "pagination") {
+				rawURL += "?page=3"
+			}
 			if strings.HasPrefix(tt.name, "video") {
 				rawURL = "https://www.youtube.com/watch?v=abc"
 				if tt.name == "video wrong target" {
@@ -91,6 +97,11 @@ func TestProcessItemWithFallback(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tt.s.calls, tt.wantCalls) {
 				t.Fatalf("calls=%v, want %v", tt.s.calls, tt.wantCalls)
+			}
+			for _, gotURL := range tt.s.urls {
+				if gotURL != rawURL {
+					t.Fatalf("attempt URL=%q, want original %q", gotURL, rawURL)
+				}
 			}
 			files, err := filepath.Glob(filepath.Join(dir, "*", "*"))
 			if err != nil {
@@ -109,13 +120,22 @@ func TestProcessItemWithFallback(t *testing.T) {
 			if err != nil || stripFrontmatter(string(data)) != tt.want {
 				t.Fatalf("saved content=%q, err=%v; want %q", data, err, tt.want)
 			}
+			if strings.HasPrefix(tt.name, "pagination") {
+				if !strings.Contains(string(data), fmt.Sprintf("url: %q\n", rawURL)) || !strings.Contains(filepath.Base(files[0]), output.SHA8(rawURL)) {
+					t.Fatalf("saved output lost supplied URL identity: %s\n%s", files[0], data)
+				}
+				p.RebuildIndex()
+				if p.index.ContentPath(output.SHA8(rawURL)) != files[0] || p.index.Has(output.SHA8("https://example.com/article")) {
+					t.Fatal("output index replaced the supplied page URL with the first page")
+				}
+			}
 		})
 	}
 }
 
 func TestProcessBatchFailedPaginationPreservesFiles(t *testing.T) {
 	dir := t.TempDir()
-	item := source.ReadingItem{URL: "https://example.com/article"}
+	item := source.ReadingItem{URL: "https://example.com/article?page=3"}
 	out := filepath.Join(dir, output.DomainDir(item.URL))
 	if err := os.MkdirAll(out, 0755); err != nil {
 		t.Fatal(err)
@@ -145,6 +165,9 @@ func TestProcessBatchFailedPaginationPreservesFiles(t *testing.T) {
 	}
 	if !reflect.DeepEqual(s.calls, []string{"initial", "headed"}) {
 		t.Fatalf("unexpected retries: %v", s.calls)
+	}
+	if !reflect.DeepEqual(s.urls, []string{item.URL, item.URL}) {
+		t.Fatalf("retry did not restart supplied page: %v", s.urls)
 	}
 	entries, err := os.ReadDir(out)
 	if err != nil || len(entries) != len(files) {
