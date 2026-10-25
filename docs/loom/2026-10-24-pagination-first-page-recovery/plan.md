@@ -19,6 +19,11 @@ charter: 1.1
 - Test: A1 positive: six-real-later-entries; negative: unverifiable-case-not-success. A2 positive: source-paragraphs-once-in-order; boundary: same-article-corpus. A3 positive: real-first-page-match; negative: low-cap-no-output. A4 positive: twelve-first-page-regressions; negative: failed-output-not-overwritten.
 - Risk: agent-decided — Apply REQ-1–4 using isolated CLI and independent source-body checks. Include ITmedia3/5, PRESIDENT2/3, Yahoo2 and Toyokeizai2, plus the existing twelve first-page articles. Record actual restrictions honestly; keep raw copyrighted text and profiles temporary.
 
+**W4-01 Preserve the inherited review record as historical evidence** after: W3-01 acceptance: 4
+- Files: docs/loom/2026-10-24-reliable-itmedia-pagination/attestation.json, docs/loom/2026-10-24-pagination-first-page-recovery/evidence/pr22-attestation.json
+- Test: A4 positive: cumulative-branch-identifies-current-change; boundary: archived-record-bytes-unchanged.
+- Risk: agent-decided — Publication rejected two recognized attestations in this cumulative branch. Move the inherited generated record without editing its bytes; retain PR22's branch, runtime behavior and current generated record. Closing review must judge the new digest before regenerating evidence.
+
 ## Simplicity check
 - none found
 
