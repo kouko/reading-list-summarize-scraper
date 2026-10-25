@@ -1,0 +1,83 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-24-pagination-first-page-recovery",
+  "content_digest": "97275ca2cee0754ef0d421c3fbc1b72ca0d543d0",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "env GOCACHE=/private/tmp/rlss-go-build go test -json -count=1 -run '^TestBrowserExtractPaginated$' ./internal/extract",
+      "artifact": "internal/extract/browser_test.go",
+      "result": "pass",
+      "command_digest": "733f08d54907f666403c66326314d5838a5fea12d258653c2fd2c646136fac4d",
+      "evidence": "parsed",
+      "passed": 11
+    }
+  ],
+  "verdicts": [
+    {
+      "verdict": "PASS",
+      "lens": "code",
+      "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
+      "review_target_sha": "e1b31275ea9fa8ff5fa05713b7aa9ce4f9ae0e72",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md exists",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Reviewed the cumulative branch, including the unmerged pagination baseline, against both intents/specifications/plans and the standing product principles. Shared validation, complete-only traversal, bounded recovery, canonical-position validation, original output identity and retry preservation are coherent.",
+        "Focused tests from pagination_test.go, pagination_entry_probe_test.go, pool_test.go, extraction_test.go and pipeline_test.go ran and passed without skips. Judged the handed browser_test.go adversarial output at the review target: all named browser subtests passed. Did not rerun that program or the complete suite.",
+        "Checked pinned CDP Navigate return fields, lifecycle frame/loader identifiers and responseReceived identifiers against local dependency source. Independent acceptance records a fresh d8e89a7 CLI rerun of all four Acceptance conditions and eleven UI flows; subsequent target changes are acceptance documentation only. No probe confirmation is emitted because handed output does not contain the program file stem browser_test."
+      ],
+      "reviewer": "first_page_code_review",
+      "vendor": "codex",
+      "model": "inherited"
+    },
+    {
+      "verdict": "PASS",
+      "lens": "spec+adversarial",
+      "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
+      "review_target_sha": "e1b31275ea9fa8ff5fa05713b7aa9ce4f9ae0e72",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS",
+        "design-conformance": "N/A — No DESIGN.md exists; the eleven spec UI flows were reconciled against implementation and latest acceptance evidence.",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Reconciled all four recovery REQs and Acceptance conditions and all eleven UI flows in both directions, including bounded discovery/forward phases, original-entry inclusion, identity/canonical rejection, unusable pages, challenge retry suppression, original output identity and old-file protection. The earlier baseline rejection behavior is explicitly superseded by the confirmed recovery intent.",
+        "Read the latest d8e89a7 acceptance section and its raw sanitized results and local-flow results: 18 successful real cases, 279 checked first-page blocks and 225 recovery blocks. Source capture reuse, representative prose coverage, historical failures and the absence of a persistent watch run are disclosed rather than presented as new exhaustive observations. No package suite or handed adversarial program was rerun.",
+        "Handed e1b3127 JSONL shows TestBrowserExtractPaginated and its subtests actually passed. No probe_confirmation is emitted because no complete handed output line contains the artifact stem browser_test, as required by the reviewer contract. Model oracle inherited/unobservable/null; zero redispatches."
+      ],
+      "reviewer": "first_page_spec_closing_review",
+      "vendor": "codex",
+      "model": "inherited"
+    }
+  ],
+  "findings": [],
+  "selection": null
+}
