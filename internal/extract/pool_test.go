@@ -115,22 +115,35 @@ func TestPoolRecoveryPreservesPaginationProfile(t *testing.T) {
 	previous := &recordingBrowser{}
 	p.instances[poolKey{profile: "Default"}] = previous
 	b := &recordingBrowser{}
+	wantHeaded := false
 	p.newBrowser = func(headed bool, profile, _ string) (poolBrowser, error) {
 		if !previous.closed {
 			t.Fatal("different profile still owns shared user data directory")
 		}
-		if !headed || profile != "Profile 2" {
+		if headed != wantHeaded || profile != "Profile 2" {
 			t.Fatalf("headed=%v profile=%q", headed, profile)
 		}
 		return b, nil
 	}
 	defer p.CloseAll()
-	url := "https://example.com/article"
-	if body, err := p.ExtractURLHeaded(url); err != nil || body != "article" {
-		t.Fatalf("body=%q error=%v", body, err)
-	}
-	if b.url != url || b.js != p.jsCode || b.selector != "a.next" || b.maxPages != 3 || b.timeout != cfg.HeadedTimeout || b.wait != cfg.WaitAfterLoad {
-		t.Fatalf("extraction settings lost: %+v", b)
+	url := "https://example.com/article?page=3"
+	for _, headed := range []bool{false, true} {
+		wantHeaded = headed
+		var body string
+		var err error
+		wantTimeout := cfg.Timeout
+		if headed {
+			body, err = p.ExtractURLHeaded(url)
+			wantTimeout = cfg.HeadedTimeout
+		} else {
+			body, err = p.ExtractURL(url)
+		}
+		if err != nil || body != "article" {
+			t.Fatalf("body=%q error=%v", body, err)
+		}
+		if b.url != url || b.js != p.jsCode || b.selector != "a.next" || b.maxPages != 3 || b.timeout != wantTimeout || b.wait != cfg.WaitAfterLoad {
+			t.Fatalf("extraction settings lost: %+v", b)
+		}
 	}
 }
 

@@ -1,0 +1,83 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-24-pagination-first-page-recovery",
+  "content_digest": "61deaaf4eb532bc493e089e1d30010b7d8680b31",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "env GOCACHE=/private/tmp/rlss-go-build go test -json -count=1 -run '^TestBrowserExtractPaginated$' ./internal/extract",
+      "artifact": "internal/extract/browser_test.go",
+      "result": "pass",
+      "command_digest": "733f08d54907f666403c66326314d5838a5fea12d258653c2fd2c646136fac4d",
+      "evidence": "parsed",
+      "passed": 11
+    }
+  ],
+  "verdicts": [
+    {
+      "verdict": "PASS",
+      "lens": "code",
+      "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
+      "review_target_sha": "1786aba5eb767a29595024c9f9f8daa9fbad85e3",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md exists",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Resumed the same review episode and reviewed only e1b3127..1786aba. Previous findings: none. The delta adds the current generated review record, adds the observed publication-conflict repair to plan W4, and archives the inherited PR22 record without changing its bytes. Both old and archived paths resolve to blob 1beb501eb48bdf040727de0a961ace562db84016.",
+        "No production, test or acceptance-report files changed; prior code scores and focused-test evidence remain applicable. Handed target JSONL shows TestBrowserExtractPaginated and its subtests passed without failure or skips. No test, probe or complete suite was rerun. Current generated evidence must be regenerated after this verdict as planned.",
+        "Archival preserves historical review evidence while removing its old recognized attestation path; no new abstraction, runtime policy or external surface is introduced. No probe confirmation is emitted because complete handed output lines lack the browser_test artifact stem. Model oracle inherited/unobservable/null; zero redispatches, one same-identity follow-up."
+      ],
+      "reviewer": "first_page_code_review",
+      "vendor": "codex",
+      "model": "inherited"
+    },
+    {
+      "verdict": "PASS",
+      "lens": "spec+adversarial",
+      "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
+      "review_target_sha": "1786aba5eb767a29595024c9f9f8daa9fbad85e3",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS",
+        "design-conformance": "N/A — No DESIGN.md exists; the metadata-only fix does not change the previously reconciled UI flows.",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Round 2 of the same bounded episode; previous findings were empty. Reviewed only e1b3127..1786aba: the W4 plan addition, generated current attestation and 100% rename of inherited PR22 evidence. Old and archived record blobs both equal 1beb501eb48bdf040727de0a961ace562db84016; no runtime, tests, acceptance report or requirement changed.",
+        "Read installed loom_checker/verification.py and invoked identify_change against the cumulative base and new target: it returns ('2026-10-24-pagination-first-page-recovery', None). W4 records the observed publication failure and minimal preservation fix in the appropriate plan fields. The existing generated attestation records the earlier checkpoint and must be regenerated after these verdicts, as explicitly assigned; it is not evidence of finalization at this target.",
+        "The previously reconciled four REQs, four Acceptance conditions and eleven UI flows remain valid because the fix changes no product behavior. Handed 1786aba browser JSONL has 13 passed test events and zero failures; no program or suite was rerun and no probe_confirmation is emitted because its complete output lines lack browser_test. Model oracle inherited/unobservable/null; zero completed redispatches, same-identity followup 1."
+      ],
+      "reviewer": "first_page_spec_closing_review",
+      "vendor": "codex",
+      "model": "inherited"
+    }
+  ],
+  "findings": [],
+  "selection": null
+}

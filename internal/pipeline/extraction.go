@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 )
 
 type articleExtractor interface {
@@ -14,6 +17,8 @@ type articleExtractor interface {
 	ExtractURL(string) (string, error)
 	ExtractURLHeaded(string) (string, error)
 }
+
+var htmlTags = regexp.MustCompile(`<[^>]*>`)
 
 // extractWithFallback retries a failed headless extraction once with a visible
 // browser. Both attempts must pass the same content checks before being saved.
@@ -26,7 +31,7 @@ func extractWithFallback(pool articleExtractor, rawURL string, headedOnBlock boo
 	if err == nil {
 		return content, nil
 	}
-	if headed || (!headedOnBlock && (isBlockedPage(content) || isBlockedPage(err.Error()))) {
+	if headed || (!headedOnBlock && (extract.IsBlockedPage(content) || extract.IsBlockedPage(err.Error()))) {
 		return "", err
 	}
 
@@ -73,7 +78,7 @@ func videoTarget(rawURL string) (platform, target string) {
 }
 
 func validateTargetContent(rawURL, content string) error {
-	if err := validateExtractedContent(content); err != nil {
+	if err := extract.ValidateContent(content); err != nil {
 		return err
 	}
 	platform, target := videoTarget(rawURL)
@@ -100,21 +105,8 @@ func validateTargetContent(rawURL, content string) error {
 	}
 	body = strings.TrimPrefix(body, metadata)
 	// Labels, timestamps and comments alone cannot establish subtitle contents.
-	if !hasArticleBody(body) || !strings.ContainsFunc(htmlTags.ReplaceAllString(body, ""), unicode.IsLetter) {
+	if !extract.HasArticleBody(body) || !strings.ContainsFunc(htmlTags.ReplaceAllString(body, ""), unicode.IsLetter) {
 		return fmt.Errorf("unusable subtitles: no substantive cue text")
-	}
-	return nil
-}
-
-func validateExtractedContent(content string) error {
-	if strings.TrimSpace(content) == "" {
-		return fmt.Errorf("empty content (Defuddle returned nothing)")
-	}
-	if isBlockedPage(content) {
-		return fmt.Errorf("blocked by anti-bot protection (Cloudflare/CAPTCHA)")
-	}
-	if isUnavailablePage(content) {
-		return fmt.Errorf("page unavailable (maintenance / paywall / login required)")
 	}
 	return nil
 }
