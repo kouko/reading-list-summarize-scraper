@@ -90,6 +90,15 @@ func TestBrowserExtractPaginated(t *testing.T) {
 			fmt.Fprint(w, `<body><article>second</article><a class="prev" href="?id=article">previous</a></body>`)
 		case "/query-no-prev":
 			fmt.Fprint(w, `<body><article>second</article></body>`)
+		case "/query-mode":
+			switch r.URL.Query().Get("page") {
+			case "1":
+				fmt.Fprint(w, `<body><article>first</article><a class="next" href="?page=2&amp;id=article">next</a></body>`)
+			case "2":
+				fmt.Fprint(w, `<body><article>second</article></body>`)
+			default:
+				fmt.Fprint(w, `<body><article>different presentation without a forward chain</article></body>`)
+			}
 		case "/story.html":
 			fmt.Fprint(w, `<body><article>first</article><a class="next" href="/story_2.html">next</a></body>`)
 		case "/story_2.html":
@@ -162,7 +171,7 @@ func TestBrowserExtractPaginated(t *testing.T) {
 				t.Errorf("%s later query entry: got %q, %v", path, got, err)
 			}
 		}
-		for _, path := range []string{"/query?page=2&id=article", "/story_2.html"} {
+		for _, path := range []string{"/query?page=2&id=article", "/story_2.html", "/query-mode?page=2&id=article"} {
 			got, err := b.ExtractPaginated(server.URL+path, js, ".next", 2, timeout, 0)
 			if err != nil || got != "first\n\nsecond" {
 				t.Errorf("later entry %s: got %q, %v", path, got, err)

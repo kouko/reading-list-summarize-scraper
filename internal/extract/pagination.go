@@ -43,7 +43,8 @@ func articlePage(raw string) (identity string, number int, first string, err err
 	u.Fragment = ""
 	number = 1
 	q := u.Query()
-	if values, ok := q["page"]; ok {
+	values, hasPage := q["page"]
+	if hasPage {
 		if len(values) != 1 {
 			return "", 0, "", fmt.Errorf("cannot establish article first page: ambiguous page number")
 		}
@@ -64,9 +65,13 @@ func articlePage(raw string) (identity string, number int, first string, err err
 		}
 		u.Path = match[1] + match[3]
 	}
-	first = u.String()
 	u.RawQuery = q.Encode()
-	return u.String(), number, first, nil
+	identity = u.String()
+	if hasPage {
+		q.Set("page", "1")
+		u.RawQuery = q.Encode()
+	}
+	return identity, number, u.String(), nil
 }
 
 // pageFetcher loads one page and returns its extracted content plus the raw
