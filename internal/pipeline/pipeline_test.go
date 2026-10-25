@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
+	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 	"github.com/kouko/reading-list-summarize-scraper/internal/output"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
 )
@@ -52,21 +53,21 @@ func TestProcessItemRejectsCachedWall(t *testing.T) {
 
 func TestIsBlockedPage_CloudflareChallenge(t *testing.T) {
 	content := "Please wait while we verify your browser. Checking your browser before accessing the site. Powered by Cloudflare."
-	if !isBlockedPage(content) {
+	if !extract.IsBlockedPage(content) {
 		t.Error("expected blocked detection for Cloudflare challenge page")
 	}
 }
 
 func TestIsBlockedPage_CaptchaAndAccessDenied(t *testing.T) {
 	content := "Access Denied. Please complete the CAPTCHA to continue."
-	if !isBlockedPage(content) {
+	if !extract.IsBlockedPage(content) {
 		t.Error("expected blocked detection for CAPTCHA + Access Denied")
 	}
 }
 
 func TestIsBlockedPage_BotProtection(t *testing.T) {
 	content := "Bot protection is enabled. Please verify you are a human to proceed."
-	if !isBlockedPage(content) {
+	if !extract.IsBlockedPage(content) {
 		t.Error("expected blocked detection for bot protection page")
 	}
 }
@@ -81,7 +82,7 @@ It provides excellent concurrency support through goroutines and channels.
 
 To install Go, visit the official website at golang.org.`
 
-	if isBlockedPage(content) {
+	if extract.IsBlockedPage(content) {
 		t.Error("normal article content should not be detected as blocked")
 	}
 }
@@ -89,20 +90,20 @@ To install Go, visit the official website at golang.org.`
 func TestIsBlockedPage_SinglePatternMatch(t *testing.T) {
 	// Only one match should NOT trigger blocked detection (requires >= 2).
 	content := "This article discusses cloudflare as a CDN provider for websites."
-	if isBlockedPage(content) {
+	if extract.IsBlockedPage(content) {
 		t.Error("single pattern match should not be detected as blocked")
 	}
 }
 
 func TestIsBlockedPage_EmptyContent(t *testing.T) {
-	if isBlockedPage("") {
+	if extract.IsBlockedPage("") {
 		t.Error("empty content should not be detected as blocked")
 	}
 }
 
 func TestIsBlockedPage_CaseInsensitive(t *testing.T) {
 	content := "CLOUDFLARE Security Challenge detected"
-	if !isBlockedPage(content) {
+	if !extract.IsBlockedPage(content) {
 		t.Error("detection should be case-insensitive")
 	}
 }
@@ -274,8 +275,8 @@ func TestIsUnavailablePage_MaintenanceAndWalls(t *testing.T) {
 		"請登入後閱讀全文，或訂閱成為會員。",
 	}
 	for _, c := range unavailable {
-		if !isUnavailablePage(c) {
-			t.Errorf("isUnavailablePage should be true for a wall page: %q", c)
+		if err := extract.ValidateContent(c); err == nil {
+			t.Errorf("ValidateContent should reject a wall page: %q", c)
 		}
 	}
 
@@ -287,8 +288,8 @@ func TestIsUnavailablePage_MaintenanceAndWalls(t *testing.T) {
 		"A long, normal article body with several paragraphs of real content and no wall.",
 	}
 	for _, c := range normal {
-		if isUnavailablePage(c) {
-			t.Errorf("isUnavailablePage should be false for normal content: %q", c)
+		if err := extract.ValidateContent(c); err != nil {
+			t.Errorf("ValidateContent should accept normal content %q: %v", c, err)
 		}
 	}
 }
@@ -305,7 +306,7 @@ func TestIsBlockedPage_MultiLanguage(t *testing.T) {
 		"拒绝访问，请确认您是真人。",                     // zh-Hans (other phrases)
 	}
 	for _, c := range blocked {
-		if !isBlockedPage(c) {
+		if !extract.IsBlockedPage(c) {
 			t.Errorf("isBlockedPage should detect a localized challenge page: %q", c)
 		}
 	}
@@ -318,7 +319,7 @@ func TestIsBlockedPage_MultiLanguage(t *testing.T) {
 		"## to, err:= human()\n\nThis article explains Go error handling and cookie policies.",
 	}
 	for _, c := range normal {
-		if isBlockedPage(c) {
+		if extract.IsBlockedPage(c) {
 			t.Errorf("isBlockedPage should NOT flag a normal article: %q", c)
 		}
 	}

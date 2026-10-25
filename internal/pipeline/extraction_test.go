@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
+	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 	"github.com/kouko/reading-list-summarize-scraper/internal/output"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
 )
@@ -17,6 +19,7 @@ import (
 type stubExtractor struct {
 	headed   bool
 	calls    []string
+	urls     []string
 	first    string
 	firstErr error
 	retry    string
@@ -26,12 +29,14 @@ type stubExtractor struct {
 const verifiedTranscript = `<!-- rlss-video-v1 {"platform":"youtube","target":"abc","language":"ja","source":"automatic","evidence":"original-audio-asr-association"} -->` + "\n\nSubtitle language: ja\nSubtitle source: automatic\n\n今日は字幕について話します。"
 
 func (s *stubExtractor) UsesHeaded(string) bool { return s.headed }
-func (s *stubExtractor) ExtractURL(string) (string, error) {
+func (s *stubExtractor) ExtractURL(url string) (string, error) {
 	s.calls = append(s.calls, "initial")
+	s.urls = append(s.urls, url)
 	return s.first, s.firstErr
 }
-func (s *stubExtractor) ExtractURLHeaded(string) (string, error) {
+func (s *stubExtractor) ExtractURLHeaded(url string) (string, error) {
 	s.calls = append(s.calls, "headed")
+	s.urls = append(s.urls, url)
 	return s.retry, s.retryErr
 }
 
@@ -54,6 +59,8 @@ func TestProcessItemWithFallback(t *testing.T) {
 		{"social body", stubExtractor{first: "The target post explains how workers exchange files."}, "The target post explains how workers exchange files.", []string{"initial"}, false, false},
 		{"specialized challenge disabled", stubExtractor{firstErr: errors.New("Inaccessible social target: Cloudflare CAPTCHA"), retry: "article"}, "", []string{"initial"}, true, true},
 		{"load error", stubExtractor{firstErr: loadErr, retry: "article"}, "article", []string{"initial", "headed"}, false, false},
+		{"pagination retry replaces partial body", stubExtractor{first: "partial first attempt", firstErr: fmt.Errorf("pagination page 2: %w", loadErr), retry: "page one\n\npage two\n\npage three"}, "page one\n\npage two\n\npage three", []string{"initial", "headed"}, false, false},
+		{"pagination wrapped challenge disabled", stubExtractor{first: "partial first page", firstErr: fmt.Errorf("pagination page 2: %w", errors.New("blocked by anti-bot protection (Cloudflare/CAPTCHA)")), retry: "article"}, "", []string{"initial"}, true, true},
 		{"empty", stubExtractor{first: " \n", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
 		{"challenge", stubExtractor{first: "Cloudflare CAPTCHA", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
 		{"login wall", stubExtractor{first: "Please sign in to read", retry: "article"}, "article", []string{"initial", "headed"}, false, false},
@@ -72,6 +79,9 @@ func TestProcessItemWithFallback(t *testing.T) {
 			cfg := &config.Config{OutputDir: dir, Extract: config.ExtractConfig{HeadedOnBlock: !tt.blockDisabled}}
 			p := New(cfg, &tt.s, nil)
 			rawURL := "https://example.com/article"
+			if strings.HasPrefix(tt.name, "pagination") {
+				rawURL += "?page=3"
+			}
 			if strings.HasPrefix(tt.name, "video") {
 				rawURL = "https://www.youtube.com/watch?v=abc"
 				if tt.name == "video wrong target" {
@@ -87,6 +97,11 @@ func TestProcessItemWithFallback(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tt.s.calls, tt.wantCalls) {
 				t.Fatalf("calls=%v, want %v", tt.s.calls, tt.wantCalls)
+			}
+			for _, gotURL := range tt.s.urls {
+				if gotURL != rawURL {
+					t.Fatalf("attempt URL=%q, want original %q", gotURL, rawURL)
+				}
 			}
 			files, err := filepath.Glob(filepath.Join(dir, "*", "*"))
 			if err != nil {
@@ -105,7 +120,64 @@ func TestProcessItemWithFallback(t *testing.T) {
 			if err != nil || stripFrontmatter(string(data)) != tt.want {
 				t.Fatalf("saved content=%q, err=%v; want %q", data, err, tt.want)
 			}
+			if strings.HasPrefix(tt.name, "pagination") {
+				if !strings.Contains(string(data), fmt.Sprintf("url: %q\n", rawURL)) || !strings.Contains(filepath.Base(files[0]), output.SHA8(rawURL)) {
+					t.Fatalf("saved output lost supplied URL identity: %s\n%s", files[0], data)
+				}
+				p.RebuildIndex()
+				if p.index.ContentPath(output.SHA8(rawURL)) != files[0] || p.index.Has(output.SHA8("https://example.com/article")) {
+					t.Fatal("output index replaced the supplied page URL with the first page")
+				}
+			}
 		})
+	}
+}
+
+func TestProcessBatchFailedPaginationPreservesFiles(t *testing.T) {
+	dir := t.TempDir()
+	item := source.ReadingItem{URL: "https://example.com/article?page=3"}
+	out := filepath.Join(dir, output.DomainDir(item.URL))
+	if err := os.MkdirAll(out, 0755); err != nil {
+		t.Fatal(err)
+	}
+	now, sha := time.Now(), output.SHA8(item.URL)
+	files := map[string]string{
+		output.ContentFilename(now, sha): "---\ntype: reading-list-content\n---\n\nExisting complete article",
+		output.SummaryFilename(now, sha): "---\ntype: reading-list-summary\n---\n\nExisting summary",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(out, name), []byte(body), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cause := errors.New("later page navigation failed")
+	s := &stubExtractor{
+		first: "partial initial body", firstErr: fmt.Errorf("pagination page 2: %w", cause),
+		retry: "partial retry body", retryErr: fmt.Errorf("pagination page 3: %w", cause),
+	}
+	cfg := &config.Config{OutputDir: dir, Extract: config.ExtractConfig{HeadedOnBlock: true}}
+	stats := New(cfg, s, nil).ProcessBatch([]source.ReadingItem{item})
+	if stats.Success != 0 || stats.Partial != 0 || stats.Skipped != 0 || stats.Failed != 1 || len(stats.Errors) != 1 {
+		t.Fatalf("incomplete pagination misreported: %+v", stats)
+	}
+	if !errors.Is(stats.Errors[0].Err, cause) || !strings.Contains(stats.Errors[0].Err.Error(), "pagination page 3") {
+		t.Fatalf("lost pagination failure: %v", stats.Errors[0].Err)
+	}
+	if !reflect.DeepEqual(s.calls, []string{"initial", "headed"}) {
+		t.Fatalf("unexpected retries: %v", s.calls)
+	}
+	if !reflect.DeepEqual(s.urls, []string{item.URL, item.URL}) {
+		t.Fatalf("retry did not restart supplied page: %v", s.urls)
+	}
+	entries, err := os.ReadDir(out)
+	if err != nil || len(entries) != len(files) {
+		t.Fatalf("output files changed: %v, err=%v", entries, err)
+	}
+	for name, want := range files {
+		body, err := os.ReadFile(filepath.Join(out, name))
+		if err != nil || string(body) != want {
+			t.Fatalf("existing file %s changed: %q, err=%v", name, body, err)
+		}
 	}
 }
 
@@ -164,12 +236,12 @@ func TestExtractionRejectsObservedWalls(t *testing.T) {
 		"[Log in](https://x.com/i/flow/login)\n[Sign up](https://x.com/i/flow/signup)",
 		xAuth,
 	} {
-		if err := validateExtractedContent(content); err == nil {
+		if err := extract.ValidateContent(content); err == nil {
 			t.Errorf("accepted wall: %q", content)
 		}
 	}
 	article := "## Designing worker teams\n\nWorkers exchange files and review results.\n\n" + xAuth
-	if err := validateExtractedContent(article); err != nil {
+	if err := extract.ValidateContent(article); err != nil {
 		t.Fatalf("rejected article with login chrome: %v", err)
 	}
 }
