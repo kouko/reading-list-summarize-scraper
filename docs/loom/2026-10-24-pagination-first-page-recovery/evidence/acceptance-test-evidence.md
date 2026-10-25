@@ -1,6 +1,114 @@
 # Recover the first page — independent acceptance evidence
 
 
+## Re-run on 2026-10-25, at d8e89a7c1acfd3bbbc04e42abe316a9e68776458
+
+**Current result: all four Acceptance conditions and all eleven UI rows work. All three previously recorded important findings are resolved by actual CLI evidence.** Historical failures and the previous rerun above remain intact.
+
+### Setup, fix range and source snapshot
+- Reviewed fix range 64d2db3..d8e89a7: supported explicit canonical page positions must match actual position in recovery and forward validation; page-less article canonical remains allowed.
+- New clean detached checkout `/private/tmp/rlss-acceptance-d8e89a7` at the full SHA above. README `npm ci` passed (26 packages, zero audit findings); `env GOCACHE=/private/tmp/rlss-go-build go build -o /private/tmp/rlss-acceptance-d8e89a7-bin ./cmd/rlss/` passed.
+- Fresh actual-CLI runner `/private/tmp/rlss-acceptance-run-d8e89a7.py`; new isolated per-case config/profile/output under `/private/tmp/rlss-acceptance-live-d8e89a7/`. Maximum two CLI processes, headless30/headed60/wait2, headed_on_block false, max_pages10 (ITmedia final page5 cap5), no summary/reading-list/RSS/copy for live corpus. No real vault/profile/root executable touched.
+- Source observations explicitly reused from **2026-10-25 12:17:13 Asia/Taipei**: 34 current-at-capture HTTP source pages, 279 corroborated first-page candidate blocks, with Mynavi biography distinction as previously disclosed. This final run did not refresh source HTTP. All eighteen CLI outputs and all body/order/uniqueness/original-URL checks are new.
+- Analyzer `/private/tmp/rlss-acceptance-analyze-d8e89a7.py` re-read the newly saved outputs. Source URLs/anchor hashes are as above; new result hashes/page counts/offsets are in current `sanitized-results.json`.
+- Same focused command from section4 run at new checkout; output `/private/tmp/rlss-acceptance-focused-d8e89a7.log`: exit0, all selected tests pass; browser test4.40s, pipeline package0.739s. It covers canonical contradictory recovery, HTTP404, H1/title challenge, valid security-heading article, empty/unusable/nav failures, subresource404, retry replacement/lifecycle/profile, wrapped challenge suppression, original URL/index and existing-file protection.
+- Full package suite is **not skipped**; finalize-review will execute `env GOCACHE=/private/tmp/rlss-go-build go test ./...` and block acceptance on failure. No future suite outcome is asserted here.
+
+### 1. Complete verified later entries — re-tested — works
+| New case | Exit | Seconds | Source blocks present/checked | Once-only page anchors in order (offsets) |
+|---|---|---|---|---|
+| pcuser | 0 | 20.31 | 61/61 | 482, 5088, 10463, 16653, 22246 |
+| president | 0 | 24.41 | 38/38 | 195, 1661, 2517, 3563, 4749, 6110 |
+| gendai | 0 | 7.29 | 14/14 | 194, 1432 |
+| bunshun | 0 | 13.19 | 14/14 | 189, 1565 |
+| jbpress | 0 | 11.42 | 21/21 | 385, 1631 |
+| toyokeizai | 0 | 12.66 | 22/22 | 324, 1018, 1964 |
+| yahoo | 0 | 7.61 | 5/5 | 477, 1512 |
+| itmedia-business | 0 | 9.83 | 32/32 | 2181, 16259, 30790 |
+| itmedia-mobile | 0 | 9.55 | 10/10 | 1119, 4760, 9255 |
+| ascii | 0 | 9.32 | 34/34 | 356, 3899 |
+| mynavi | 0 | 7.12 | 26/26 | 251, 2020 |
+| nikkan | 0 | 11.34 | 2/2 | 416, 3057 |
+| itmedia-page3 | 0 | 23.9 | 61/61 | 1653, 7147, 11350, 17540, 23133 |
+| itmedia-page5 | 0 | 33.04 | 61/61 | 1653, 8317, 13692, 19882, 25525 |
+| president-page2 | 0 | 29.7 | 38/38 | 202, 1668, 2524, 3570, 4756, 6117 |
+| president-page3 | 0 | 31.55 | 38/38 | 202, 1668, 2524, 3570, 4756, 6117 |
+| yahoo-page2 | 0 | 10.16 | 5/5 | 484, 1519 |
+| toyokeizai-page2 | 0 | 17.8 | 22/22 | 321, 1015, 1961 |
+
+All eighteen print Success1/Failed0 and preserve supplied URL in frontmatter and SHA8 filename. Exact command per row: `/private/tmp/rlss-acceptance-d8e89a7-bin --config /private/tmp/rlss-acceptance-live-d8e89a7/<id>/config.yaml --no-summary url '<URL in initial section1 table>'`; new `run.json` and `cli.log` capture each actual invocation.
+
+### 2. Start at first page, correct order, no repeated merge — re-tested — works
+All 279/279 source-snapshot candidates in twelve first-page cases and 225/225 across six recovered entries appear. Every recovery candidate occurs once; all page anchors occur once and increase in order. Output identity is unchanged in all18. New contradictory-first control now rejects instead of saving the repeated second-page suffix.
+
+### 3. Conservative rejection — re-tested — works
+All same local flows from the previous run were executed, without new case expansion, using `python3 /private/tmp/rlss-acceptance-flows-d8e89a7.py` and production binary. Every local fixture remains synthetic. Full config/commands and before/after SHA256 maps: `/private/tmp/rlss-acceptance-live-d8e89a7/flows/results.json`; each case has `config.yaml` and `cli.log`.
+
+| Actual local case | Exit | Files | Old hashes unchanged | Headed retry | Result |
+|---|---|---|---|---|---|
+| wrong-article | 1 | 0 | true | true | total1 success0 skipped0 partial0 failed1 |
+| missing-page | 1 | 0 | true | true | total1 success0 skipped0 partial0 failed1 |
+| wall-disabled | 1 | 0 | true | false | total1 success0 skipped0 partial0 failed1 |
+| title-wall-disabled | 1 | 0 | true | false | total1 success0 skipped0 partial0 failed1 |
+| loop | 1 | 0 | true | true | total1 success0 skipped0 partial0 failed1 |
+| cap | 1 | 0 | true | true | total1 success0 skipped0 partial0 failed1 |
+| failure-preserves | 1 | 2 | true | true | total1 success0 skipped0 partial0 failed1 |
+| missing-preserves | 1 | 2 | true | true | total1 success0 skipped0 partial0 failed1 |
+| wall-preserves | 1 | 2 | true | false | total1 success0 skipped0 partial0 failed1 |
+| title-wall-preserves | 1 | 2 | true | false | total1 success0 skipped0 partial0 failed1 |
+| contradictory-first | 1 | 0 | true | true | total1 success0 skipped0 partial0 failed1 |
+| success-overwrites | 0 | 2 | false | false | total1 success1 skipped0 partial0 failed0 |
+| ordinary | 0 | 1 | false | false | total1 success1 skipped0 partial0 failed0 |
+| batch-continues | 0 | 1 | false | true | total2 success1 skipped0 partial0 failed1 |
+| completed-skips | 0 | 2 | true | true | total2 success0 skipped1 partial0 failed1 |
+| dry-run | 0 | 0 | true | false | total2 success0 skipped2 partial0 failed0 |
+| empty-batch | 0 | 0 | true | false | empty; no items |
+
+- **Resolved canonical contradiction:** exact same HTTP200 fixture as previous failure: requested /contradict?page=2, nominated /contradict?page=1 explicitly canonical to page2, both bodies second-page prose, nominated page1 next to page2. Current exact command: `/private/tmp/rlss-acceptance-d8e89a7-bin --config /private/tmp/rlss-acceptance-live-d8e89a7/flows/contradictory-first/config.yaml --no-summary url 'http://127.0.0.1:52495/contradict?page=2'`. Actual exit1, Success0/Failed1, zero files; initial and headed attempts both report `article identity mismatch: canonical on http://127.0.0.1:52495/contradict?page=1`. Source reproduction unchanged; no relaxed fixture.
+- **Resolved HTTP404 remains resolved:** actual /missing?page=2 returns Python send_error404; current CLI fails with HTTP404 after allowed headed retry, no partial output. Seeded body+summary remain byte-identical.
+- **Resolved discarded challenge heading remains resolved:** exact original H1 CAPTCHA response plus title-only CAPTCHA variant both fail without headed retry or new files; seeded body+summary remain byte-identical. Current focused suite accepts independent legitimate article prose beside a security heading.
+- Wrong-article first link, loop and cap still fail/no files; focused empty/unusable/nav cases pass. Nothing was repaired by the acceptance agent.
+
+### 4. Preserve established behavior — re-tested — works
+All12 first-page controls, retry settings, profile lifecycle, original URL identity, old-file preservation, explicit successful overwrite, completed skipping, continued batch processing, ordinary extraction and empty/dry-run pass. Actual cap+HTTP404+both challenge seeded-file cases all retain both old files.
+
+### 5. Later-page success UI — re-tested — works
+All six current real runs Success1/exit0, complete source-snapshot prose/order/uniqueness/originalURL checks pass.
+
+### 6. First-page success UI — re-tested — works
+All twelve current real runs Success1/exit0 and source-snapshot checks pass.
+
+### 7. Progress/retry UI — re-tested — works
+Actual wrong-article/HTTP404/loop/cap/canonical contradiction logs show processing and permitted headed retry from the supplied URL. Focused complete-retry replacement, lifecycle and pagination-profile tests pass. Successful complete retry is measured at existing test seam rather than claimed as a live network-recovery observation.
+
+### 8. Uncertain first page UI — re-tested — works
+Both wrong-article first link and explicit canonical page-position contradiction fail after retry, nonzero, no output.
+
+### 9. Missing/empty/wall UI — re-tested — works
+Actual required HTTP404 and both original-document challenge variants fail/no partial body and preserve old files; focused empty/unusable/navigation failures pass.
+
+### 10. Loop/limit UI — re-tested — works
+Actual loop and cap1 return Failed1/exit1 with no files; cap seeded files unchanged.
+
+### 11. Disabled challenge retry UI — re-tested — works
+Actual H1/title challenge runs and their seeded-file counterparts fail with no headed retry. Wrapped-challenge and explicit-headed focused tests pass.
+
+### 12. Existing-output UI — re-tested — works
+Four actual seeded failure cases retain body+summary hashes exactly; successful complete extraction overwrites body (summary retained under no-summary); completed batch URL skips with unchanged output hashes. Original URL/index tests pass.
+
+### 13. Batch/watch UI — re-tested — works
+Actual two-item RSS: Success1/Failed1 with one article saved, processing continues; completed rerun Skipped1/Failed1, existing files unchanged. Existing batch exit0 preserved. Original-URL retry asserted by focused tests. Watch uses same per-cycle batch path; no persistent watch was launched.
+
+### 14. Ordinary no-rule UI — re-tested — works
+Actual no-rule command Success1/exit0, one ordinary article saved.
+
+### 15. Empty/dry-run UI — re-tested — works
+Actual dry-run Total2/Skipped2/Failed0, exit0, no article files; empty RSS logs no items, exit0, no article files.
+
+### Final finding disposition
+All three important findings (HTTP404 false success, discarded original challenge heading, explicit canonical position contradiction) are **resolved** by actual rerun evidence. No important finding was dismissed. All4 Acceptance and11 UI rows re-tested fully; none carried over. Only report/evidence changed. Model oracle inherited/null; one completed redispatch, no overrides or child agents in this acceptance run. Full suite remains the later finalize-review gate.
+
+
 ## Re-run on 2026-10-25, at 2633afb7a01c9b0c8ecf8a2cbb085a009a5aad59
 
 The earlier results above are historical observations at 8439560, including the two real failures. This section supersedes their current verdicts, not their historical record. No row was carried over: per-page browser fetch changed, so all four Acceptance conditions and eleven flows were re-tested in full. Fix diff reviewed: dc1558a..2633afb (HTTP document status, original DOM challenge evidence, document-title evidence). No important finding was dismissed.
