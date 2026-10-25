@@ -1,5 +1,7 @@
 package extract
 
+// concern: First-page recovery must reject unrelated, missing, or incomplete article chains without returning partial content.
+
 import (
 	"context"
 	"fmt"
