@@ -1,7 +1,7 @@
 {
   "schema": "loom-attestation/v2",
   "change_id": "2026-10-24-pagination-first-page-recovery",
-  "content_digest": "97275ca2cee0754ef0d421c3fbc1b72ca0d543d0",
+  "content_digest": "61deaaf4eb532bc493e089e1d30010b7d8680b31",
   "executions": [
     {
       "kind": "package-tests",
@@ -25,7 +25,7 @@
       "verdict": "PASS",
       "lens": "code",
       "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
-      "review_target_sha": "e1b31275ea9fa8ff5fa05713b7aa9ce4f9ae0e72",
+      "review_target_sha": "1786aba5eb767a29595024c9f9f8daa9fbad85e3",
       "dimension_scores": {
         "security": "PASS",
         "architecture": "PASS",
@@ -42,9 +42,9 @@
       },
       "findings": [],
       "notes": [
-        "Reviewed the cumulative branch, including the unmerged pagination baseline, against both intents/specifications/plans and the standing product principles. Shared validation, complete-only traversal, bounded recovery, canonical-position validation, original output identity and retry preservation are coherent.",
-        "Focused tests from pagination_test.go, pagination_entry_probe_test.go, pool_test.go, extraction_test.go and pipeline_test.go ran and passed without skips. Judged the handed browser_test.go adversarial output at the review target: all named browser subtests passed. Did not rerun that program or the complete suite.",
-        "Checked pinned CDP Navigate return fields, lifecycle frame/loader identifiers and responseReceived identifiers against local dependency source. Independent acceptance records a fresh d8e89a7 CLI rerun of all four Acceptance conditions and eleven UI flows; subsequent target changes are acceptance documentation only. No probe confirmation is emitted because handed output does not contain the program file stem browser_test."
+        "Resumed the same review episode and reviewed only e1b3127..1786aba. Previous findings: none. The delta adds the current generated review record, adds the observed publication-conflict repair to plan W4, and archives the inherited PR22 record without changing its bytes. Both old and archived paths resolve to blob 1beb501eb48bdf040727de0a961ace562db84016.",
+        "No production, test or acceptance-report files changed; prior code scores and focused-test evidence remain applicable. Handed target JSONL shows TestBrowserExtractPaginated and its subtests passed without failure or skips. No test, probe or complete suite was rerun. Current generated evidence must be regenerated after this verdict as planned.",
+        "Archival preserves historical review evidence while removing its old recognized attestation path; no new abstraction, runtime policy or external surface is introduced. No probe confirmation is emitted because complete handed output lines lack the browser_test artifact stem. Model oracle inherited/unobservable/null; zero redispatches, one same-identity follow-up."
       ],
       "reviewer": "first_page_code_review",
       "vendor": "codex",
@@ -54,7 +54,7 @@
       "verdict": "PASS",
       "lens": "spec+adversarial",
       "reviewed_sha": "4a34b3eeaca528d97bef4d508f1bcf455368d925",
-      "review_target_sha": "e1b31275ea9fa8ff5fa05713b7aa9ce4f9ae0e72",
+      "review_target_sha": "1786aba5eb767a29595024c9f9f8daa9fbad85e3",
       "dimension_scores": {
         "omission": "PASS",
         "ambiguity": "PASS",
@@ -63,15 +63,15 @@
         "missing-population": "PASS",
         "deletion-first": "PASS",
         "spec-conformance": "PASS",
-        "design-conformance": "N/A — No DESIGN.md exists; the eleven spec UI flows were reconciled against implementation and latest acceptance evidence.",
+        "design-conformance": "N/A — No DESIGN.md exists; the metadata-only fix does not change the previously reconciled UI flows.",
         "principles-conformance": "PASS",
         "user-judgment-leak": "PASS"
       },
       "findings": [],
       "notes": [
-        "Reconciled all four recovery REQs and Acceptance conditions and all eleven UI flows in both directions, including bounded discovery/forward phases, original-entry inclusion, identity/canonical rejection, unusable pages, challenge retry suppression, original output identity and old-file protection. The earlier baseline rejection behavior is explicitly superseded by the confirmed recovery intent.",
-        "Read the latest d8e89a7 acceptance section and its raw sanitized results and local-flow results: 18 successful real cases, 279 checked first-page blocks and 225 recovery blocks. Source capture reuse, representative prose coverage, historical failures and the absence of a persistent watch run are disclosed rather than presented as new exhaustive observations. No package suite or handed adversarial program was rerun.",
-        "Handed e1b3127 JSONL shows TestBrowserExtractPaginated and its subtests actually passed. No probe_confirmation is emitted because no complete handed output line contains the artifact stem browser_test, as required by the reviewer contract. Model oracle inherited/unobservable/null; zero redispatches."
+        "Round 2 of the same bounded episode; previous findings were empty. Reviewed only e1b3127..1786aba: the W4 plan addition, generated current attestation and 100% rename of inherited PR22 evidence. Old and archived record blobs both equal 1beb501eb48bdf040727de0a961ace562db84016; no runtime, tests, acceptance report or requirement changed.",
+        "Read installed loom_checker/verification.py and invoked identify_change against the cumulative base and new target: it returns ('2026-10-24-pagination-first-page-recovery', None). W4 records the observed publication failure and minimal preservation fix in the appropriate plan fields. The existing generated attestation records the earlier checkpoint and must be regenerated after these verdicts, as explicitly assigned; it is not evidence of finalization at this target.",
+        "The previously reconciled four REQs, four Acceptance conditions and eleven UI flows remain valid because the fix changes no product behavior. Handed 1786aba browser JSONL has 13 passed test events and zero failures; no program or suite was rerun and no probe_confirmation is emitted because its complete output lines lack browser_test. Model oracle inherited/unobservable/null; zero completed redispatches, same-identity followup 1."
       ],
       "reviewer": "first_page_spec_closing_review",
       "vendor": "codex",
