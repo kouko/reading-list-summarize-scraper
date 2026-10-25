@@ -3,12 +3,71 @@ package extract
 import (
 	"fmt"
 	"net/url"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
 // defaultMaxPages bounds how many pages a paginated article is followed for
 // when a DomainRule sets no (or a non-positive) MaxPages.
 const defaultMaxPages = 10
+
+var numberedArticlePath = regexp.MustCompile(`^(.*)_([0-9]+)(\.[^/.]+)$`)
+
+// Canonical URLs may omit query parameters but must not change article keys.
+func compatibleCanonical(identity, canonical string) bool {
+	canonicalIdentity, _, _, err := articlePage(canonical)
+	if err != nil {
+		return false
+	}
+	a, _ := url.Parse(identity)
+	b, _ := url.Parse(canonicalIdentity)
+	if a.Scheme != b.Scheme || a.Host != b.Host || a.Path != b.Path {
+		return false
+	}
+	for key, values := range b.Query() {
+		if strings.Join(a.Query()[key], "\x00") != strings.Join(values, "\x00") {
+			return false
+		}
+	}
+	return true
+}
+
+// articlePage separates supported page positions from the stable article URL.
+// Other query parameters remain part of the identity, not navigation guesses.
+func articlePage(raw string) (identity string, number int, first string, err error) {
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return "", 0, "", fmt.Errorf("article identity mismatch: invalid URL %q", raw)
+	}
+	u.Fragment = ""
+	number = 1
+	q := u.Query()
+	if values, ok := q["page"]; ok {
+		if len(values) != 1 {
+			return "", 0, "", fmt.Errorf("cannot establish article first page: ambiguous page number")
+		}
+		number, err = strconv.Atoi(values[0])
+		if err != nil || number < 1 {
+			return "", 0, "", fmt.Errorf("cannot establish article first page: invalid page number")
+		}
+		q.Del("page")
+		u.RawQuery = q.Encode()
+	}
+	if match := numberedArticlePath.FindStringSubmatch(u.Path); match != nil {
+		if number != 1 {
+			return "", 0, "", fmt.Errorf("cannot establish article first page: conflicting page numbers")
+		}
+		number, err = strconv.Atoi(match[2])
+		if err != nil || number < 1 {
+			return "", 0, "", fmt.Errorf("cannot establish article first page: invalid path page number")
+		}
+		u.Path = match[1] + match[3]
+	}
+	first = u.String()
+	u.RawQuery = q.Encode()
+	return u.String(), number, first, nil
+}
 
 // pageFetcher loads one page and returns its extracted content plus the raw
 // href of its "next page" link ("" if none). It is the injectable seam that

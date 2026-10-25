@@ -85,22 +85,15 @@ func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, wait
 // markdown. Only a complete sequence returns content; failures, unusable
 // continuations, loops and a cap with remaining pages return an error.
 func (b *Browser) ExtractPaginated(startURL, jsCode, nextSelector string, maxPages int, timeout, waitAfterLoad time.Duration) (string, error) {
-	// This guard applies only to the entry document. Previous links on pages
-	// reached by our own forward traversal do not imply missing content.
-	entryJS := `(function(){
-var current=new URL(location.href);current.hash='';
-var earlier=document.querySelectorAll('link[rel~=first],a[rel~=first],link[rel~=prev],a[rel~=prev]');
-for(var e of earlier){
- if(!(e.getAttribute('href')||'').trim())continue;
- var target;try{target=new URL(e.getAttribute('href'),document.baseURI);}catch(_){continue;}
- target.hash='';
- if(target.origin===current.origin&&target.href!==current.href)
-  throw new Error('incomplete pagination: initial page advertises an earlier page');
-}
-var numbers=current.searchParams.getAll('page');
-if(numbers.length===1&&/^\d+$/.test(numbers[0])&&Number(numbers[0])>1)
- throw new Error('incomplete pagination: initial page number is greater than one');
+	metadataJS := `(function(){
+var links=Array.from(document.querySelectorAll('link[rel~=first],a[rel~=first],link[rel~=prev],a[rel~=prev]'));
+var canonical=document.querySelector('link[rel~=canonical]');
+return {url:location.href,canonical:canonical&&canonical.href||'',earlier:links.filter(e=>(e.getAttribute('href')||'').trim()).map(e=>e.href)};
 })()`
+	var metadata struct {
+		URL, Canonical string
+		Earlier        []string
+	}
 	// Embed the selector safely as a JS string literal.
 	selLit, _ := json.Marshal(nextSelector)
 	nextJS := `(function(){
@@ -160,12 +153,7 @@ return '';
 			}),
 			chromedp.WaitVisible(`body`, chromedp.ByQuery),
 			chromedp.Sleep(waitAfterLoad),
-			chromedp.ActionFunc(func(ctx context.Context) error {
-				if pageURL == startURL {
-					return chromedp.Evaluate(entryJS, nil).Do(ctx)
-				}
-				return nil
-			}),
+			chromedp.Evaluate(metadataJS, &metadata),
 			chromedp.Evaluate(jsCode, nil),
 			chromedp.Evaluate(`window.extractArticle()`, &content, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
 				return p.WithAwaitPromise(true)
@@ -178,7 +166,88 @@ return '';
 		return content, nextHref, err
 	}
 
-	return paginate(startURL, maxPages, fetch)
+	identity, requestedPage, _, err := articlePage(startURL)
+	if err != nil {
+		return "", err
+	}
+	if maxPages <= 0 {
+		maxPages = defaultMaxPages
+	}
+	current := startURL
+	visited := map[string]bool{}
+	var firstContent, firstNext string
+	for visits := 0; ; visits++ {
+		if visited[current] {
+			return "", fmt.Errorf("cannot establish article first page: recovery loop at %s", current)
+		}
+		if visits >= maxPages {
+			return "", fmt.Errorf("cannot establish article first page: recovery exceeds maxPages %d", maxPages)
+		}
+		visited[current] = true
+		firstContent, firstNext, err = fetch(current)
+		if err != nil {
+			return "", fmt.Errorf("paginated extract: page %s: %w", current, err)
+		}
+		actualIdentity, position, candidate, parseErr := articlePage(metadata.URL)
+		if parseErr != nil || actualIdentity != identity {
+			return "", fmt.Errorf("article identity mismatch: page %s", current)
+		}
+		if metadata.Canonical != "" {
+			if !compatibleCanonical(identity, metadata.Canonical) {
+				return "", fmt.Errorf("article identity mismatch: canonical on %s", current)
+			}
+		}
+		for _, earlier := range metadata.Earlier {
+			earlierIdentity, earlierPage, _, earlierErr := articlePage(earlier)
+			if earlierErr != nil || earlierIdentity != identity {
+				return "", fmt.Errorf("article identity mismatch: earlier link on %s", current)
+			}
+			if earlierPage < position {
+				candidate = earlier
+			} else if earlierPage != position {
+				return "", fmt.Errorf("cannot establish article first page: contradictory earlier link on %s", current)
+			}
+		}
+		if position == 1 {
+			break
+		}
+		current = candidate
+	}
+	// Discovery bodies are discarded except the established first page. The
+	// normal complete-only walker starts afresh with its own page allowance.
+	first := true
+	reachedRequested := false
+	forwardPage := 0
+	content, err := paginate(current, maxPages, func(pageURL string) (string, string, error) {
+		body, next := firstContent, firstNext
+		var fetchErr error
+		if !first {
+			body, next, fetchErr = fetch(pageURL)
+		}
+		first = false
+		forwardPage++
+		if fetchErr != nil {
+			return "", "", fetchErr
+		}
+		actualIdentity, position, _, identityErr := articlePage(metadata.URL)
+		if requestedPage > 1 && (actualIdentity != identity || identityErr != nil || position != forwardPage) {
+			return "", "", fmt.Errorf("article identity mismatch: page %s", pageURL)
+		}
+		if requestedPage > 1 && metadata.Canonical != "" {
+			if !compatibleCanonical(identity, metadata.Canonical) {
+				return "", "", fmt.Errorf("article identity mismatch: canonical on %s", pageURL)
+			}
+		}
+		reachedRequested = reachedRequested || requestedPage == 1 || position == requestedPage
+		return body, next, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	if !reachedRequested {
+		return "", fmt.Errorf("cannot establish article first page: forward sequence omits requested page %s", startURL)
+	}
+	return content, nil
 }
 
 func (b *Browser) Close() {

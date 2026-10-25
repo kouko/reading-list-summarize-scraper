@@ -90,6 +90,23 @@ func TestBrowserExtractPaginated(t *testing.T) {
 			fmt.Fprint(w, `<body><article>second</article><a class="prev" href="?id=article">previous</a></body>`)
 		case "/query-no-prev":
 			fmt.Fprint(w, `<body><article>second</article></body>`)
+		case "/story.html":
+			fmt.Fprint(w, `<body><article>first</article><a class="next" href="/story_2.html">next</a></body>`)
+		case "/story_2.html":
+			fmt.Fprint(w, `<link rel="prev" href="/story.html"><body><article>second</article></body>`)
+		case "/recover":
+			kind := r.URL.Query().Get("kind")
+			if r.URL.Query().Get("page") == "2" {
+				prev := "?kind=" + kind
+				if kind == "foreign" {
+					prev = "/another-article"
+				}
+				fmt.Fprintf(w, `<link rel="prev" href="%s"><body><article>second</article></body>`, prev)
+			} else if kind == "unavailable" {
+				fmt.Fprint(w, `<body><article> </article></body>`)
+			} else {
+				fmt.Fprint(w, `<body><article>first</article></body>`)
+			}
 		case "/hint":
 			fmt.Fprint(w, `<link rel="next" href="/2"><body><article>first</article></body>`)
 		case "/empty-next":
@@ -139,10 +156,25 @@ func TestBrowserExtractPaginated(t *testing.T) {
 		}
 	})
 	t.Run("initial earlier page evidence", func(t *testing.T) {
-		for _, path := range []string{"/query", "/query-base-prev", "/query-no-prev"} {
+		for _, path := range []string{"/query-base-prev", "/query-no-prev"} {
 			got, err := b.ExtractPaginated(server.URL+path+"?page=2&id=article", js, ".next", 10, timeout, 0)
 			if err == nil || got != "" {
 				t.Errorf("%s later query entry: got %q, %v", path, got, err)
+			}
+		}
+		for _, path := range []string{"/query?page=2&id=article", "/story_2.html"} {
+			got, err := b.ExtractPaginated(server.URL+path, js, ".next", 2, timeout, 0)
+			if err != nil || got != "first\n\nsecond" {
+				t.Errorf("later entry %s: got %q, %v", path, got, err)
+			}
+		}
+		for _, tc := range []struct {
+			kind, reason string
+			maxPages     int
+		}{{"foreign", "article identity mismatch", 2}, {"missing-entry", "omits requested page", 2}, {"unavailable", "empty content", 2}, {"limit", "recovery exceeds maxPages", 1}} {
+			got, err := b.ExtractPaginated(server.URL+"/recover?page=2&kind="+tc.kind, js, ".next", tc.maxPages, timeout, 0)
+			if err == nil || got != "" || !strings.Contains(err.Error(), tc.reason) {
+				t.Errorf("%s recovery: got %q, %v; want %s", tc.kind, got, err, tc.reason)
 			}
 		}
 		got, err := b.ExtractPaginated(server.URL+"/query?page=1&id=article", js, ".next", 10, timeout, 0)
