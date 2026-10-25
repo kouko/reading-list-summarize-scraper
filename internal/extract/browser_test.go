@@ -71,6 +71,9 @@ func TestBrowserExtractPaginated(t *testing.T) {
 			fmt.Fprintf(w, `<body><article><p>The investigation follows a complete account of the events and explains the evidence collected by the reporters.</p></article><a class="next" href="/wall-end?kind=%s">next</a></body>`, r.URL.Query().Get("kind"))
 		case "/wall-end":
 			switch r.URL.Query().Get("kind") {
+			case "missing":
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprint(w, `<html><body><h1>Error response</h1><p>Error code: 404</p><p>Message: Not Found.</p><p>Error code explanation: 404 - Nothing matches the given URI.</p></body></html>`)
 			case "challenge":
 				fmt.Fprint(w, `<body><article><p>Cloudflare security challenge. CAPTCHA.</p></article></body>`)
 			case "article":
@@ -79,7 +82,9 @@ func TestBrowserExtractPaginated(t *testing.T) {
 				fmt.Fprint(w, `<body><article><p>Please sign in to read the full article.</p></article></body>`)
 			}
 		case "/1":
-			fmt.Fprint(w, `<body><article>first</article><a class="next" href="/2">next</a><img src="/pending"></body>`)
+			fmt.Fprint(w, `<body><article>first</article><a class="next" href="/2">next</a><img src="/pending"><img src="/missing-image"></body>`)
+		case "/missing-image":
+			w.WriteHeader(http.StatusNotFound)
 		case "/2":
 			fmt.Fprint(w, `<link rel="prev" href="/1"><body><article>second</article><img src="/pending"></body>`)
 		case "/query":
@@ -155,7 +160,7 @@ func TestBrowserExtractPaginated(t *testing.T) {
 		}
 	})
 	t.Run("real extractor validates later page", func(t *testing.T) {
-		for _, tc := range []struct{ kind, reason string }{{"login", "login required"}, {"challenge", "Cloudflare/CAPTCHA"}, {"article", ""}} {
+		for _, tc := range []struct{ kind, reason string }{{"login", "login required"}, {"challenge", "Cloudflare/CAPTCHA"}, {"missing", "HTTP 404"}, {"article", ""}} {
 			got, err := b.ExtractPaginated(server.URL+"/wall-start?kind="+tc.kind, assets.DefuddleJS, ".next", 10, timeout, 0)
 			if tc.reason == "" {
 				if err != nil || !strings.Contains(got, "The researchers explain") {

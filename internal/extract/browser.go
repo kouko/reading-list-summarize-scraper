@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
@@ -119,7 +120,14 @@ return '';
 		// visible body during parsing is not sufficient. DOMContentLoaded waits
 		// for deferred scripts, but not ancillary images or ads to finish.
 		ready := make(chan *page.EventLifecycleEvent, 16)
+		responses := make(chan *network.EventResponseReceived, 16)
 		chromedp.ListenTarget(ctx, func(ev any) {
+			if e, ok := ev.(*network.EventResponseReceived); ok && e.Type == network.ResourceTypeDocument {
+				select {
+				case responses <- e:
+				default:
+				}
+			}
 			if e, ok := ev.(*page.EventLifecycleEvent); ok && e.Name == "DOMContentLoaded" {
 				select {
 				case ready <- e:
@@ -129,8 +137,9 @@ return '';
 		})
 		err := chromedp.Run(ctx,
 			page.SetLifecycleEventsEnabled(true),
+			network.Enable(),
 			chromedp.ActionFunc(func(ctx context.Context) error {
-				_, loader, errorText, download, err := page.Navigate(pageURL).Do(ctx)
+				frame, loader, errorText, download, err := page.Navigate(pageURL).Do(ctx)
 				if err != nil {
 					return err
 				}
@@ -140,16 +149,28 @@ return '';
 				if download || loader == "" {
 					return fmt.Errorf("navigate: no article document loaded")
 				}
-				for {
+				// CDP Network.responseReceived identifies the document response by
+				// frameId and loaderId; page.navigate returns those same identifiers.
+				// https://chromedevtools.github.io/devtools-protocol/tot/Network/#event-responseReceived
+				documentReady, responseReceived := false, false
+				for !documentReady || !responseReceived {
 					select {
+					case e := <-responses:
+						if e.LoaderID == loader && e.FrameID == frame {
+							if e.Response.Status >= 400 {
+								return fmt.Errorf("navigate: HTTP %d", e.Response.Status)
+							}
+							responseReceived = true
+						}
 					case e := <-ready:
-						if e.LoaderID == loader {
-							return nil
+						if e.LoaderID == loader && e.FrameID == frame {
+							documentReady = true
 						}
 					case <-ctx.Done():
 						return ctx.Err()
 					}
 				}
+				return nil
 			}),
 			chromedp.WaitVisible(`body`, chromedp.ByQuery),
 			chromedp.Sleep(waitAfterLoad),
