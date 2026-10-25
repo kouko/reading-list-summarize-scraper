@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/chromedp/cdproto/network"
@@ -89,12 +91,13 @@ func (b *Browser) ExtractPaginated(startURL, jsCode, nextSelector string, maxPag
 	metadataJS := `(function(){
 var links=Array.from(document.querySelectorAll('link[rel~=first],a[rel~=first],link[rel~=prev],a[rel~=prev]'));
 var canonical=document.querySelector('link[rel~=canonical]');
-return {url:location.href,canonical:canonical&&canonical.href||'',earlier:links.filter(e=>(e.getAttribute('href')||'').trim()).map(e=>e.href)};
+return {url:location.href,canonical:canonical&&canonical.href||'',text:document.body.innerText,earlier:links.filter(e=>(e.getAttribute('href')||'').trim()).map(e=>e.href)};
 })()`
 	var metadata struct {
-		URL, Canonical string
-		Earlier        []string
+		URL, Canonical, Text string
+		Earlier              []string
 	}
+	challengePrompt := regexp.MustCompile(`(?i)^(?:please )?verify (?:that )?you are (?:a )?human[.!]?$`)
 	// Embed the selector safely as a JS string literal.
 	selLit, _ := json.Marshal(nextSelector)
 	nextJS := `(function(){
@@ -183,6 +186,20 @@ return '';
 		)
 		if err == nil {
 			err = ValidateContent(content)
+		}
+		// Defuddle may discard the challenge heading and leave only its prompt.
+		// Retain original-document evidence, but allow independent article prose
+		// beside security terminology instead of rejecting raw DOM keywords.
+		if err == nil && IsBlockedPage(metadata.Text) {
+			var prose []string
+			for _, line := range strings.Split(content, "\n") {
+				if !challengePrompt.MatchString(strings.TrimSpace(line)) && !IsBlockedPage(line) {
+					prose = append(prose, line)
+				}
+			}
+			if !HasArticleBody(strings.Join(prose, "\n")) {
+				err = fmt.Errorf("blocked by anti-bot protection (Cloudflare/CAPTCHA)")
+			}
 		}
 		return content, nextHref, err
 	}

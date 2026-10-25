@@ -76,8 +76,10 @@ func TestBrowserExtractPaginated(t *testing.T) {
 				fmt.Fprint(w, `<html><body><h1>Error response</h1><p>Error code: 404</p><p>Message: Not Found.</p><p>Error code explanation: 404 - Nothing matches the given URI.</p></body></html>`)
 			case "challenge":
 				fmt.Fprint(w, `<body><article><p>Cloudflare security challenge. CAPTCHA.</p></article></body>`)
+			case "challenge-heading":
+				fmt.Fprint(w, `<html><body><h1>Cloudflare CAPTCHA</h1><p>Verify you are human</p></body></html>`)
 			case "article":
-				fmt.Fprint(w, `<body><article><p>Please sign in to read is a phrase commonly used by publishers.</p><p>The researchers explain how publishers fund reporting through subscriptions and describe the effects on their readers.</p></article></body>`)
+				fmt.Fprint(w, `<body><article><h1>Cloudflare CAPTCHA</h1><p>Please sign in to read is a phrase commonly used by publishers.</p><p>The researchers explain how publishers fund reporting through subscriptions and describe the effects on their readers.</p></article></body>`)
 			default:
 				fmt.Fprint(w, `<body><article><p>Please sign in to read the full article.</p></article></body>`)
 			}
@@ -160,7 +162,7 @@ func TestBrowserExtractPaginated(t *testing.T) {
 		}
 	})
 	t.Run("real extractor validates later page", func(t *testing.T) {
-		for _, tc := range []struct{ kind, reason string }{{"login", "login required"}, {"challenge", "Cloudflare/CAPTCHA"}, {"missing", "HTTP 404"}, {"article", ""}} {
+		for _, tc := range []struct{ kind, reason string }{{"login", "login required"}, {"challenge", "Cloudflare/CAPTCHA"}, {"challenge-heading", "Cloudflare/CAPTCHA"}, {"missing", "HTTP 404"}, {"article", ""}} {
 			got, err := b.ExtractPaginated(server.URL+"/wall-start?kind="+tc.kind, assets.DefuddleJS, ".next", 10, timeout, 0)
 			if tc.reason == "" {
 				if err != nil || !strings.Contains(got, "The researchers explain") {
