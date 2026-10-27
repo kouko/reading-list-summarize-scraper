@@ -146,7 +146,9 @@ function sameTarget(candidate: string | null, target: URL): boolean {
     if (!candidate) return false;
     try {
         const other = new URL(candidate, target);
-        return other.hostname.replace(/^www\./, '') === target.hostname.replace(/^www\./, '') && other.pathname.replace(/\/$/, '') === target.pathname.replace(/\/$/, '');
+        const host = target.hostname.replace(/^www\./, '');
+        const path = (value: string) => value.replace(/\/$/, '').replace(/^\/([^/]+)/, (_, user) => `/${['x.com', 'twitter.com'].includes(host) ? user.toLowerCase() : user}`);
+        return other.hostname.replace(/^www\./, '') === host && path(other.pathname) === path(target.pathname);
     } catch { return false; }
 }
 
@@ -158,7 +160,7 @@ function bodyMarkdown(element: Element, url: URL): string {
 
 function ownTweet(article: Element): Element {
     const clone = article.cloneNode(true) as Element;
-    clone.querySelectorAll('[data-testid="quoteTweet"], [data-testid="simpleTweet"], article[data-testid="tweet"]').forEach(el => el.remove());
+    clone.querySelectorAll('[data-testid="quoteTweet"], [data-testid="simpleTweet"], article, [data-slot="embedded-tweet-frame"]').forEach(el => el.remove());
     // Upstream TwitterExtractor identifies quoted cards by their labelled
     // container and nested author header. They cannot identify the outer post.
     clone.querySelectorAll('[aria-labelledby*="id__"]').forEach(el => {
@@ -176,7 +178,42 @@ function social(document: Document, url: URL): string {
         // XArticleExtractor 0.19.5 identifies these first-party read-view nodes.
         const richText = document.querySelector('[data-testid="twitterArticleReadView"] [data-testid="twitterArticleRichTextView"]');
         const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute('href') || document.querySelector('meta[property="og:url"]')?.getAttribute('content') || null;
-        if (richText && sameTarget(canonical, url)) {
+        // The public layout identifies the expanded post with current-page
+        // author and status links instead of test IDs or a time element.
+        if (sameTarget(canonical, url)) {
+            const target = new URL(url.origin + url.pathname.replace(/\/article\/?$/, ''));
+            const author = new URL(url.origin + '/' + url.pathname.split('/')[1]);
+            const candidates: Element[] = [];
+            for (const article of Array.from(document.querySelectorAll('article'))) {
+                if (article.parentElement?.closest('article, [data-slot="embedded-tweet-frame"], [data-testid="quoteTweet"]')) continue;
+                const own = ownTweet(article);
+                const links = Array.from(own.querySelectorAll('a[aria-current="page"]')).filter(a => !a.closest('[data-article-part="body"], [dir="auto"].text-lead'));
+                const posts = links.filter(a => /\/(?:status|article)\/\d+/.test(a.getAttribute('href') || ''));
+                if (!posts.length || !posts.every(a => sameTarget(a.getAttribute('href'), target)) || !links.some(a => sameTarget(a.getAttribute('href'), author))) continue;
+                candidates.push(own);
+            }
+            if (candidates.length > 1) fail('Inaccessible social target: ambiguous main bodies');
+            if (candidates.length === 1) {
+                const own = candidates[0];
+                const preview = own.querySelector('[data-testid="tweet-text-show-more-link"], [data-article-part="preview"], a[href^="/i/article/"]');
+                const expand = Array.from(own.querySelectorAll('button, [role="button"], a')).some(el => /^show more$/i.test(el.textContent?.trim() || ''));
+                if (preview || expand) fail('Inaccessible social target: truncated post preview');
+                const bodies = own.querySelectorAll('[data-article-part="body"] .x-article-body');
+                if (bodies.length > 1) fail('Inaccessible social target: ambiguous article bodies');
+                if (bodies.length === 1) {
+                    const title = own.querySelector('[data-article-part="title"]');
+                    const body = bodyMarkdown(bodies[0], url);
+                    if (!substantive(body) || /^(?:log in|sign in|sign up)\b/i.test(body)) fail('Inaccessible social target: main body unavailable');
+                    text = [title ? '# ' + bodyMarkdown(title, url) : '', body].filter(Boolean).join('\n\n');
+                } else {
+                    if (own.querySelector('[data-article-part]')) fail('Inaccessible social target: incomplete article');
+                    const posts = own.querySelectorAll('[dir="auto"].text-lead.whitespace-pre-wrap');
+                    if (posts.length !== 1) fail('Inaccessible social target: ambiguous post body');
+                    text = bodyMarkdown(posts[0], url);
+                }
+            }
+        }
+        if (!text && richText && sameTarget(canonical, url)) {
             const own = ownTweet(richText);
             if (own.querySelector('[data-testid="tweet-text-show-more-link"]')) fail('Inaccessible social target: truncated article preview');
             text = bodyMarkdown(own, url);
@@ -236,7 +273,16 @@ async function extractContent(document: Document, address: string, fetcher: type
     if (['bilibili.com', 'm.bilibili.com'].includes(host)) fail('Unverified original language: Bilibili exposes subtitle language but no verified original-audio association');
     if (['vimeo.com', 'dailymotion.com', 'twitch.tv', 'tiktok.com', 'nicovideo.jp', 'niconico.jp', 'youku.com', 'douyin.com'].some(h => host === h || host.endsWith('.' + h)) || document.querySelector('meta[property="og:type"][content^="video"]')) fail('Unsupported video transcript extraction');
     if (['x.com', 'twitter.com', 'threads.net', 'threads.com', 'medium.com'].includes(host) || host.endsWith('.medium.com')) return social(document, url);
-    const result = new Defuddle(document, { markdown: true }).parse();
+    const articleDocument = document.cloneNode(true) as Document;
+    for (const container of Array.from(articleDocument.querySelectorAll('[data-date]'))) {
+        // Defuddle removes data-date nodes as metadata, including article bodies.
+        // Protect only containers with multiple substantial prose paragraphs;
+        // date labels and every other cleanup rule still reach the parser.
+        const paragraphs = Array.from(container.children).filter(element => element.tagName === 'P'
+            && (element.textContent || '').trim().length >= 80 && substantive(element.textContent || ''));
+        if (paragraphs.length >= 2) container.removeAttribute('data-date');
+    }
+    const result = new Defuddle(articleDocument, { markdown: true }).parse();
     if (!result?.content?.trim()) fail('Ordinary article extraction failed: empty content');
     return result.content;
 }

@@ -1,0 +1,83 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-27-recover-felix-and-x-article-content",
+  "content_digest": "99b8beb3b0e719499dfdc8ba2ea1b6118a301675",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "env GOCACHE=/private/tmp/rlss-go-build go test -json extraction_boundaries_test.go",
+      "artifact": "extraction_boundaries_test.go",
+      "result": "pass",
+      "command_digest": "34d7b2ff512daa9034b29551cb007d3aaa388b433d66d8ebd73794912c8827ed",
+      "evidence": "parsed",
+      "passed": 1
+    }
+  ],
+  "verdicts": [
+    {
+      "reviewer": "felix_x_closing_code",
+      "vendor": "codex",
+      "model": "inherited",
+      "verdict": "PASS",
+      "lens": "code",
+      "reviewed_sha": "8e37f33e252337dc5f2727631b35460eb7086066",
+      "review_target_sha": "063a46af010f7c3160f71f30d8cd00f2949b6b72",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — No ratified ARCHITECTURE.md exists.",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Round 2 reviewed only the fix delta; Round 1 had no findings. The new runner follows the existing boundary-runner pattern and executes the existing JavaScript body assertions without replacing their behavior.",
+        "Ran GOCACHE=/private/tmp/rlss-closing-code-gocache go test . -run '^TestExtractionBodies$' -count=1: PASS. No complete suite or adversarial probe was run.",
+        "Supplied current-target JUnit output records 17 passes, zero failures and zero skips. It contains no complete line naming the extraction.test file stem, so no probe confirmation is emitted."
+      ]
+    },
+    {
+      "reviewer": "felix_x_closing_spec",
+      "vendor": "codex",
+      "model": "inherited",
+      "verdict": "PASS",
+      "lens": "spec+adversarial",
+      "reviewed_sha": "8e37f33e252337dc5f2727631b35460eb7086066",
+      "review_target_sha": "063a46af010f7c3160f71f30d8cd00f2949b6b72",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS",
+        "design-conformance": "N/A — No DESIGN.md exists; prior UI-flow reconciliation remains applicable.",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Round 2 reviewed only 05e18199c62a81961bf6ad6a4ab9b82962b7aa7c..063a46af010f7c3160f71f30d8cd00f2949b6b72. Round 1 had no findings.",
+        "Plan W4 accurately describes the minimal Go runner that executes existing JavaScript assertions and propagates failure. Independently ran go test -run '^TestExtractionBodies$' -count=1 . with isolated GOCACHE: PASS.",
+        "Product source, embedded bundle and acceptance evidence are unchanged; prior four-requirement and nine-flow reconciliation carries forward without claiming additional live coverage. No full suite or adversarial programs were executed."
+      ]
+    }
+  ],
+  "findings": [],
+  "selection": null
+}
