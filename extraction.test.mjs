@@ -105,6 +105,24 @@ test('A2 wrong target rejected', async () => {
  await assert.rejects(extractArticle(doc('<article data-testid="tweet"><a href="/a/status/999"><time>today</time></a><div data-testid="tweetText">Wrong post</div></article>'), 'https://x.com/a/status/123'), /target/i);
  await assert.rejects(extractArticle(doc('<div data-pagelet="threads_post_page_0"><div data-pressable-container><a href="/@b/post/REPLY"><time>today</time></a><span dir="auto">Other reply</span><div data-pressable-container><a href="/@a/post/ABC"><time>yesterday</time></a><span dir="auto">Quoted target</span></div></div></div>'), 'https://www.threads.com/@a/post/ABC'), /target/i);
 });
+test('A1 x-public-target-body preserves current public post and article bodies', async () => {
+ const canonical = '<link rel="canonical" href="https://x.com/Author/status/123">';
+ const identity = '<a href="/Author" aria-current="page">@Author</a><a href="/Author/status/123" aria-current="page">today</a>';
+ for (const body of ['<div class="text-lead whitespace-pre-wrap" dir="auto">Complete target.\n\nLast paragraph.</div>', '<h1 data-article-part="title">Target title</h1><div data-article-part="body"><div class="x-article-body"><h2>First section</h2><p>Complete target.</p><div data-slot="embedded-tweet-frame"><article>Quoted unrelated text.</article></div><p>Last paragraph.</p></div></div>']) {
+  const out = await extractArticle(doc(`${canonical}<article>${identity}${body}</article><article><div dir="auto" class="text-lead">Unrelated reply.</div></article>`), 'https://x.com/author/status/123');
+  assert.match(out, /Complete target\./); assert.match(out, /Last paragraph\./); assert.doesNotMatch(out, /Unrelated|Quoted|@Author|<div/);
+  if (body.includes('x-article-body')) { assert.match(out, /# Target title/); assert.match(out, /## First section/); }
+ }
+});
+test('A3 x-preview-or-reply rejects unverified current bodies', async () => {
+ const canonical = '<link rel="canonical" href="https://x.com/a/status/123">';
+ const identity = '<a href="/a" aria-current="page">@a</a><a href="/a/status/123" aria-current="page">today</a>';
+ const body = '<div class="text-lead whitespace-pre-wrap" dir="auto">Complete target.</div>';
+ const own = `<article>${identity}${body}</article>`;
+ for (const html of [own, `${canonical}${own}${own}`, `${canonical}<article>${identity}${body}<button>Show more</button></article>`, `${canonical}<article><a href="/b/status/999" aria-current="page">today</a>${body}</article>`, `${canonical}<article><div data-slot="embedded-tweet-frame">${own}</div></article>`, `${canonical}<article>${identity}<a href="/i/article/123">Article preview</a>${body}</article>`, `${canonical}<article>${identity}<div class="text-lead" dir="auto">Log in to continue</div></article>`, `${canonical}<article>${identity}<h1 data-article-part="title">Real title</h1><div data-article-part="body"><div class="x-article-body">Log in to continue</div></div></article>`]) {
+  await assert.rejects(extractArticle(doc(html), 'https://x.com/a/status/123'), /target|preview|ambiguous/i);
+ }
+});
 test('A3 verified social content succeeds without network fallback', async () => {
  assert.equal(await extractArticle(doc('<article data-testid="tweet"><a href="/a/status/123"><time>now</time></a><div data-testid="tweetText">Actual target</div></article>'), 'https://x.com/a/status/123', () => {throw Error('external request');}), 'Actual target');
  const article = await extractArticle(doc(`<article><h1>Ordinary article</h1><p>${'This ordinary article explains a concrete subject with substantial detail. '.repeat(20)}</p></article>`), 'https://example.com/article');
