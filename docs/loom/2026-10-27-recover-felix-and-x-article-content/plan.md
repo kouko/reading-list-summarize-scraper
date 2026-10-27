@@ -22,6 +22,12 @@ charter: 1.1
 - Test: A1 positive: bundled-x-target; negative: bundled-wrong-target. A2 positive: bundled-dated-body; negative: bundled-date-only. A3 positive: bundled-complete-body; negative: bundled-empty. A4 positive: clean-rebuild; boundary: legacy-bundle-path.
 - Risk: agent-decided — REQ-1/2/3/4 require the shipped Go embedded entry, not only TypeScript source. Regenerate using the existing build script; verify deterministic rebuild and focused tests. No handwritten bundle changes.
 
+### Wave 4 — Include body regressions in the declared package suite
+**W4-01 Run browser body regressions from the Go suite**  after: W3-01  acceptance: 1, 2, 3, 4
+- Files: extraction_test.go (entry: Go test runner)
+- Test: A1 positive: package-x-bodies; negative: package-wrong-target. A2 positive: package-dated-body; negative: package-date-only. A3 positive: package-complete-body; negative: package-preview. A4 positive: package-legacy-bodies; boundary: package-challenge-policy.
+- Risk: agent-decided — REQ-1/2/3/4 tests already exist in extraction.test.mjs; reuse their RED/GREEN assertions through a minimal Go entry following extraction_boundaries_test.go. Finalization rejected reuse because only boundary tests previously belonged to go test ./....
+
 ## Simplicity check
 - none found
 
