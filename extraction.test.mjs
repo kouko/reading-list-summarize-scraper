@@ -130,6 +130,24 @@ test('A3 verified social content succeeds without network fallback', async () =>
  const paid = await extractArticle(doc('<link rel="canonical" href="https://medium.com/@a/title-abcdef123456"><script type="application/ld+json">{"@type":"Article","isAccessibleForFree":false}</script><article><h1>Member-only story</h1><p>Full legitimately accessible article text.</p></article>'), 'https://medium.com/@a/title-abcdef123456');
  assert.match(paid, /Full legitimately accessible article text/);
 });
+test('A2/A4 ordinary-dated-body preserves full sections and original DOM', async () => {
+ const paragraphs = Array.from({length: 4}, (_, i) => `Paragraph ${i + 1} describes a different practical step in the project. ${'Careful planning makes the work easier to understand and finish. '.repeat(4)}`.trim());
+ const d = doc(`<article><h1>Practical project guide</h1><div data-date="2026-10-27"><h2>Getting started</h2><p>${paragraphs[0]}</p><p>${paragraphs[1]}</p><h2>Finishing well</h2><p>${paragraphs[2]}</p><p>${paragraphs[3]}</p></div></article>`);
+ const original = d.documentElement.outerHTML;
+ const out = await extractArticle(d, 'https://example.com/guide');
+ for (const paragraph of paragraphs) assert.ok(out.includes(paragraph));
+ assert.match(out, /## Getting started/); assert.match(out, /## Finishing well/);
+ assert.equal(d.documentElement.outerHTML, original);
+});
+test('A2/A4 ordinary-date-only metadata remains removed beside substantive body', async () => {
+ const paragraph = 'This ordinary article explains how a practical project progresses with clear goals and careful decisions. '.repeat(8);
+ const out = await extractArticle(doc(`<article><h1>Practical project guide</h1><div data-date="2026-10-27"><p>Published on Tuesday, October 27, 2026.</p></div><div><p>${paragraph}</p><p>${paragraph}</p></div></article>`), 'https://example.com/guide');
+ assert.match(out, /practical project progresses/);
+ assert.doesNotMatch(out, /Published on Tuesday/);
+ await assert.rejects(extractArticle(doc('<div data-date="2026-10-27"></div>'), 'https://example.com/empty'), /empty content/);
+ const challenge = parseHTML('<html><head><title>Verify you are human</title></head><body><form id="captcha"><iframe src="https://hcaptcha.com/challenge"></iframe></form></body></html>').document;
+ await assert.rejects(extractArticle(challenge, 'https://example.com/guide'), /CAPTCHA security challenge/);
+});
 test('A3 challenge identity survives actual adapter failures without classifying article mentions', async () => {
  const page = (title, body) => parseHTML(`<html><head><title>${title}</title></head><body>${body}</body></html>`).document;
  for (const url of ['https://x.com/a/status/123', 'https://medium.com/@a/title-abcdef123456', 'https://www.youtube.com/watch?v=abc']) {

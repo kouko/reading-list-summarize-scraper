@@ -273,7 +273,16 @@ async function extractContent(document: Document, address: string, fetcher: type
     if (['bilibili.com', 'm.bilibili.com'].includes(host)) fail('Unverified original language: Bilibili exposes subtitle language but no verified original-audio association');
     if (['vimeo.com', 'dailymotion.com', 'twitch.tv', 'tiktok.com', 'nicovideo.jp', 'niconico.jp', 'youku.com', 'douyin.com'].some(h => host === h || host.endsWith('.' + h)) || document.querySelector('meta[property="og:type"][content^="video"]')) fail('Unsupported video transcript extraction');
     if (['x.com', 'twitter.com', 'threads.net', 'threads.com', 'medium.com'].includes(host) || host.endsWith('.medium.com')) return social(document, url);
-    const result = new Defuddle(document, { markdown: true }).parse();
+    const articleDocument = document.cloneNode(true) as Document;
+    for (const container of Array.from(articleDocument.querySelectorAll('[data-date]'))) {
+        // Defuddle removes data-date nodes as metadata, including article bodies.
+        // Protect only containers with multiple substantial prose paragraphs;
+        // date labels and every other cleanup rule still reach the parser.
+        const paragraphs = Array.from(container.children).filter(element => element.tagName === 'P'
+            && (element.textContent || '').trim().length >= 80 && substantive(element.textContent || ''));
+        if (paragraphs.length >= 2) container.removeAttribute('data-date');
+    }
+    const result = new Defuddle(articleDocument, { markdown: true }).parse();
     if (!result?.content?.trim()) fail('Ordinary article extraction failed: empty content');
     return result.content;
 }
