@@ -1,3 +1,4 @@
+// concern: Target identity confusion, quoted or truncated X bodies, and metadata-driven article body loss.
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
