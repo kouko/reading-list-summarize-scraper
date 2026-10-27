@@ -16,6 +16,12 @@ charter: 1.1
 - Test: A2 positive: ordinary-dated-body; negative: ordinary-date-only. A3 positive: ordinary-complete-body; negative: ordinary-empty-or-challenge. A4 positive: ordinary-existing-cleanup; boundary: original-dom-preserved.
 - Risk: agent-decided — REQ-2/3/4 Design decision: narrow cleanup adaptation rather than disabling parser filters; extraction.test.mjs coverage widens, existing extraction-boundaries.test.mjs cases remain intact. Avoid domain-specific bypasses and preserve source DOM.
 
+### Wave 3 — Integrate the embedded browser entry
+**W3-01 Regenerate the committed browser bundle**  after: W2-01  acceptance: 1, 2, 3, 4
+- Files: embed/defuddle.min.js (entry: window.extractArticle)
+- Test: A1 positive: bundled-x-target; negative: bundled-wrong-target. A2 positive: bundled-dated-body; negative: bundled-date-only. A3 positive: bundled-complete-body; negative: bundled-empty. A4 positive: clean-rebuild; boundary: legacy-bundle-path.
+- Risk: agent-decided — REQ-1/2/3/4 require the shipped Go embedded entry, not only TypeScript source. Regenerate using the existing build script; verify deterministic rebuild and focused tests. No handwritten bundle changes.
+
 ## Simplicity check
 - none found
 
