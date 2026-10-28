@@ -30,7 +30,7 @@ func TestCompleteSocialThread(t *testing.T) {
 			}
 			return socialSnapshot{Version: 1, Platform: "x", TargetID: target, Posts: posts, ReplyPages: []socialSequence{{RootID: "1", End: true}, {RootID: "2", End: true}}}, nil
 		})
-		if err != nil || body != "first\n\nsame [source](https://example.org)\n\nsame [source](https://example.org)\n\ndistinct ending" || calls > 8 {
+		if err != nil || body != "first\n\n[Source](https://x.com/author/status/1)\n\nsame [source](https://example.org)\n\n[Source](https://x.com/author/status/2)\n\nsame [source](https://example.org)\n\n[Source](https://x.com/author/status/3)\n\ndistinct ending\n\n[Source](https://x.com/author/status/4)" || calls > 8 {
 			t.Fatalf("%s: %q, %v (%d calls)", entry, body, err, calls)
 		}
 	}
@@ -53,7 +53,7 @@ func TestCompleteSocialThread(t *testing.T) {
 				}
 				return socialSnapshot{Version: 1, Platform: "threads", TargetID: target, Posts: []socialPost{p, q, r}, Sequences: []socialSequence{{RootID: "1", IDs: []string{"1", "2"}, End: true, Cursor: "terminal"}}, Branches: []socialSequence{{RootID: "1", IDs: []string{"3"}, End: true}}, ReplyPages: []socialSequence{{RootID: "1", End: true}}}, nil
 			})
-			if err != nil || body != "first\n\nsecond\n\nauthor supplement" {
+			if err != nil || body != "first\n\n[Source](https://www.threads.com/@author/post/one)\n\nsecond\n\n[Source](https://www.threads.com/@author/post/two)\n\nauthor supplement\n\n[Source](https://www.threads.com/@author/post/three)" {
 				t.Fatalf("%s: %q, %v", entry, body, err)
 			}
 		}
@@ -132,7 +132,7 @@ func TestCompleteSocialThread(t *testing.T) {
 		body, err := collectSocial(root.URL, 8, func(string) (socialSnapshot, error) {
 			return socialSnapshot{Version: 1, Platform: "x", TargetID: "1", Posts: []socialPost{root, {ID: "reader", AuthorID: "b", ParentID: jsonParent(`"1"`)}, {ID: "aside", AuthorID: "a", ParentID: jsonParent(`"reader"`), Body: "conversation", BodyComplete: true}}}, nil
 		})
-		if err != nil || body != "first" {
+		if err != nil || body != "first\n\n[Source]("+root.URL+")" {
 			t.Fatalf("%q, %v", body, err)
 		}
 	})

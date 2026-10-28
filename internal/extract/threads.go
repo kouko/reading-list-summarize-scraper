@@ -285,7 +285,7 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 		if err := ValidateContent(p.Body); err != nil {
 			return "", fmt.Errorf("Inaccessible social target: member body: %w", err)
 		}
-		bodies = append(bodies, p.Body)
+		bodies = append(bodies, p.Body+"\n\n[Source]("+p.URL+")")
 	}
 	if !seen[requested] || len(ids) == 0 || ids[0] != root {
 		return "", fail("sequence omits requested member or beginning")

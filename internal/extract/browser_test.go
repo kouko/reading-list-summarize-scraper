@@ -53,7 +53,7 @@ window.socialSnapshot=()=>({version:1,platform:'x',targetID:'1',posts:[{id:'1',u
 	ctx, deadline := context.WithTimeout(ctx, 20*time.Second)
 	defer deadline()
 	body, err := b.extractSocial(ctx, server.URL, js, 0)
-	if err != nil || body != "verified article" {
+	if err != nil || body != "verified article\n\n[Source]("+server.URL+"/)" {
 		t.Fatalf("social: %q, %v", body, err)
 	}
 	body, err = b.extractSocial(ctx, server.URL, strings.Replace(js, "bodyComplete:true", "bodyComplete:false", 1), 0)
