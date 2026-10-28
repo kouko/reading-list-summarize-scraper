@@ -396,3 +396,116 @@ All sixteen affected entries run using the new independent executable/worktree, 
 - **F1 — important — remains open**, anchor `spec.md REQ-1 / acceptance-test-report.md row 1`: eight mandatory entry points still fail (six X, two Threads AI colleague). Close by establishing complete permitted source membership/full bodies and passing independent full comparisons for both entry points of all remaining groups; do not weaken completeness or label safe failure successful extraction.
 - **F2 — closed**, anchor `spec.md REQ-2 / First-post success`: all eight positive entry points now contain exactly one verified source link per member with unchanged ordered captions and identical first/middle output. No live X completion is inferred from this closure.
 - Actual standalone social/long article success and actual external provider summary delivery remain unverified and disclosed as partly. Watch's later-cycle limitation is closed by two actual cycles. No required step was skipped; no important/fatal finding was dismissed.
+
+## Re-run on 2026-10-28, at b9af8215846d972cd8fdd2b6f212d74e0e9f3f4d
+
+This independent witness started a new detached worktree at `/private/tmp/rlss-author-final-acceptance`. Reviewed fix range `98b535f..b9af821`: reply-count consistency, late observed children, removal of a redundant early leaf check, and real public browser-entry regression coverage. All four Acceptance lines and all fourteen UI flows are affected and re-tested in full; no carried-over row and no product repair. This section supersedes earlier current verdicts, especially Acceptance 3: preservation on observed failures does not prove rejection of every uncertain narrative member.
+
+### Setup, focused checks and independent method
+
+- README setup: `npm ci --cache /private/tmp/rlss-final-accept-npm`, exit 0, 26 packages, zero vulnerabilities. `env GOCACHE=/private/tmp/rlss-final-accept-go go build -o /private/tmp/rlss-final-accept-bin ./cmd/rlss/`, exit 0.
+- All actual entry commands use the new executable, temporary config, output and guest user-data directories under `/private/tmp/rlss-final-accept-live`; Chrome config root is also temporary. Command driver: `python3 /private/tmp/rlss-final-accept.py`. Every URL uses `url <confirmed URL> --config <case/config.yaml> --no-summary`, default headless-first/headed retry, 30-second attempt limits and three-second render wait. Case JSON and CLI logs retain outcomes locally.
+- Independent observer: `python3 /private/tmp/rlss-final-accept-source.py`, public source visits for all four successful groups, headed fresh guests, four-second wait. Observer saves original `page.html` before injecting the current bundle; its extracted result is not the oracle. Original JSON parsing uses root `data.media` and ordered explicit `self_thread.posts.edges`, not product snapshots. Separate `python3 /private/tmp/rlss-final-connections.py` checks source post identities and final pagination; all four self-thread connections terminate with `has_next_page=false`, `end_cursor=null`.
+- `python3 /private/tmp/rlss-final-accept-compare.py` independently compares every source caption against each saved body, removing only whitespace and appended provenance markers. It checks exact ordered member-link codes, one link each, no additional text, exact first/middle body hashes, and separate input URL/storage identity. Raw original HTML, captions, unrelated reply records and browser data remain exclusively temporary.
+- Focused JavaScript command: `node --test --test-name-pattern='thread A|A2 target bodies|A2/A3 explicit target|A2 wrong target|A3 verified social|A3 challenge|A3 login' extraction.test.mjs`: 10/10 PASS. Existing incomplete-fixture Invalid URL diagnostic is present; zero failed/skipped tests. `node --test extraction-boundaries.test.mjs`: 2/2 PASS.
+- Focused collector/public-browser command: `env CHROME_CONFIG_HOME=/private/tmp/rlss-final-accept-test-chrome GOCACHE=/private/tmp/rlss-final-accept-go go test ./internal/extract -run 'TestCompleteSocialThread|TestBrowserExtractSocialCompleteOnly' -v`: PASS, package 1.453s. Includes changed explicit counts, zero with author or reader child, late reader exceeding count, body navigation, unknown extent, missing members, loops/caps and complete-only public dispatch.
+- Focused pipeline command: `env GOCACHE=/private/tmp/rlss-final-accept-go go test ./internal/pipeline -run 'Test(ProcessItemSocialCache|ProcessItemWithFallback|ProcessBatchFailedPaginationPreservesFiles|ExtractionRejectsObservedWalls|IsSkipped|Stats_Report|Stats_Partial)' -v`: PASS, package 0.645s. Includes cache revalidation, recording summary receiver, zero summary calls on rejected refresh, completed skip/force, ordinary Partial behavior, failure preservation and verification retry settings.
+- No full package suite ran in this witness checkout. Neither package-tests nor finalize-review is skipped. The automated test suite runs before acceptance and blocks it on failure; `go test ./...` remains the finalize-review command when verdicts permit. Main-agent earlier suite evidence is context only.
+
+### 3. Failure honesty and existing files — re-tested
+
+`python3 /private/tmp/rlss-final-accept-extra.py` explicitly reprocesses dashboard first URL with temporary sentinel old body/summary. Exit 1, complete reply extent unknown; both before/after hashes unchanged: content `c6f945cd02c4767cefdc70f7f17b8afce8b7ad1a2edb6952f1de979e612695d4`, summary `95d622c7618d10e594b100c1d8bca7bd77e820ff3f4ab13d1fd0226b3cebb609`. Current focused tests also pass conflicting-count and late-direct-child rejection. These prove observed failures and preservation, not universal narrative-membership rejection. A3 is partly because resource-only author-reply membership remains unresolved.
+
+### 4. Existing content and retry behavior — re-tested
+
+Actual `https://go.dev/blog/strings`: exit 0, body file SHA-256 `29dbfcfbfca50014f6bdf9e5be4c845ad5b93457e4f29daf46a4d500558d2887`. Actual standalone candidate `https://x.com/Sukiea1008/status/2112084040362897441`: exit 1, headed result complete reply extent unknown, no body. No live independent standalone-social or social-long-article positive is claimed. Focused retry and single-target tests pass; A4 remains partly.
+
+### 8. Progress and ordinary retry — re-tested
+
+Actual X logs show item progress and headless failure followed by headed retry. Focused navigation/empty fallback and explicitly headed single-attempt cases pass. No production browser or process was used.
+
+### 9. Verification restriction — re-tested
+
+Focused tests pass verification setting false/true, specialized verification disabled, and navigation/empty retries with the setting false. Disabled verification retry does not disable ordinary failure retries.
+
+### 10. Missing target/body — re-tested
+
+Focused target mismatch, previews, quoted permalink, login/challenge and incomplete public-entry cases reject; actual failures exit nonzero without new body. Actual sentinel refresh preserves both old files. This does not assert that every ambiguous resource reply is detected.
+
+### 11. Incomplete/ambiguous thread — re-tested
+
+Actual incomplete-extent/pagination cases fail without output; focused missing member, contradictory identity, count conflict, late child, loop/cap and unknown boundary cases pass. Narrative membership of same-author resource replies is still not established, so the whole row is partly.
+
+### 12. Old body without summary — re-tested
+
+Focused verified-social-resume refreshes live content before the recording receiver; failed refresh preserves existing files and invokes no summary; ordinary cached content retains existing resume behavior. PASS.
+
+### 13. Summary enabled — re-tested
+
+Focused recording receiver receives newly validated body, extraction failure makes no summary call and summary failure stays Partial. No real external provider was authorized or invoked, and no actual live complete multi-member external-summary result was verified; partly.
+
+### 14. Completed notes and explicit reprocessing — re-tested
+
+Completed skip/force focused cases pass. Actual explicit temporary completed-note reprocessing performs fresh extraction and preserves body/summary on failure. No bulk backfill or production note operation occurs.
+
+### 15. Batch/watch — re-tested
+
+`python3 /private/tmp/rlss-final-accept-batch.py` runs a temporary localhost RSS feed (failed dashboard then ordinary Go article) through actual `process --watch --no-summary`. TWO cycles each produce Total 2 / Success 1 / Failed 1 / Skipped 0 / Partial 0. Second cycle retries failed dashboard and then continues with the ordinary cached body. Signal sent only to this witness-created process during sleep; exit 0. Raw log `/private/tmp/rlss-final-accept-watch/cli.log`. Focused stats tests separately verify Skipped/Partial reporting.
+
+### 16. Empty/dry run — re-tested
+
+New binary `process --config /private/tmp/rlss-final-accept-extra/ordinary/config.yaml --no-summary`: exit 0, no items. `url https://example.com --config <same temporary config> --dry-run --no-summary`: exit 0, Total 1 / Skipped 1 / Success 0 / Failed 0 / Partial 0, no new file.
+
+### 17. Existing standalone content — re-tested
+
+Ordinary article passes live and single-target/rich-body fixtures pass. Actual standalone X candidate fails unknown extent. Independent social standalone/long-article success remains unverified; partly.
+
+### Open findings (not dismissed)
+
+- **F1 — important — eight mandatory entry points fail**, anchor `spec.md REQ-1 / report row 1`. Safe failure is not complete article delivery. Close only with permitted complete first-party membership/full captions and independent first/middle source comparisons for all remaining groups.
+- **F3 — fatal — narrative membership unresolved**, anchor `internal/extract/threads.go:202` and `:245`, spec Design decision on resource-only replies, REQ-2/REQ-3, report rows 2/3/7/11. Current branch collection selects explicit same-author reply ancestry; count agreement establishes extent but does not establish that a separate resource recommendation belongs to the article. Fresh positive self-thread comparisons do not settle this broader branch contract, nor do failing live X sources. Close with independent source-grounded article-membership evidence, reject ambiguous resource-only author replies, and re-test both real entry points plus a resource-reply negative through production extraction. This witness did not repair the product or dismiss this finding.
+- F2 provenance remains closed only for the independently verified positive outputs; no live X success is inferred. Standalone-social/long and real-provider summary limits remain disclosed.
+
+### 1. All required first/middle articles — re-tested
+
+All sixteen actual CLI attempts finished: eight successful exits across four Threads groups; eight failed exits, six X and two Threads AI colleague. Failed entries create zero body/summary files. Every URL is the exact public first/middle entry already listed in baseline section 1 and the confirmed spec.
+
+| Group | First / middle exit | Actual result |
+|---|---|---|
+| X dashboard skills | 1 / 1 | headed retry: complete reply extent unknown |
+| X Japan MCP tools | 1 / 1 | headed retry: complete reply extent unknown |
+| X Google I/O | 1 / 1 | headed retry: complete reply extent unknown |
+| Threads Open Design | 0 / 0 | complete independent source-caption comparison passes |
+| Threads AI colleague | 1 / 1 | direct reply pagination incomplete in both attempts |
+| Threads pstack | 0 / 0 | complete independent source-caption comparison passes |
+| Threads Claude Code files | 0 / 0 | complete independent source-caption comparison passes |
+| Threads AI adoption gap | 0 / 0 | complete independent source-caption comparison passes |
+
+| Positive group | Members / links per body | Equal first/middle body SHA-256 | Fresh original HTML SHA-256 |
+|---|---:|---|---|
+| Open Design | 4 / 4 | aab776546687aad3d07ebe4f901dfd28a444d1f40a62fed1b1eabdbe63d1687b | 8d9321d5021a63529927ffbea9ecf9802c93a58f0a68a5f980a75f9bcb30e5ce |
+| pstack | 6 / 6 | 840ae6fdfe38d8c1fd18086d24f954b8f47e668c51998183a4933b460b48e46e | e2520b115444889250aff3f752dd6f84d044552e6a920de9549aab73e4ddabc2 |
+| Claude Code files | 5 / 5 | 8f46290a6b74d9df1c2aa5d5cc11d2067a47084ebed0763a1e23c632ed182085 | 511877b626d669785813fdf5f9d6dd1a419301ab2383dc07461808e229c62cfa |
+| AI adoption gap | 5 / 5 | 8a37778517ffb465224a197856ea3126b0fd68f833bea1a976f153b870ba555e | 27eaf2858f65118a7eaee3cd0ad7cb30fd4c4e903010f69581fd0ba0f7d57fdf |
+
+All source member codes, caption lengths and caption hashes were recomputed from the new original HTML and exactly equal the baseline per-member tables. Every positive body equals the full ordered caption sequence after only whitespace/provenance-marker removal. Source-link codes equal the complete member sequence once, and eight separate input identities remain intact. Raw comparison records are local `04-first/comparison.json`, `06-first/comparison.json`, `07-first/comparison.json`, `08-first/comparison.json` under the temporary live directory. A1 fails; four positive groups do not establish all eight.
+
+### 2. Membership, ordering and exclusions — re-tested
+
+All eight successful outputs have one complete ordered caption copy, exactly one source link per member, no additional body text, and exact first/middle equivalence. Source reader/quote/recommendation records were not used as expected article text. Focused fixtures pass reader/quoted-permalink exclusions, distinct-member preservation and conflicting identity rejection. These positive self-thread samples do not prove exclusion of every resource-only same-author reply admitted through the separate ancestry-based branch path. Google distinct seventh-section outputs remain unavailable. A2 is partly; F3 remains fatal and open.
+
+### 5. First-post success — re-tested
+
+All eight first URLs ran through the actual CLI: four complete-source positives with 4/6/5/5 members and four failures. No new switch, no partial-body success. Partly.
+
+### 6. Middle-post success — re-tested
+
+All eight middle URLs ran through the actual CLI: four exact body-hash matches to their first-entry output, each retaining its supplied URL identity; four failures. No other notes merged, renamed or deleted. Partly.
+
+### 7. Correct scope and repetition — re-tested
+
+Complete independent source comparisons settle positive bodies, ordering, once-only provenance and no extra text. Broader resource-only author-reply exclusion and distinct Google-section output remain unverified; partly rather than a universal membership pass.
+
+### 18. Isolated verification — re-tested
+
+All sixteen mandatory entry points were attempted with the new clean executable, separate guest profiles/configs/outputs and no credentials. All four positive groups have new independent original source HTML, terminal self-thread records and complete caption comparisons against both actual outputs. Failing groups are not claimed complete or source-verified. No production config/profile/account/notes/executable/process was touched. Only prescribed public URLs/IDs, counts, hashes and test results enter permanent evidence; original HTML/captions and account state remain outside Git. No new paid API, proxy, automatic login or external summary service was used. No required station was skipped, no important/fatal finding was dismissed, and acceptance remains blocked.
