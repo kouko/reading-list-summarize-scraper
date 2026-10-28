@@ -26,6 +26,13 @@ charter: 1.1
 - Test: A3 positive: verified-social-resume; negative: failed-refresh-preserves-files. A4 positive: completed-skip-and-force; boundary: ordinary-cache-summary-partial.
 - Risk: agent-decided — REQ-3–4: bypass content-only social cache without changing storage identity or completed batch skips; preserve and widen pipeline_test.go and extraction_test.go coverage. Keep headed_on_block behavior and existing summary failure classification.
 
+### Wave 4 — Contradictory membership regression
+
+**W4-01 Reject contradictory article membership and retain the earned regression** after: W3-01 acceptance: 2, 3
+- Files: internal/extract/threads.go (collectSocial), internal/extract/threads_test.go, docs/loom/2026-10-28-extract-complete-author-threads/evidence/probes/conflicting_root_test.go, internal/extract/probes/conflicting_root_test.go
+- Test: A2 positive: consistent-source-membership; negative: foreign-root-member. A3 positive: verified-complete-membership; negative: contradictory-reply-role.
+- Risk: agent-decided — REQ-2–3: reject explicit ancestry or reply-role contradictions instead of trusting the sequence alone; widen threads_test.go coverage. Move the earned adversarial program unchanged into the permanent Go suite so its package remains isolated.
+
 ## Simplicity check
 - none found
 
