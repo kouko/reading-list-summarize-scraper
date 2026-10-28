@@ -47,6 +47,20 @@ charter: 1.1
 - Test: A1 positive: exact-direct-child-count; A3 negative: missing-direct-child; A4 positive: bounded-complete-X-source.
 - Risk: agent-decided — REQ-1,3–4: require exact nonnegative source counts and unique explicit direct children within one snapshot. Unknown or mismatched counts, display-group endings and timeline termination remain insufficient. Existing incomplete live samples remain failures.
 
+### Wave 7 — Consistent reply-count evidence
+
+**W7-01 Reject contradictory reply counts across collection** after: W6-01 acceptance: 2, 3
+- Files: internal/extract/threads.go (collectSocial), internal/extract/threads_test.go
+- Test: A3 negative: contradictory-count-observations; A2 positive: reader-branch-excluded.
+- Risk: agent-decided — REQ-2–3: reject changing explicit counts and counts smaller than known distinct direct children before accepting terminal evidence. Preserve unknown fields and source membership rules; correct the existing zero-count reader fixture without changing its exclusion assertion.
+
+### Wave 8 — Production social dispatch coverage
+
+**W8-01 Exercise social browser behavior through Browser.Extract** after: W7-01 acceptance: 3, 4
+- Files: internal/extract/browser_test.go (TestBrowserExtractSocialCompleteOnly and existing browser helper)
+- Test: A3 negative: incomplete-social-entry; A4 positive: production-social-dispatch.
+- Risk: agent-decided — REQ-3–4: move existing social assertions through the production entry using an isolated intercepted social hostname. Preserve ordinary extraction and remove superseded helper calls; use no production profile, external page requests or new production configuration.
+
 ## Simplicity check
 - none found
 
@@ -61,3 +75,4 @@ charter: 1.1
 4. agent-decided — No paid service, new account, bulk rewrite or PR24 merge is authorized or necessary; use reversible isolated development and leave production profiles, configuration, notes and running process untouched.
 5. agent-decided — Acceptance F1 remains open: the observed public X guest timeline termination does not establish exhaustive author membership, and Threads AI-colleague direct pagination remains pending. Preserve failed acceptance until permitted complete source evidence is available.
 6. agent-decided — X selects partial conversation branches (https://help.x.com/en/resources/recommender-systems/conversations-recommendations); counts measure direct replies (https://help.x.com/en/using-x/x-conversations). Dashboard reports eleven direct replies but exposes two explicit direct children. Termination and module tip IDs do not prove author completeness.
+7. agent-decided — Closing review also leaves source-grounded narrative membership unresolved: author identity plus reply ancestry may include a separate resource recommendation. Exact reply counts prove extent, not article membership. Retain this blocker alongside F1; do not weaken confirmed guarantees.
