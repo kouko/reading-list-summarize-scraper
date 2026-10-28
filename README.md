@@ -183,9 +183,13 @@ validation are re-extracted; completed summaries retain existing skip behavior.
 Threads, Medium and X/Twitter extraction checks the target permalink or canonical
 identity before returning the main body. Missing targets, detected previews and
 access walls fail; unavailable private or member-only content is not promised.
-Existing social caches retain the normal wall checks but cannot retroactively
-prove target identity. Requests use first-party platform data and media endpoints
-with existing access, without outside mirrors, proxies or audio uploads.
+X/Twitter and Threads content-only caches are re-extracted before summarization
+because saved bodies cannot prove complete author-thread membership. Completed
+summaries retain normal batch skipping; explicit URL or forced reprocessing
+revalidates the live article. Failed extraction preserves existing body and
+summary files. Medium caches retain their existing content checks. Requests use
+first-party platform data and media endpoints with existing access, without
+outside mirrors, proxies or audio uploads.
 
 ## Output Structure
 

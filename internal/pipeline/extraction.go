@@ -20,6 +20,20 @@ type articleExtractor interface {
 
 var htmlTags = regexp.MustCompile(`<[^>]*>`)
 
+func authorThreadTarget(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	for _, domain := range []string{"x.com", "twitter.com", "threads.com", "threads.net"} {
+		if host == domain || strings.HasSuffix(host, "."+domain) {
+			return true
+		}
+	}
+	return false
+}
+
 // extractWithFallback retries a failed headless extraction once with a visible
 // browser. Both attempts must pass the same content checks before being saved.
 func extractWithFallback(pool articleExtractor, rawURL string, headedOnBlock bool) (string, error) {

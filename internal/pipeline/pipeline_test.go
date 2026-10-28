@@ -13,6 +13,7 @@ import (
 	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 	"github.com/kouko/reading-list-summarize-scraper/internal/output"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
+	"github.com/kouko/reading-list-summarize-scraper/internal/summarize"
 )
 
 func TestProcessItemRejectsCachedWall(t *testing.T) {
@@ -38,12 +39,93 @@ func TestProcessItemRejectsCachedWall(t *testing.T) {
 			if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 				t.Fatal(err)
 			}
-			p := New(&config.Config{OutputDir: dir}, nil, nil)
-			if err := p.ProcessItem(item); err == nil || !strings.Contains(err.Error(), "cached content") {
-				t.Fatalf("expected cached extraction failure, got %v", err)
+			p := New(&config.Config{OutputDir: dir}, s, nil)
+			if err := p.ProcessItem(item); err == nil {
+				t.Fatalf("expected extraction failure, got %v", err)
 			}
 			if got, err := os.ReadFile(path); err != nil || string(got) != content {
 				t.Fatalf("existing note changed: %q, %v", got, err)
+			}
+		})
+	}
+}
+
+type recordingSummary struct{ bodies []string }
+
+func (s *recordingSummary) Summarize(body string, _ summarize.SummarizeOptions) (summarize.SummarizeResult, error) {
+	s.bodies = append(s.bodies, body)
+	return summarize.SummarizeResult{}, errors.New("summary unavailable")
+}
+
+func TestProcessItemSocialCache(t *testing.T) {
+	for _, tt := range []struct {
+		name, url                               string
+		completed, force, dryRun, fail, extract bool
+	}{
+		{"verified-social-resume", "https://x.com/example/status/123", false, false, false, false, true},
+		{"failed-refresh-preserves-files", "https://www.threads.com/@example/post/abc", false, true, false, true, true},
+		{"completed-skip", "https://twitter.com/example/status/123", true, false, false, false, false},
+		{"completed-force", "https://mobile.twitter.com/example/status/123", true, true, false, true, true},
+		{"dry-run", "https://www.threads.net/@example/post/abc", false, true, true, false, false},
+		{"ordinary-cache-summary-partial", "https://example.com/article", false, true, false, false, false},
+		{"spoof-host-cache", "https://x.com.example.org/article", false, true, false, false, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			item := source.ReadingItem{URL: tt.url}
+			out := filepath.Join(dir, output.DomainDir(item.URL))
+			if err := os.MkdirAll(out, 0755); err != nil {
+				t.Fatal(err)
+			}
+			sha, now := output.SHA8(item.URL), time.Now()
+			files := map[string]string{output.ContentFilename(now, sha): "---\ntype: reading-list-content\n---\n\nOld partial body"}
+			if tt.completed {
+				files[output.SummaryFilename(now, sha)] = "Existing summary"
+			}
+			for name, body := range files {
+				if err := os.WriteFile(filepath.Join(out, name), []byte(body), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			s := &stubExtractor{first: "Verified complete author article", retry: "Verified complete author article"}
+			if tt.fail {
+				s.firstErr = errors.New("Inaccessible social target: Cloudflare CAPTCHA")
+				s.retryErr = s.firstErr
+			}
+			sum := &recordingSummary{}
+			cfg := &config.Config{OutputDir: dir, Pipeline: config.PipelineConfig{SkipExisting: !tt.force, DryRun: tt.dryRun}}
+			err := New(cfg, s, sum).ProcessItem(item)
+			if (len(s.calls) > 0) != tt.extract {
+				t.Fatalf("extraction calls=%v want extract=%v", s.calls, tt.extract)
+			}
+			if tt.fail {
+				if err == nil || IsPartial(err) || len(sum.bodies) != 0 || len(s.calls) != 1 {
+					t.Fatalf("failed refresh summarized or retried blocked page: err=%v calls=%v summaries=%v", err, s.calls, sum.bodies)
+				}
+			} else if tt.dryRun || tt.completed {
+				if !IsSkipped(err) || len(sum.bodies) != 0 {
+					t.Fatalf("skip changed: err=%v summaries=%v", err, sum.bodies)
+				}
+			} else {
+				want := "Old partial body"
+				if tt.extract {
+					want = s.first
+				}
+				if !IsPartial(err) || len(sum.bodies) != 1 || sum.bodies[0] != want {
+					t.Fatalf("summary input/classification changed: err=%v summaries=%v", err, sum.bodies)
+				}
+			}
+			if tt.fail || !tt.extract {
+				entries, readErr := os.ReadDir(out)
+				if readErr != nil || len(entries) != len(files) {
+					t.Fatalf("files changed: %v %v", entries, readErr)
+				}
+				for name, want := range files {
+					got, readErr := os.ReadFile(filepath.Join(out, name))
+					if readErr != nil || string(got) != want {
+						t.Fatalf("existing file changed: %s %q %v", name, got, readErr)
+					}
+				}
 			}
 		})
 	}

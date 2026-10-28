@@ -198,10 +198,11 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 	}
 
 	// ── 3. Resume detection ──
-	// If content exists but summary is missing, read existing content and skip to summarization.
+	// Social caches cannot prove whole-thread completeness; revalidate them live.
+	// Other content-only caches retain their existing summary-resume behavior.
 	var markdown string
 	info := p.index.Get(sha8)
-	if info.ContentExists && !info.SummaryExists {
+	if info.ContentExists && !info.SummaryExists && !authorThreadTarget(item.URL) {
 		contentPath := p.index.ContentPath(sha8)
 		if contentPath != "" {
 			data, err := os.ReadFile(contentPath)
