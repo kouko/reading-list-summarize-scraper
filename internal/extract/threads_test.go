@@ -59,7 +59,7 @@ func TestCompleteSocialThread(t *testing.T) {
 		}
 	})
 	t.Run("unproven boundaries", func(t *testing.T) {
-		for _, kind := range []string{"local reply sequence", "unknown beginning", "conflicting reply identity", "standalone self-thread member", "standalone direct branch", "late X sibling"} {
+		for _, kind := range []string{"local reply sequence", "unknown beginning", "conflicting reply identity", "standalone self-thread member", "standalone direct branch", "late X sibling", "zero with author child", "zero with reader child", "changed explicit count", "late reader exceeds count"} {
 			t.Run(kind, func(t *testing.T) {
 				p, q, r := root, middle, last
 				p.ReplyCount = intPointer(1)
@@ -71,6 +71,15 @@ func TestCompleteSocialThread(t *testing.T) {
 				q.URL = "https://www.threads.com/@author/post/two"
 				p.IsReply = new(bool)
 				q.RootID = "1"
+				if strings.HasPrefix(kind, "zero with ") {
+					p.ReplyCount = intPointer(0)
+				}
+				if kind == "zero with reader child" {
+					q.AuthorID = "reader"
+				}
+				if kind == "changed explicit count" || kind == "late reader exceeds count" {
+					q.BodyComplete = false
+				}
 				if kind == "local reply sequence" {
 					*p.IsReply = true
 				}
@@ -102,11 +111,21 @@ func TestCompleteSocialThread(t *testing.T) {
 						if kind == "late X sibling" {
 							posts = append(posts, r)
 						}
+						if kind == "changed explicit count" {
+							posts[0].ReplyCount = intPointer(2)
+						}
+						if kind == "late reader exceeds count" {
+							r.AuthorID, r.ParentID = "reader", jsonParent(`"1"`)
+							posts = append(posts, r)
+						}
 					}
 					snapshot := socialSnapshot{Version: 1, Platform: platform, TargetID: target, Posts: posts, Sequences: []socialSequence{{RootID: "1", IDs: []string{"1", "2"}, End: true}}, ReplyPages: []socialSequence{{RootID: "1", End: true}}}
 					if kind == "standalone direct branch" {
 						snapshot.Sequences[0].IDs = []string{"1"}
 						snapshot.Branches = []socialSequence{{RootID: "1", IDs: []string{"2"}, End: true}}
+					}
+					if kind == "zero with reader child" {
+						snapshot.Sequences[0].IDs = []string{"1"}
 					}
 					return snapshot, nil
 				})
@@ -128,9 +147,9 @@ func TestCompleteSocialThread(t *testing.T) {
 		}
 	})
 	t.Run("unrelated author branch", func(t *testing.T) {
-		root.ReplyCount = intPointer(0)
+		root.ReplyCount = intPointer(1)
 		body, err := collectSocial(root.URL, 8, func(string) (socialSnapshot, error) {
-			return socialSnapshot{Version: 1, Platform: "x", TargetID: "1", Posts: []socialPost{root, {ID: "reader", AuthorID: "b", ParentID: jsonParent(`"1"`)}, {ID: "aside", AuthorID: "a", ParentID: jsonParent(`"reader"`), Body: "conversation", BodyComplete: true}}}, nil
+			return socialSnapshot{Version: 1, Platform: "x", TargetID: "1", Posts: []socialPost{root, {ID: "reader", AuthorID: "b", ParentID: jsonParent(`"1"`)}, {ID: "aside", AuthorID: "a", ParentID: jsonParent(`"reader"`), Body: "conversation", BodyComplete: true}}, ReplyPages: []socialSequence{{RootID: "1", End: true}}}, nil
 		})
 		if err != nil || body != "first\n\n[Source]("+root.URL+")" {
 			t.Fatalf("%q, %v", body, err)

@@ -69,6 +69,9 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 				return fail("missing source identity")
 			}
 			if old, ok := posts[p.ID]; ok {
+				if old.ReplyCount != nil && p.ReplyCount != nil && *old.ReplyCount != *p.ReplyCount {
+					return fail("conflicting source reply count")
+				}
 				if old.IsReply != nil && p.IsReply != nil && *old.IsReply != *p.IsReply {
 					return fail("conflicting source reply identity")
 				}
@@ -251,9 +254,6 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 					children = append(children, id)
 				}
 			}
-			if len(children) == 0 && (p.ReplyCount == nil || *p.ReplyCount != 0) {
-				return "", fail("article end is unknown")
-			}
 			pending = append(pending, children...)
 			sort.Slice(pending, func(i, j int) bool {
 				a, _ := strconv.ParseUint(pending[i], 10, 64)
@@ -289,6 +289,20 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 	}
 	if !seen[requested] || len(ids) == 0 || ids[0] != root {
 		return "", fail("sequence omits requested member or beginning")
+	}
+	// Count every known explicit direct child, including reader replies, after
+	// body recovery has had its final chance to reveal more source evidence.
+	children := map[string]int{}
+	for _, p := range posts {
+		var parent string
+		if json.Unmarshal(p.ParentID, &parent) == nil && parent != "" {
+			children[parent]++
+		}
+	}
+	for id, p := range posts {
+		if p.ReplyCount != nil && children[id] > *p.ReplyCount {
+			return "", fail("reply count contradicts known direct children")
+		}
 	}
 	// Leaf replyCount=0 proves only that leaf ends. A rendered author chain
 	// cannot prove there are no hidden author siblings earlier in the article.
