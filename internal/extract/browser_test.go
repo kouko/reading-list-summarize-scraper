@@ -11,18 +11,22 @@ import (
 	"testing"
 	"time"
 
+	cu "github.com/Davincible/chromedp-undetected"
 	"github.com/chromedp/chromedp"
 
 	assets "github.com/kouko/reading-list-summarize-scraper/embed"
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
 )
 
-func newTestBrowser(t *testing.T) *Browser {
+func newTestBrowser(t *testing.T, flags ...chromedp.ExecAllocatorOption) *Browser {
 	t.Helper()
-	b, err := NewBrowser(false, "", t.TempDir())
+	// Allocator flags apply to every tab, including those opened by Extract.
+	ctx, cancel, err := cu.New(cu.NewConfig(cu.WithUserDataDir(t.TempDir()),
+		cu.WithChromeFlags(append(flags, chromedp.Flag("headless", true))...)))
 	if err != nil {
 		t.Fatal(err)
 	}
+	b := &Browser{ctx: ctx, cancel: cancel}
 	// Register after TempDir so Chrome finishes writing before profile removal.
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(b.ctx, 10*time.Second)
@@ -41,26 +45,28 @@ func newTestBrowser(t *testing.T) *Browser {
 }
 
 func TestBrowserExtractSocialCompleteOnly(t *testing.T) {
-	b := newTestBrowser(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `<body><article>ordinary article</article></body>`)
 	}))
 	defer server.Close()
+	// Keep the real social hostname for production dispatch while every tab
+	// resolves it only to this fixture; other hostnames cannot resolve.
+	b := newTestBrowser(t,
+		chromedp.Flag("host-resolver-rules", "MAP x.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"),
+		chromedp.Flag("no-proxy-server", true),
+		chromedp.Flag("ignore-certificate-errors", true))
+	socialURL := strings.Replace(server.URL, "127.0.0.1", "x.com", 1) + "/author/status/1"
 	js := `window.extractArticle=()=>document.querySelector('article').textContent;
 window.socialSnapshot=()=>({version:1,platform:'x',targetID:'1',posts:[{id:'1',url:location.href,authorID:'a',body:'verified article',bodyComplete:true,parentID:null,replyCount:0}]})`
-	ctx, cancel := chromedp.NewContext(b.ctx)
-	defer cancel()
-	ctx, deadline := context.WithTimeout(ctx, 20*time.Second)
-	defer deadline()
-	body, err := b.extractSocial(ctx, server.URL, js, 0)
-	if err != nil || body != "verified article\n\n[Source]("+server.URL+"/)" {
+	body, err := b.Extract(socialURL, js, 20*time.Second, 0)
+	if err != nil || body != "verified article\n\n[Source]("+socialURL+")" {
 		t.Fatalf("social: %q, %v", body, err)
 	}
-	body, err = b.extractSocial(ctx, server.URL, strings.Replace(js, "bodyComplete:true", "bodyComplete:false", 1), 0)
+	body, err = b.Extract(socialURL, strings.Replace(js, "bodyComplete:true", "bodyComplete:false", 1), 20*time.Second, 0)
 	if err == nil || body != "" {
 		t.Fatalf("preview: %q, %v", body, err)
 	}
-	body, err = b.extractSocial(ctx, server.URL, `window.socialSnapshot=()=>{throw Error('missing target')};window.extractArticle=()=>{throw Error('Cloudflare security challenge')}`, 0)
+	body, err = b.Extract(socialURL, `window.socialSnapshot=()=>{throw Error('missing target')};window.extractArticle=()=>{throw Error('Cloudflare security challenge')}`, 20*time.Second, 0)
 	if err == nil || body != "" || !strings.Contains(err.Error(), "Cloudflare") {
 		t.Fatalf("challenge identity: %q, %v", body, err)
 	}
