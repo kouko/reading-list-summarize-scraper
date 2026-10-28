@@ -297,6 +297,9 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 	for id := range seen {
 		p := posts[id]
 		if platform == "threads" && id != root {
+			if (p.RootID != "" && p.RootID != root) || (p.IsReply != nil && !*p.IsReply) {
+				return "", fail("contradictory article membership")
+			}
 			continue
 		}
 		if p.ReplyCount != nil && *p.ReplyCount == 0 {

@@ -59,7 +59,7 @@ func TestCompleteSocialThread(t *testing.T) {
 		}
 	})
 	t.Run("unproven boundaries", func(t *testing.T) {
-		for _, kind := range []string{"local reply sequence", "unknown beginning", "conflicting reply identity", "late X sibling"} {
+		for _, kind := range []string{"local reply sequence", "unknown beginning", "conflicting reply identity", "standalone self-thread member", "standalone direct branch", "late X sibling"} {
 			t.Run(kind, func(t *testing.T) {
 				p, q, r := root, middle, last
 				p.ReplyCount = intPointer(1)
@@ -79,6 +79,9 @@ func TestCompleteSocialThread(t *testing.T) {
 				}
 				if kind == "conflicting reply identity" {
 					q.BodyComplete = false
+				}
+				if strings.HasPrefix(kind, "standalone ") {
+					q.IsReply = new(bool)
 				}
 				if kind == "late X sibling" {
 					platform = "x"
@@ -100,7 +103,12 @@ func TestCompleteSocialThread(t *testing.T) {
 							posts = append(posts, r)
 						}
 					}
-					return socialSnapshot{Version: 1, Platform: platform, TargetID: target, Posts: posts, Sequences: []socialSequence{{RootID: "1", IDs: []string{"1", "2"}, End: true}}, ReplyPages: []socialSequence{{RootID: "1", End: true}}}, nil
+					snapshot := socialSnapshot{Version: 1, Platform: platform, TargetID: target, Posts: posts, Sequences: []socialSequence{{RootID: "1", IDs: []string{"1", "2"}, End: true}}, ReplyPages: []socialSequence{{RootID: "1", End: true}}}
+					if kind == "standalone direct branch" {
+						snapshot.Sequences[0].IDs = []string{"1"}
+						snapshot.Branches = []socialSequence{{RootID: "1", IDs: []string{"2"}, End: true}}
+					}
+					return snapshot, nil
 				})
 				if err == nil || body != "" {
 					t.Fatalf("%q, %v", body, err)
