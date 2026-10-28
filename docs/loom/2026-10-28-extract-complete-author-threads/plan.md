@@ -33,6 +33,13 @@ charter: 1.1
 - Test: A2 positive: consistent-source-membership; negative: foreign-root-member. A3 positive: verified-complete-membership; negative: contradictory-reply-role.
 - Risk: agent-decided — REQ-2–3: reject explicit ancestry or reply-role contradictions instead of trusting the sequence alone; widen threads_test.go coverage. Move the earned adversarial program unchanged into the permanent Go suite so its package remains isolated.
 
+### Wave 5 — Saved member provenance
+
+**W5-01 Retain a source permalink with every verified member body** after: W4-01 acceptance: 2
+- Files: internal/extract/threads.go (collectSocial), internal/extract/threads_test.go, internal/extract/browser_test.go
+- Test: A2 positive: verified-member-permalinks; negative: failed-thread-no-output.
+- Risk: agent-decided — REQ-2: append each member's verified permalink without changing its text or following linked content; preserve and widen threads_test.go and browser_test.go coverage. Keep input storage identity, ordering, deduplication and incomplete-result rejection.
+
 ## Simplicity check
 - none found
 
@@ -45,3 +52,4 @@ charter: 1.1
 2. agent-decided — Navigation may expose previews, unavailable members or incomplete lists; use bounded retries and fail without replacing existing outputs. A successful short extraction is insufficient evidence of completeness.
 3. agent-decided — Reuse the existing JavaScript test harness, register it in the declared Go package suite, and regenerate the embedded bundle deterministically. Run tasks sequentially, then independent adversary, complete package tests and independent acceptance.
 4. agent-decided — No paid service, new account, bulk rewrite or PR24 merge is authorized or necessary; use reversible isolated development and leave production profiles, configuration, notes and running process untouched.
+5. agent-decided — Acceptance F1 remains open: the observed public X guest timeline termination does not establish exhaustive author membership, and Threads AI-colleague direct pagination remains pending. Preserve failed acceptance until permitted complete source evidence is available.
