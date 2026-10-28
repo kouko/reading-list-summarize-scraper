@@ -252,6 +252,7 @@ export function socialSnapshot(document: Document = globalThis.document, address
             }
         }
     } else if (host === 'x.com' || host === 'twitter.com') {
+        const replyCounts = new Map<string, unknown>();
         // Only inspect bounded props belonging to rendered articles. Never return
         // React/app objects, account state, fetch tokens or arbitrary script data.
         for (const article of Array.from(document.querySelectorAll('article'))) {
@@ -275,7 +276,12 @@ export function socialSnapshot(document: Document = globalThis.document, address
                     const body = modernXBody(own,url);
                     const fields: Partial<SocialPost> = {...evidence.get(id)};
                     if (typeof user?.rest_id === 'string') fields.authorID=user.rest_id;
-                    if (Number.isInteger(value.counts?.reply_count)) fields.replyCount=value.counts.reply_count;
+                    const count = value.counts?.reply_count;
+                    if (count !== undefined) {
+                        if (replyCounts.has(id) && replyCounts.get(id) !== count) fail('Inaccessible social target: conflicting source reply count');
+                        replyCounts.set(id,count);
+                    }
+                    if (Number.isInteger(count) && count >= 0) fields.replyCount=count;
                     if (position) { fields.conversationStart=position.isStart; fields.conversationEnd=position.isEnd; }
                     if (value.reply_to_results === null) fields.parentID = null;
                     else if (typeof value.reply_to_results?.rest_id === 'string') fields.parentID = value.reply_to_results.rest_id;
@@ -294,6 +300,11 @@ export function socialSnapshot(document: Document = globalThis.document, address
                 for (let j=0; hook && j<20; j++, hook=hook.next) visit(hook.memoizedState?.snapshot?.data);
                 visit(fiber.updateQueue?.memoCache?.data);
             }
+        }
+        for (const post of posts.values()) {
+            const count = replyCounts.get(post.id);
+            const children = [...posts.values()].filter(child => child.parentID === post.id);
+            if (Number.isInteger(count) && (count as number) >= 0 && count === children.length) replyPages.push({rootID:post.id,end:true,cursor:null});
         }
     } else fail('Inaccessible social target: unsupported snapshot platform');
     const targets = [...posts.values()].filter(p => sameTarget(p.url,url));

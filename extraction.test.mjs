@@ -48,6 +48,26 @@ test('thread A1/A2 source-ordered first and middle snapshots retain distinct mem
   first.__reactFiber$fixture.memoizedState={next:{memoizedState:{snapshot:{data:{rest_id:'1',reply_to_results:null,counts:{reply_count:2}}}}}};
   const merged=socialSnapshot(d,'https://x.com/writer/status/1').posts[0];
   assert.equal(merged.parentID,null);assert.equal(merged.replyCount,2);
+  const root=first.__reactFiber$fixture.memoizedState.next.memoizedState.snapshot.data;
+  root.counts.reply_count=1;
+  const second=d.querySelectorAll('article')[1];
+  second.__reactFiber$fixture.memoizedProps.tweet.core.user_results.result.user.rest_id='reader';
+  const duplicate=second.cloneNode(true);duplicate.__reactFiber$fixture=second.__reactFiber$fixture;d.body.append(duplicate);
+  assert.deepEqual(socialSnapshot(d,'https://x.com/writer/status/1').replyPages,[{rootID:'1',end:true,cursor:null}]);
+  for (const reply_count of [2,-1,1.5,'1',undefined]) {
+   root.counts.reply_count=reply_count;
+   assert.deepEqual(socialSnapshot(d,'https://x.com/writer/status/1').replyPages,[]);
+  }
+  root.counts.reply_count=0;
+  assert.deepEqual(socialSnapshot(d,'https://x.com/writer/status/1').replyPages,[]);
+  root.counts.reply_count=undefined;
+  const last=d.querySelectorAll('article')[count-1].__reactFiber$fixture.memoizedProps.tweet;
+  last.counts={reply_count:0};
+  assert.deepEqual(socialSnapshot(d,'https://x.com/writer/status/1').replyPages,[{rootID:String(count),end:true,cursor:null}]);
+  delete last.counts;
+  root.counts.reply_count=1;
+  first.__reactFiber$fixture.memoizedProps.tweet.counts={reply_count:2};
+  assert.throws(()=>socialSnapshot(d,'https://x.com/writer/status/1'),/conflicting.*count/i);
  }
 });
 test('thread A1/A3 missing members and unknown pagination never prove completeness', () => {
