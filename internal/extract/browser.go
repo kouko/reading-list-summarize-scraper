@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -69,6 +70,9 @@ func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, wait
 	defer cancel()
 	ctx, cancel = context.WithTimeout(ctx, timeout)
 	defer cancel()
+	if isSocialPostURL(url) {
+		return b.extractSocial(ctx, url, jsCode, waitAfterLoad)
+	}
 
 	var content string
 	err := chromedp.Run(ctx,
@@ -81,6 +85,39 @@ func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, wait
 		}),
 	)
 	return content, err
+}
+
+func isSocialPostURL(address string) bool {
+	u, err := url.Parse(address)
+	if err != nil {
+		return false
+	}
+	host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+	return ((host == "x.com" || host == "twitter.com") && strings.Contains(u.Path, "/status/")) || ((host == "threads.com" || host == "threads.net") && strings.Contains(u.Path, "/post/"))
+}
+
+// Every member uses this attempt's tab and deadline. The walker returns no
+// content until both source membership and every member body are complete.
+func (b *Browser) extractSocial(ctx context.Context, address, jsCode string, waitAfterLoad time.Duration) (string, error) {
+	return collectSocial(address, 32, func(memberURL string) (socialSnapshot, error) {
+		var snapshot socialSnapshot
+		err := chromedp.Run(ctx,
+			chromedp.Navigate(memberURL),
+			chromedp.WaitVisible(`body`, chromedp.ByQuery),
+			chromedp.Sleep(waitAfterLoad),
+			chromedp.Evaluate(jsCode, nil),
+			chromedp.Evaluate(`(async()=>{
+try { return window.socialSnapshot(); }
+catch (sourceError) {
+ // Reuse the existing extractor's verification-page classification only.
+ // A successful single-post fallback never establishes a complete thread.
+ try { await window.extractArticle(); } catch (classifiedError) { throw classifiedError; }
+ throw sourceError;
+}
+})()`, &snapshot, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) }),
+		)
+		return snapshot, err
+	})
 }
 
 // ExtractPaginated extracts a multi-page article by following the next-page

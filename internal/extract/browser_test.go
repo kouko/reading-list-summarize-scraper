@@ -40,6 +40,36 @@ func newTestBrowser(t *testing.T) *Browser {
 	return b
 }
 
+func TestBrowserExtractSocialCompleteOnly(t *testing.T) {
+	b := newTestBrowser(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `<body><article>ordinary article</article></body>`)
+	}))
+	defer server.Close()
+	js := `window.extractArticle=()=>document.querySelector('article').textContent;
+window.socialSnapshot=()=>({version:1,platform:'x',targetID:'1',posts:[{id:'1',url:location.href,authorID:'a',body:'verified article',bodyComplete:true,parentID:null,replyCount:0}]})`
+	ctx, cancel := chromedp.NewContext(b.ctx)
+	defer cancel()
+	ctx, deadline := context.WithTimeout(ctx, 20*time.Second)
+	defer deadline()
+	body, err := b.extractSocial(ctx, server.URL, js, 0)
+	if err != nil || body != "verified article" {
+		t.Fatalf("social: %q, %v", body, err)
+	}
+	body, err = b.extractSocial(ctx, server.URL, strings.Replace(js, "bodyComplete:true", "bodyComplete:false", 1), 0)
+	if err == nil || body != "" {
+		t.Fatalf("preview: %q, %v", body, err)
+	}
+	body, err = b.extractSocial(ctx, server.URL, `window.socialSnapshot=()=>{throw Error('missing target')};window.extractArticle=()=>{throw Error('Cloudflare security challenge')}`, 0)
+	if err == nil || body != "" || !strings.Contains(err.Error(), "Cloudflare") {
+		t.Fatalf("challenge identity: %q, %v", body, err)
+	}
+	body, err = b.Extract(server.URL, js, 20*time.Second, 0)
+	if err != nil || body != "ordinary article" {
+		t.Fatalf("ordinary: %q, %v", body, err)
+	}
+}
+
 func TestBrowserExtractPaginated(t *testing.T) {
 	b := newTestBrowser(t)
 	// Check extraction behavior within the production budget, not a two-second
