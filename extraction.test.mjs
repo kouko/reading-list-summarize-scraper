@@ -143,6 +143,11 @@ test('A2 target bodies on three platforms exclude replies', async () => {
  ['https://medium.com/@a/title-abcdef123456','<link rel="canonical" href="https://medium.com/@a/title-abcdef123456"><article><p>Target main post text.<br>Next line.</p><div>Separate block.</div></article>']]) {
   const out = await extractArticle(doc(html), url); assert.match(out, /Target main post text\.\s+Next line\.\s+Separate block\./); assert.doesNotMatch(out, /reply/);
  }
+ const rich=doc('<article><a aria-current="page" href="/a">author</a><a aria-current="page" href="/a/status/123">date</a><h1 data-article-part="title">Own long title</h1><div data-article-part="body"><style>UNRELATED STYLES</style><div>OUTSIDE BODY</div><div class="x-article-body"><p>Complete authored rich body.</p><a href="https://example.com/source">Reference</a><div data-slot="embedded-tweet-frame">QUOTED BODY</div></div></div></article>');
+ rich.querySelector('article').__reactFiber$fixture={memoizedProps:{tweet:{rest_id:'123',core:{user_results:{result:{user:{rest_id:'author'}}}},reply_to_results:null,counts:{reply_count:2}}}};
+ const snapshot=socialSnapshot(rich,'https://x.com/a/status/123');
+ assert.equal(snapshot.posts[0].bodyComplete,true);assert.match(snapshot.posts[0].body,/# Own long title\s+Complete authored rich body\./);assert.match(snapshot.posts[0].body,/\[Reference\]\(https:\/\/example.com\/source\)/);assert.doesNotMatch(snapshot.posts[0].body,/OUTSIDE BODY|STYLES|QUOTED BODY/);assert.deepEqual(snapshot.replyPages,[]);
+ assert.equal(await extractArticle(rich,'https://x.com/a/status/123'),snapshot.posts[0].body);
 });
 test('A2/A3 explicit target previews fail while complete own bodies remain usable', async () => {
  const marker = '<a data-testid="tweet-text-show-more-link">Show more</a>';

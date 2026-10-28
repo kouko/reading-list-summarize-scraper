@@ -172,6 +172,18 @@ function postPreview(own: Element): boolean {
         || Array.from(own.querySelectorAll('button, [role="button"]')).some(button => /^(?:show more|read more|顯示更多|もっと見る)$/i.test((button.textContent || '').trim()));
 }
 
+function modernXBody(own: Element, url: URL): string {
+    const rich = own.querySelectorAll('[data-article-part="body"] .x-article-body');
+    if (rich.length === 1) {
+        const title = own.querySelector('[data-article-part="title"]');
+        const body = bodyMarkdown(rich[0],url);
+        return substantive(body) ? [title ? '# ' + bodyMarkdown(title,url) : '',body].filter(Boolean).join('\n\n') : '';
+    }
+    if (own.querySelector('[data-article-part]')) return '';
+    const plain = own.querySelectorAll('[data-testid="tweetText"], [dir="auto"].whitespace-pre-wrap');
+    return plain.length === 1 ? bodyMarkdown(plain[0],url) : '';
+}
+
 type SocialPost = {id: string; url: string; authorID: string; body: string; bodyComplete: boolean; parentID?: string | null; rootID?: string; isReply?: boolean; replyCount?: number; conversationStart?: boolean; conversationEnd?: boolean};
 type SocialSequence = {rootID: string; ids: string[]; end: boolean; cursor: string | null; missingIDs: string[]};
 
@@ -249,8 +261,7 @@ export function socialSnapshot(document: Document = globalThis.document, address
                     const links = Array.from(own.querySelectorAll('a[href]'));
                     const permalink = links.find(a => new URL(a.getAttribute('href')!, url).pathname.endsWith('/status/' + id));
                     if (!permalink) return;
-                    const bodies = own.querySelectorAll('[data-testid="tweetText"], [dir="auto"].text-lead.whitespace-pre-wrap, [dir="auto"].whitespace-pre-wrap');
-                    const body = bodies.length === 1 ? bodyMarkdown(bodies[0], url) : '';
+                    const body = modernXBody(own,url);
                     const fields: Partial<SocialPost> = {...evidence.get(id)};
                     if (typeof user?.rest_id === 'string') fields.authorID=user.rest_id;
                     if (Number.isInteger(value.counts?.reply_count)) fields.replyCount=value.counts.reply_count;
@@ -309,15 +320,15 @@ function social(document: Document, url: URL): string {
             const target = new URL(url.origin + url.pathname.replace(/\/article\/?$/, ''));
             const author = new URL('/' + url.pathname.split('/')[1], url);
             const candidates = Array.from(document.querySelectorAll('article')).filter(a => !a.parentElement?.closest('article, [data-slot="embedded-tweet-frame"]')).map(ownTweet).filter(own => {
-                const links = Array.from(own.querySelectorAll('a[aria-current="page"]')).filter(a => !a.closest('[dir="auto"].whitespace-pre-wrap'));
+                const links = Array.from(own.querySelectorAll('a[aria-current="page"]')).filter(a => !a.closest('[data-article-part="body"], [dir="auto"].whitespace-pre-wrap'));
                 const posts = links.filter(a => /\/(?:status|article)\/\d+/.test(a.getAttribute('href') || ''));
                 return posts.length > 0 && posts.every(a => sameTarget(a.getAttribute('href'),target)) && links.some(a => sameTarget(a.getAttribute('href'),author));
             });
             if (candidates.length > 1) fail('Inaccessible social target: ambiguous post identity');
             if (candidates.length === 1) {
-                const own = candidates[0], bodies = own.querySelectorAll('[dir="auto"].text-lead.whitespace-pre-wrap');
-                if (postPreview(own) || bodies.length !== 1) fail('Inaccessible social target: incomplete post preview or body');
-                text = bodyMarkdown(bodies[0],url);
+                const own = candidates[0];
+                text = modernXBody(own,url);
+                if (postPreview(own) || !substantive(text)) fail('Inaccessible social target: incomplete post preview or body');
             }
         }
     } else if (host === 'threads.net' || host === 'threads.com') {
