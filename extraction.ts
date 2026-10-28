@@ -202,10 +202,21 @@ export function socialSnapshot(document: Document = globalThis.document, address
     };
     if (host === 'threads.com' || host === 'threads.net') {
         const rawPosts = new Map<string, any>(), collections: any[] = [];
+        const ancestry = new Map<string, string>();
         let remaining = 250000;
         const visit = (value: any, depth = 0) => {
             if (!value || typeof value !== 'object') return;
             if (--remaining < 0 || depth > 100) fail('Inaccessible social target: source snapshot limit');
+            // Relay may deliver the containing-thread relation separately from
+            // the media/caption fragment. Join only by its stable info identity.
+            if (typeof value.id === 'string' && value.id.startsWith('XDTTextPostAppMediaInfo:')) {
+                const ancestors = value.containing_thread?.posts?.edges || [];
+                for (const edge of ancestors) if (edge.node?.pk && edge.node?.text_post_app_info?.is_reply === false) {
+                    const root = String(edge.node.pk), prior = ancestry.get(value.id);
+                    if (prior && prior !== root) fail('Inaccessible social target: conflicting source ancestor');
+                    ancestry.set(value.id,root);
+                }
+            }
             if (value.pk && value.code && value.user?.id && value.text_post_app_info?.id) rawPosts.set(String(value.pk), value);
             if (value.id && value.self_thread?.posts) collections.push(value);
             for (const child of Object.values(value)) visit(child, depth + 1);
@@ -219,11 +230,11 @@ export function socialSnapshot(document: Document = globalThis.document, address
         for (const [id, p] of rawPosts) {
             const caption = typeof p.caption?.text === 'string' ? p.caption.text.trim() : '';
             const preview = (p.text_post_app_info.text_fragments?.fragments || []).map((f: any) => f.plaintext || '').join('');
-            const containing = p.text_post_app_info.containing_thread?.posts?.edges?.[0]?.node;
+            const rootID = ancestry.get(p.text_post_app_info.id);
             add({id, url:`https://${host}/@${p.user.username}/post/${p.code}`, authorID:String(p.user.id), body:caption || preview,
                 bodyComplete:substantive(caption), isReply:p.text_post_app_info.is_reply,
                 ...(Number.isInteger(p.text_post_app_info.direct_reply_count) ? {replyCount:p.text_post_app_info.direct_reply_count} : {}),
-                ...(containing?.pk ? {rootID:String(containing.pk)} : {})});
+                ...(rootID ? {rootID} : {})});
         }
         const ids = (connection: any) => (connection?.edges || []).map((e: any) => String(e.node?.pk || '')).filter(Boolean);
         for (const c of collections) {

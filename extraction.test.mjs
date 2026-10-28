@@ -55,6 +55,12 @@ test('thread A1/A3 missing members and unknown pagination never prove completene
  const s = socialSnapshot(threadPage(posts,{self_thread:{post_ids:{edges:[{node:{pk:'2'}}]},posts:{edges:[],page_info:{has_next_page:true,end_cursor:'cursor'}}}}),'https://www.threads.com/@writer/post/ROOT');
  assert.equal(s.sequences[0].end,false); assert.deepEqual(s.sequences[0].missingIDs,['2']);
  assert.throws(()=>socialSnapshot(doc(''),'https://www.threads.com/@writer/post/ROOT'),/target|identity/i);
+ const mid=threadPost('MID','2',true), root=threadPost('ROOT','1');
+ const separate=threadPage([mid]);
+ const script=separate.createElement('script');script.type='application/json';script.textContent=JSON.stringify({data:{media:{text_post_app_info:{id:mid.text_post_app_info.id,is_reply:true,containing_thread:{posts:{edges:[{node:root}]}}}}}});separate.body.append(script);
+ const recovered=socialSnapshot(separate,'https://www.threads.com/@writer/post/MID');
+ assert.equal(recovered.posts.find(p=>p.id==='2').rootID,'1');assert.equal(recovered.posts.find(p=>p.id==='2').isReply,true);
+ assert.equal(socialSnapshot(threadPage([mid,root]),'https://www.threads.com/@writer/post/MID').posts.find(p=>p.id==='2').rootID,undefined);
 });
 test('thread A2 reader branches are separate from explicit self-thread membership', () => {
  const root=threadPost('ROOT','1'), reader={...threadPost('READER','9',true),user:{id:'reader',username:'reader'}};
