@@ -40,6 +40,13 @@ charter: 1.1
 - Test: A2 positive: verified-member-permalinks; negative: failed-thread-no-output.
 - Risk: agent-decided — REQ-2: append each member's verified permalink without changing its text or following linked content; preserve and widen threads_test.go and browser_test.go coverage. Keep input storage identity, ordering, deduplication and incomplete-result rejection.
 
+### Wave 6 — Reachable X completeness evidence
+
+**W6-01 Establish X direct-reply extent from exact source counts** after: W5-01 acceptance: 1, 3, 4
+- Files: extraction.ts (socialSnapshot X producer), extraction.test.mjs, embed/defuddle.min.js
+- Test: A1 positive: exact-direct-child-count; A3 negative: missing-direct-child; A4 positive: bounded-complete-X-source.
+- Risk: agent-decided — REQ-1,3–4: require exact nonnegative source counts and unique explicit direct children within one snapshot. Unknown or mismatched counts, display-group endings and timeline termination remain insufficient. Existing incomplete live samples remain failures.
+
 ## Simplicity check
 - none found
 
@@ -53,3 +60,4 @@ charter: 1.1
 3. agent-decided — Reuse the existing JavaScript test harness, register it in the declared Go package suite, and regenerate the embedded bundle deterministically. Run tasks sequentially, then independent adversary, complete package tests and independent acceptance.
 4. agent-decided — No paid service, new account, bulk rewrite or PR24 merge is authorized or necessary; use reversible isolated development and leave production profiles, configuration, notes and running process untouched.
 5. agent-decided — Acceptance F1 remains open: the observed public X guest timeline termination does not establish exhaustive author membership, and Threads AI-colleague direct pagination remains pending. Preserve failed acceptance until permitted complete source evidence is available.
+6. agent-decided — X selects partial conversation branches (https://help.x.com/en/resources/recommender-systems/conversations-recommendations); counts measure direct replies (https://help.x.com/en/using-x/x-conversations). Dashboard reports eleven direct replies but exposes two explicit direct children. Termination and module tip IDs do not prove author completeness.
