@@ -158,13 +158,125 @@ function bodyMarkdown(element: Element, url: URL): string {
 
 function ownTweet(article: Element): Element {
     const clone = article.cloneNode(true) as Element;
-    clone.querySelectorAll('[data-testid="quoteTweet"], [data-testid="simpleTweet"], article[data-testid="tweet"]').forEach(el => el.remove());
+    clone.querySelectorAll('[data-testid="quoteTweet"], [data-testid="simpleTweet"], article, [data-slot="embedded-tweet-frame"]').forEach(el => el.remove());
     // Upstream TwitterExtractor identifies quoted cards by their labelled
     // container and nested author header. They cannot identify the outer post.
     clone.querySelectorAll('[aria-labelledby*="id__"]').forEach(el => {
         if (el.querySelector('[data-testid="User-Name"]')) el.remove();
     });
     return clone;
+}
+
+function postPreview(own: Element): boolean {
+    return !!own.querySelector('[data-testid="tweet-text-show-more-link"], [data-testid="tweet-text-show-more"]')
+        || Array.from(own.querySelectorAll('button, [role="button"]')).some(button => /^(?:show more|read more|顯示更多|もっと見る)$/i.test((button.textContent || '').trim()));
+}
+
+type SocialPost = {id: string; url: string; authorID: string; body: string; bodyComplete: boolean; parentID?: string | null; rootID?: string; isReply?: boolean; replyCount?: number; conversationStart?: boolean; conversationEnd?: boolean};
+type SocialSequence = {rootID: string; ids: string[]; end: boolean; cursor: string | null; missingIDs: string[]};
+
+// A snapshot is evidence for the browser walker, never a complete-article claim.
+// Unknown parent/extent is deliberately distinct from an explicit null/end.
+export function socialSnapshot(document: Document = globalThis.document, address: string = globalThis.location.href) {
+    const url = new URL(address), host = url.hostname.replace(/^www\./, '');
+    const posts = new Map<string, SocialPost>();
+    const sequences: SocialSequence[] = [], branches: {rootID: string; ids: string[]; end: boolean}[] = [];
+    const replyPages: {rootID: string; end: boolean; cursor: string | null}[] = [];
+    const add = (post: SocialPost) => {
+        const prior = posts.get(post.id);
+        if (prior && (prior.authorID !== post.authorID || prior.url !== post.url || (prior.bodyComplete && post.bodyComplete && prior.body !== post.body)
+            || (prior.parentID !== undefined && post.parentID !== undefined && prior.parentID !== post.parentID))) fail('Inaccessible social target: conflicting source identity or body');
+        if (!prior || post.bodyComplete || !prior.bodyComplete) posts.set(post.id, {...prior,...post});
+    };
+    if (host === 'threads.com' || host === 'threads.net') {
+        const rawPosts = new Map<string, any>(), collections: any[] = [];
+        let remaining = 250000;
+        const visit = (value: any, depth = 0) => {
+            if (!value || typeof value !== 'object') return;
+            if (--remaining < 0 || depth > 100) fail('Inaccessible social target: source snapshot limit');
+            if (value.pk && value.code && value.user?.id && value.text_post_app_info?.id) rawPosts.set(String(value.pk), value);
+            if (value.id && value.self_thread?.posts) collections.push(value);
+            for (const child of Object.values(value)) visit(child, depth + 1);
+        };
+        for (const script of Array.from(document.querySelectorAll('script[type="application/json"]'))) {
+            const text = script.textContent || '';
+            if (text.length > 16000000) fail('Inaccessible social target: source snapshot limit');
+            let parsed; try { parsed = JSON.parse(text); } catch { continue; }
+            visit(parsed);
+        }
+        for (const [id, p] of rawPosts) {
+            const caption = typeof p.caption?.text === 'string' ? p.caption.text.trim() : '';
+            const preview = (p.text_post_app_info.text_fragments?.fragments || []).map((f: any) => f.plaintext || '').join('');
+            const containing = p.text_post_app_info.containing_thread?.posts?.edges?.[0]?.node;
+            add({id, url:`https://${host}/@${p.user.username}/post/${p.code}`, authorID:String(p.user.id), body:caption || preview,
+                bodyComplete:substantive(caption), isReply:p.text_post_app_info.is_reply,
+                ...(Number.isInteger(p.text_post_app_info.direct_reply_count) ? {replyCount:p.text_post_app_info.direct_reply_count} : {}),
+                ...(containing?.pk ? {rootID:String(containing.pk)} : {})});
+        }
+        const ids = (connection: any) => (connection?.edges || []).map((e: any) => String(e.node?.pk || '')).filter(Boolean);
+        for (const c of collections) {
+            const roots = [...rawPosts.values()].filter(p => p.text_post_app_info.id === c.id);
+            if (roots.length !== 1) continue;
+            const rootID = String(roots[0].pk), connection = c.self_thread.posts;
+            const members = ids(connection), expected = ids(c.self_thread.post_ids);
+            const sequence = {rootID, ids:[rootID,...members], end:connection.page_info?.has_next_page === false,
+                cursor:connection.page_info?.end_cursor || null, missingIDs:expected.filter((id: string) => !members.includes(id))};
+            if (!sequences.some(s => JSON.stringify(s) === JSON.stringify(sequence))) sequences.push(sequence);
+            replyPages.push({rootID,end:c.direct_replies?.page_info?.has_next_page === false,cursor:c.direct_replies?.page_info?.end_cursor || null});
+            for (const edge of c.direct_replies?.edges || []) {
+                const replies = edge.node?.posts;
+                branches.push({rootID, ids:ids(replies), end:replies?.page_info?.has_next_page === false});
+            }
+        }
+    } else if (host === 'x.com' || host === 'twitter.com') {
+        // Only inspect bounded props belonging to rendered articles. Never return
+        // React/app objects, account state, fetch tokens or arbitrary script data.
+        for (const article of Array.from(document.querySelectorAll('article'))) {
+            if (article.parentElement?.closest('article, [data-slot="embedded-tweet-frame"]')) continue;
+            const key = Object.keys(article).find(k => k.startsWith('__reactFiber$'));
+            let fiber = key ? (article as any)[key] : null;
+            let budget = 5000;
+            let position: any;
+            const evidence = new Map<string, Partial<SocialPost>>();
+            const seen = new Set<any>();
+            const visit = (value: any, depth = 0) => {
+                if (!value || typeof value !== 'object' || seen.has(value) || depth > 14 || --budget < 0) return;
+                seen.add(value);
+                if (typeof value.conversationPosition?.isStart === 'boolean' && typeof value.conversationPosition?.isEnd === 'boolean') position = value.conversationPosition;
+                const user = value.core?.user_results?.result?.user;
+                if (typeof value.rest_id === 'string') {
+                    const id = value.rest_id, own = ownTweet(article);
+                    const links = Array.from(own.querySelectorAll('a[href]'));
+                    const permalink = links.find(a => new URL(a.getAttribute('href')!, url).pathname.endsWith('/status/' + id));
+                    if (!permalink) return;
+                    const bodies = own.querySelectorAll('[data-testid="tweetText"], [dir="auto"].text-lead.whitespace-pre-wrap, [dir="auto"].whitespace-pre-wrap');
+                    const body = bodies.length === 1 ? bodyMarkdown(bodies[0], url) : '';
+                    const fields: Partial<SocialPost> = {...evidence.get(id)};
+                    if (typeof user?.rest_id === 'string') fields.authorID=user.rest_id;
+                    if (Number.isInteger(value.counts?.reply_count)) fields.replyCount=value.counts.reply_count;
+                    if (position) { fields.conversationStart=position.isStart; fields.conversationEnd=position.isEnd; }
+                    if (value.reply_to_results === null) fields.parentID = null;
+                    else if (typeof value.reply_to_results?.rest_id === 'string') fields.parentID = value.reply_to_results.rest_id;
+                    evidence.set(id,fields);
+                    if (fields.authorID) add({id,url:new URL(permalink.getAttribute('href')!,url).href,body,
+                        bodyComplete:substantive(body) && !postPreview(own),...fields} as SocialPost);
+                }
+                // Props only; avoid React owner/DOM back references and functions.
+                for (const [key, child] of Object.entries(value)) if (!['children','_owner','ref'].includes(key)) visit(child,depth+1);
+            };
+            for (let i=0; fiber && i<30; i++, fiber=fiber.return) {
+                visit(fiber.memoizedProps || fiber.pendingProps);
+                // useSyncExternalStore keeps public post query snapshots in hook
+                // state; inspect only that named data and React's memo cache.
+                let hook=fiber.memoizedState;
+                for (let j=0; hook && j<20; j++, hook=hook.next) visit(hook.memoizedState?.snapshot?.data);
+                visit(fiber.updateQueue?.memoCache?.data);
+            }
+        }
+    } else fail('Inaccessible social target: unsupported snapshot platform');
+    const targets = [...posts.values()].filter(p => sameTarget(p.url,url));
+    if (targets.length !== 1) fail('Inaccessible social target: source target identity unavailable or ambiguous');
+    return {version:1, platform:host.startsWith('threads')?'threads':'x', targetID:targets[0].id, posts:[...posts.values()], sequences, branches, replyPages};
 }
 
 function social(document: Document, url: URL): string {
@@ -192,6 +304,21 @@ function social(document: Document, url: URL): string {
             const body = own.querySelector('[data-testid="twitterArticleRichTextView"]') || own.querySelector('[data-testid="tweetText"]');
             if (body) text = bodyMarkdown(body, url);
             break;
+        }
+        if (!text) {
+            const target = new URL(url.origin + url.pathname.replace(/\/article\/?$/, ''));
+            const author = new URL('/' + url.pathname.split('/')[1], url);
+            const candidates = Array.from(document.querySelectorAll('article')).filter(a => !a.parentElement?.closest('article, [data-slot="embedded-tweet-frame"]')).map(ownTweet).filter(own => {
+                const links = Array.from(own.querySelectorAll('a[aria-current="page"]')).filter(a => !a.closest('[dir="auto"].whitespace-pre-wrap'));
+                const posts = links.filter(a => /\/(?:status|article)\/\d+/.test(a.getAttribute('href') || ''));
+                return posts.length > 0 && posts.every(a => sameTarget(a.getAttribute('href'),target)) && links.some(a => sameTarget(a.getAttribute('href'),author));
+            });
+            if (candidates.length > 1) fail('Inaccessible social target: ambiguous post identity');
+            if (candidates.length === 1) {
+                const own = candidates[0], bodies = own.querySelectorAll('[dir="auto"].text-lead.whitespace-pre-wrap');
+                if (postPreview(own) || bodies.length !== 1) fail('Inaccessible social target: incomplete post preview or body');
+                text = bodyMarkdown(bodies[0],url);
+            }
         }
     } else if (host === 'threads.net' || host === 'threads.com') {
         if (!/^\/@[^/]+\/post\/[^/]+\/?$/.test(url.pathname)) fail('Inaccessible social target: invalid post URL');

@@ -15,8 +15,63 @@ const browser = parseHTML('<html><head></head><body></body></html>');
 globalThis.window = browser.window;
 globalThis.document = browser.document;
 globalThis.DOMParser = browser.window.DOMParser;
-const { extractArticle } = await import(pathToFileURL(modulePath).href);
+const { extractArticle, socialSnapshot } = await import(pathToFileURL(modulePath).href);
 const doc = (body) => parseHTML(`<html><head></head><body>${body}</body></html>`).document;
+// Public Threads response shape, with synthetic captions and identities only.
+const threadPost = (code, id, reply = false) => ({pk:id, code, user:{id:'author',username:'writer'}, caption:{text:`Section ${code}.`},text_post_app_info:{id:`XDTTextPostAppMediaInfo:${id}`,is_reply:reply}});
+const threadPage = (posts, extra = {}) => doc(`<script type="application/json">${JSON.stringify({data:{post:posts[0],connection:{id:posts[0].text_post_app_info.id,self_thread:{posts:{edges:posts.slice(1).map(node=>({node})),page_info:{has_next_page:false,end_cursor:null}},post_ids:{edges:posts.slice(1).map(p=>({node:{pk:p.pk}}))}},direct_replies:{edges:[],page_info:{has_next_page:false,end_cursor:null}},...extra}}})}</script>`);
+test('thread A1/A2 source-ordered first and middle snapshots retain distinct members', () => {
+ // Counts/shapes from Open Design, AI colleague, pstack, Claude Code,
+ // adoption gap; captions and user identities are deliberately synthetic.
+ for (const continuations of [3,1,5,4,4]) {
+  const sample=[threadPost('ROOT','1'),...Array.from({length:continuations},(_,i)=>threadPost(`PART${i}`,String(i+2),true))];
+  assert.equal(socialSnapshot(threadPage(sample),'https://www.threads.com/@writer/post/ROOT').sequences[0].ids.length,continuations+1);
+ }
+ const posts = [threadPost('ROOT','1'),threadPost('MID','2',true),threadPost('END','3',true)];
+ const d = threadPage(posts);
+ for (const target of ['ROOT','MID']) {
+  const s = socialSnapshot(d,`https://www.threads.com/@writer/post/${target}`);
+  assert.equal(s.targetID,target==='ROOT'?'1':'2');
+  assert.deepEqual(s.sequences[0].ids,['1','2','3']);
+  assert.equal(s.sequences[0].end,true);
+  assert.deepEqual(s.posts.map(p=>p.body),['Section ROOT.','Section MID.','Section END.']);
+ }
+ // Dashboard, Japan MCP and Google source use the public React tweet shape.
+ // These bounded synthetic windows do not assert the live thread lengths.
+ for (const count of [6,2,8]) {
+  const d=doc(Array.from({length:count},(_,i)=>`<article><a aria-current="page" href="/writer/status/${i+1}">post</a><div dir="auto" class="text-lead whitespace-pre-wrap">Section ${i+1}.</div></article>`).join(''));
+  [...d.querySelectorAll('article')].forEach((a,i)=>{a.__reactFiber$fixture={memoizedProps:{tweet:{rest_id:String(i+1),core:{user_results:{result:{user:{rest_id:'author'}}}},reply_to_results:i?{rest_id:String(i)}:null},conversationPosition:{isStart:i===0,isEnd:i===count-1}}};});
+  const s=socialSnapshot(d,'https://x.com/writer/status/2');
+  assert.equal(s.posts.length,count);assert.equal(s.posts[0].parentID,null);assert.equal(s.posts[1].parentID,'1');assert.equal(s.posts.at(-1).conversationEnd,true);
+  const first=d.querySelector('article');
+  delete first.__reactFiber$fixture.memoizedProps.tweet.reply_to_results;
+  first.__reactFiber$fixture.memoizedState={next:{memoizedState:{snapshot:{data:{rest_id:'1',reply_to_results:null,counts:{reply_count:2}}}}}};
+  const merged=socialSnapshot(d,'https://x.com/writer/status/1').posts[0];
+  assert.equal(merged.parentID,null);assert.equal(merged.replyCount,2);
+ }
+});
+test('thread A1/A3 missing members and unknown pagination never prove completeness', () => {
+ const posts = [threadPost('ROOT','1')];
+ const s = socialSnapshot(threadPage(posts,{self_thread:{post_ids:{edges:[{node:{pk:'2'}}]},posts:{edges:[],page_info:{has_next_page:true,end_cursor:'cursor'}}}}),'https://www.threads.com/@writer/post/ROOT');
+ assert.equal(s.sequences[0].end,false); assert.deepEqual(s.sequences[0].missingIDs,['2']);
+ assert.throws(()=>socialSnapshot(doc(''),'https://www.threads.com/@writer/post/ROOT'),/target|identity/i);
+});
+test('thread A2 reader branches are separate from explicit self-thread membership', () => {
+ const root=threadPost('ROOT','1'), reader={...threadPost('READER','9',true),user:{id:'reader',username:'reader'}};
+ const next=threadPost('NEXT','2',true);next.text_post_app_info.containing_thread={posts:{edges:[{node:root}]}};
+ const d=threadPage([root,next],{direct_replies:{edges:[{node:{posts:{edges:[{node:reader},{node:threadPost('CHAT','10',true)}],page_info:{has_next_page:false,end_cursor:null}}}}],page_info:{has_next_page:true,end_cursor:'more-replies'}}});
+ const s=socialSnapshot(d,'https://www.threads.com/@writer/post/ROOT');
+ assert.deepEqual(s.sequences[0].ids,['1','2']); assert.equal(s.branches.length,1); assert.deepEqual(s.branches[0].ids,['9','10']);
+ assert.equal(s.posts.find(p=>p.id==='2').rootID,'1'); assert.equal(s.replyPages[0].end,false);assert.equal(s.replyPages[0].cursor,'more-replies');
+});
+test('thread A3 previews remain unresolved rather than full bodies', () => {
+ const p=threadPost('ROOT','1');p.text_post_app_info.text_fragments={fragments:[{fragment_type:'plaintext',plaintext:'Short preview.'}]};p.caption={text:'Complete authored body.'};
+ const s=socialSnapshot(threadPage([p]),'https://www.threads.com/@writer/post/ROOT');
+ assert.equal(s.posts[0].body,'Complete authored body.'); assert.equal(s.posts[0].bodyComplete,true);
+ p.caption=null;
+ const preview=socialSnapshot(threadPage([p]),'https://www.threads.com/@writer/post/ROOT');
+ assert.equal(preview.posts[0].bodyComplete,false);
+});
 // Sanitized shape from the public dQw4w9WgXcQ player response: no invented
 // caption-audio label or ID; discard all transient signed URL parameters.
 const yt = (verified = true, tracks = [{baseUrl:'https://www.youtube.com/api/timedtext?v=abc',languageCode:'en',...(verified ? {kind:'asr'} : {})}], extra = {}) => doc(`<script>var ytInitialPlayerResponse = ${JSON.stringify({videoDetails:{videoId:'abc'}, captions:{playerCaptionsTracklistRenderer:{captionTracks:tracks,audioTracks:[{captionTrackIndices:tracks.map((_, i) => i),defaultCaptionTrackIndex:0,hasDefaultTrack:true,captionsInitialState:'CAPTIONS_INITIAL_STATE_OFF_RECOMMENDED'}],defaultAudioTrackIndex:0,...extra}}})};</script>`);
@@ -80,6 +135,7 @@ test('A1/A3 refreshed invalid identity, language and API failures stay unsuccess
 test('A2 target bodies on three platforms exclude replies', async () => {
  for (const [url, html] of [
  ['https://x.com/a/status/123','<article data-testid="tweet"><a href="/a/status/123"><time>today</time></a><div data-testid="tweetText">Target main post text.<br>Next line.<div>Separate block.</div></div></article><article data-testid="tweet"><div data-testid="tweetText">reply</div></article>'],
+ ['https://x.com/a/status/123','<article><a aria-current="page" href="/a">author</a><a aria-current="page" href="/a/status/123">date</a><div dir="auto" class="text-lead whitespace-pre-wrap">Target main post text.<br>Next line.<div>Separate block.</div></div><div data-slot="embedded-tweet-frame">quoted reply</div></article>'],
  ['https://x.com/a/article/123','<link rel="canonical" href="https://x.com/a/article/123"><div data-testid="twitterArticleReadView"><div data-testid="twitterArticleRichTextView"><div class="longform-unstyled">Target main post text.<br>Next line.</div><div class="longform-unstyled">Separate block.</div></div></div><article data-testid="tweet"><div data-testid="tweetText">reply</div></article>'],
  ['https://www.threads.net/@a/post/ABC','<script type="application/ld+json">{"@type":"SocialMediaPosting","url":"https://www.threads.net/@a/post/ABC","articleBody":"Target main post text.\\nNext line.\\n\\nSeparate block."}</script>'],
  ['https://www.threads.com/@a/post/ABC','<div data-pagelet="threads_post_page_0"><div data-pressable-container><a href="/@a/post/ABC"><time>today</time></a><span dir="auto">Target main post text.<br>Next line.<div>Separate block.</div></span><div data-pressable-container><a href="/@b/post/QUOTE"><time>then</time></a><span dir="auto">quoted reply</span></div></div><div data-pressable-container><a href="/@b/post/REPLY"><time>later</time></a><span dir="auto">reply</span></div></div>'],
@@ -100,6 +156,10 @@ test('A2/A3 explicit target previews fail while complete own bodies remain usabl
  assert.equal(complete, 'Substantive target preview.');
  const fullArticle = await extractArticle(doc(`${canonical}<div data-testid="twitterArticleReadView"><div data-testid="twitterArticleRichTextView">Complete target article.</div></div><article data-testid="tweet">${own}${marker}</article>`), 'https://x.com/a/status/123');
  assert.equal(fullArticle, 'Complete target article.');
+ const modern=doc('<article><a aria-current="page" href="/a">author</a><a aria-current="page" href="/a/status/123">date</a><div dir="auto" class="text-lead whitespace-pre-wrap">Partial authored body.<button>Show more</button></div></article>');
+ modern.querySelector('article').__reactFiber$fixture={memoizedProps:{tweet:{rest_id:'123',core:{user_results:{result:{user:{rest_id:'author'}}}},reply_to_results:null}}};
+ assert.equal(socialSnapshot(modern,'https://x.com/a/status/123').posts[0].bodyComplete,false);
+ await assert.rejects(extractArticle(modern,'https://x.com/a/status/123'),/preview|incomplete/i);
 });
 test('A2 wrong target rejected', async () => {
  await assert.rejects(extractArticle(doc('<article data-testid="tweet"><a href="/a/status/999"><time>today</time></a><div data-testid="tweetText">Wrong post</div></article>'), 'https://x.com/a/status/123'), /target/i);
