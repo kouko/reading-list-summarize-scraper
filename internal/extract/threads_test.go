@@ -39,6 +39,7 @@ func TestCompleteSocialThread(t *testing.T) {
 			body, err := collectSocial("https://www.threads.com/@author/post/"+entry, 8, func(address string) (socialSnapshot, error) {
 				p, q, r := root, middle, last
 				p.URL = "https://www.threads.com/@author/post/one"
+				p.IsReply = new(bool)
 				q.URL = "https://www.threads.com/@author/post/two"
 				q.RootID = "1"
 				q.Body = "second"
@@ -55,6 +56,56 @@ func TestCompleteSocialThread(t *testing.T) {
 			if err != nil || body != "first\n\nsecond\n\nauthor supplement" {
 				t.Fatalf("%s: %q, %v", entry, body, err)
 			}
+		}
+	})
+	t.Run("unproven boundaries", func(t *testing.T) {
+		for _, kind := range []string{"local reply sequence", "unknown beginning", "conflicting reply identity", "late X sibling"} {
+			t.Run(kind, func(t *testing.T) {
+				p, q, r := root, middle, last
+				p.ReplyCount = intPointer(1)
+				q.Body = "second"
+				q.BodyComplete = true
+				q.ReplyCount = intPointer(0)
+				platform := "threads"
+				p.URL = "https://www.threads.com/@author/post/one"
+				q.URL = "https://www.threads.com/@author/post/two"
+				p.IsReply = new(bool)
+				q.RootID = "1"
+				if kind == "local reply sequence" {
+					*p.IsReply = true
+				}
+				if kind == "unknown beginning" {
+					p.IsReply = nil
+				}
+				if kind == "conflicting reply identity" {
+					q.BodyComplete = false
+				}
+				if kind == "late X sibling" {
+					platform = "x"
+					p.URL = root.URL
+					q.URL = middle.URL
+					r.ParentID = jsonParent(`"1"`)
+				}
+				body, err := collectSocial(p.URL, 8, func(address string) (socialSnapshot, error) {
+					target := "1"
+					posts := []socialPost{p, q}
+					if address == q.URL {
+						target = "2"
+						posts[1].BodyComplete = true
+						if kind == "conflicting reply identity" {
+							changed := true
+							posts[0].IsReply = &changed
+						}
+						if kind == "late X sibling" {
+							posts = append(posts, r)
+						}
+					}
+					return socialSnapshot{Version: 1, Platform: platform, TargetID: target, Posts: posts, Sequences: []socialSequence{{RootID: "1", IDs: []string{"1", "2"}, End: true}}, ReplyPages: []socialSequence{{RootID: "1", End: true}}}, nil
+				})
+				if err == nil || body != "" {
+					t.Fatalf("%q, %v", body, err)
+				}
+			})
 		}
 	})
 	t.Run("unavailable member", func(t *testing.T) {

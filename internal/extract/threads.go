@@ -69,6 +69,9 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 				return fail("missing source identity")
 			}
 			if old, ok := posts[p.ID]; ok {
+				if old.IsReply != nil && p.IsReply != nil && *old.IsReply != *p.IsReply {
+					return fail("conflicting source reply identity")
+				}
 				if old.AuthorID != p.AuthorID || !sameSocialURL(old.URL, p.URL) || (old.BodyComplete && p.BodyComplete && old.Body != p.Body) || (len(old.ParentID) > 0 && len(p.ParentID) > 0 && string(old.ParentID) != string(p.ParentID)) || (old.RootID != "" && p.RootID != "" && old.RootID != p.RootID) {
 					return fail("conflicting source member")
 				}
@@ -117,11 +120,9 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 			if p.RootID != "" && p.RootID != current {
 				parent = p.RootID
 			} else {
-				rootProven := p.IsReply != nil && !*p.IsReply
-				for _, s := range sequences {
-					rootProven = rootProven || s.RootID == current
-				}
-				if !rootProven {
+				// A local self-thread can begin at a reply. Only explicit
+				// source root identity establishes the article beginning.
+				if p.IsReply == nil || *p.IsReply {
 					return "", fail("article beginning is unknown")
 				}
 			}
@@ -340,6 +341,16 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 				if !seen[id] {
 					return "", fail("new author branch discovered during body recovery")
 				}
+			}
+		}
+	} else {
+		// Navigating a child can reveal another author sibling after its
+		// parent was walked. Earlier pagination observations cannot license
+		// returning a body that omits this newly known component member.
+		for id, p := range posts {
+			var parent string
+			if p.AuthorID == posts[root].AuthorID && json.Unmarshal(p.ParentID, &parent) == nil && seen[parent] && !seen[id] {
+				return "", fail("new author member discovered during body recovery")
 			}
 		}
 	}
