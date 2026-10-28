@@ -269,3 +269,130 @@ Fix: retain a permalink per verified member without expanding quotes/recommendat
 ## Verification limitations and review handoff
 Live external summary delivery, a later watch retry cycle, and live independent standalone social/long-article positives were not verified. Related mechanical tests pass where stated, and report rows 4, 13, 15, 17 disclose these limits.
 No package-tests or finalize-review skip was instructed. Build's reported full-suite PASS is context, not independent acceptance evidence. Finalize-review owns the fresh blocking full suite once otherwise ready. No important finding was dismissed, and this witness made no product fix.
+
+## Re-run on 2026-10-28, at f67fa5b5573608daa93fc33e43f3f96d95173569
+
+This dated section supersedes the baseline verdicts above. Fix range reviewed: b2b4555..f67fa5b. It changes saved member source links and X snapshot direct-reply extent evidence, so every report row was re-tested, including all sixteen actual first/middle entry points. No row is carried over and no important finding is dismissed. No product code was edited by this witness.
+
+### Clean setup and commands
+
+- New detached worktree: `git worktree add --detach /private/tmp/rlss-author-acceptance-rerun f67fa5b5573608daa93fc33e43f3f96d95173569`.
+- README quick build: `env GOCACHE=/private/tmp/rlss-acceptance-rerun-go go build -o /private/tmp/rlss-acceptance-rerun-bin ./cmd/rlss/`; exit 0.
+- README dependencies: `npm ci --cache /private/tmp/rlss-acceptance-rerun-npm`; exit 0, 26 packages, zero vulnerabilities. Both operations were authorized isolated setup; no global installation.
+- Actual sixteen-entry driver: `python3 /private/tmp/rlss-rerun.py`. Each entry runs `/private/tmp/rlss-acceptance-rerun-bin url <confirmed URL> --config <case/config.yaml> --no-summary`, default headless-first/headed retry, 30-second attempt settings, three-second render wait, its own guest directory/output. Chrome config root: `/private/tmp/rlss-acceptance-rerun-live/chrome-config`.
+- Raw actual logs and output: `/private/tmp/rlss-acceptance-rerun-live/{01..08}-{first,middle}/`. Cases use the same public URLs recorded in baseline section 1 and the confirmed spec.
+- Four positive groups received new independent headed guest original-page captures, saved before injection under each first-entry `source-headed/page.html`. Oracle independently parses original JSON media root and explicit ordered self-thread edges/post_ids; source self-thread page info is terminal in all four. Product snapshots/extraction results do not supply expected captions or membership.
+- Full actual comparison: `python3 /private/tmp/rlss-rerun-compare.py`; compare every original caption in order against saved Markdown after removing only whitespace and appended `[Source](...)` markers. Exact body hashes independently compare first/middle. Check one permalink per source member, exact ordered source codes, no extra body text, and distinct supplied URL frontmatter/storage.
+
+### 1. Complete articles from both entry points — re-tested
+
+| Confirmed group | First exit | Middle exit | Current outcome |
+|---|---:|---:|---|
+| X dashboard skills | 1 | 1 | complete reply extent is unknown; no output body |
+| X Japan MCP tools | 1 | 1 | complete reply extent is unknown; no output body |
+| X Google I/O | 1 | 1 | complete reply extent is unknown; no output body |
+| Threads Open Design | 0 | 0 | complete caption equality, source links and exact pair identity pass |
+| Threads AI colleague | 1 | 1 | direct reply pagination incomplete; no output body |
+| Threads pstack | 0 | 0 | complete caption equality, source links and exact pair identity pass |
+| Threads Claude Code files | 0 | 0 | complete caption equality, source links and exact pair identity pass |
+| Threads AI adoption gap | 0 | 0 | complete caption equality, source links and exact pair identity pass |
+
+Eight exits succeeded and eight failed. F1 remains important and open; returning honest failure does not satisfy Acceptance 1. Earlier Google middle identity failure did not recur, but full extraction still fails.
+
+| Positive group | Source members / links per output | Exact first and middle body SHA-256 | New original HTML SHA-256 |
+|---|---:|---|---|
+| Open Design | 4 / 4 | aab776546687aad3d07ebe4f901dfd28a444d1f40a62fed1b1eabdbe63d1687b | 70620d28a0afdb5631e98cdf5cce0cb854a7e96ef342865d102ce28273f75dbe |
+| pstack | 6 / 6 | 840ae6fdfe38d8c1fd18086d24f954b8f47e668c51998183a4933b460b48e46e | 61e67acdfcc780a75035e1b88027ed64d353e3467cab8a982c3737c6f0938864 |
+| Claude Code files | 5 / 5 | 8f46290a6b74d9df1c2aa5d5cc11d2067a47084ebed0763a1e23c632ed182085 | 562a98f3d923a86b13af06228c60261f231a2f5d6eb73b578f6c62e268a4e873 |
+| AI adoption gap | 5 / 5 | 8a37778517ffb465224a197856ea3126b0fd68f833bea1a976f153b870ba555e | 692eb552c4e4a394d9a52b94e724d7687f5b9de4af30827fe4d3b42871e28168 |
+
+All new source caption hashes and ordered member codes equal the baseline per-member tables. This was recomputed from new original HTML, not assumed unchanged. For every positive output, normalized complete-caption equality is true; source link codes exactly match every ordered member once. Eight separate output identities retain the input URLs. Source links use verified threads.com aliases rather than requiring www. F2 is closed for all eight positive entry points; no positive live X claim is made.
+
+### 2. Membership, order and exclusions — re-tested
+
+The four entire-body comparisons above contain precisely one ordered copy of every author caption after removing only appended provenance links. Thus reader replies, reader-directed author conversations, recommendations and duplicate root recommendations add no text. Author references are unchanged by exact equality. Both distinct Google seventh-section IDs remain unverified in delivered content because both Google entry points still fail.
+
+Focused JavaScript command: `node --test --test-name-pattern='thread A|A2 target bodies|A2/A3 explicit target|A2 wrong target|A3 verified social|A3 challenge|A3 login' extraction.test.mjs`; PASS, 10 tests, zero failures/skips. Covers current X exact-count producer, duplicate observations counted once, reader child counting, unknown/invalid/mismatched/conflicting counts, terminal zero count, plus source ordering, middle ancestry, reader exclusions, previews, target mismatch and walls. The existing incomplete-fixture Invalid URL diagnostic appeared; TAP is 10/10 PASS.
+
+`node --test extraction-boundaries.test.mjs`: PASS, 2/2; includes quoted permalink rejection and transcript identity boundary.
+
+`env CHROME_CONFIG_HOME=/private/tmp/rlss-acceptance-rerun-tests-chrome GOCACHE=/private/tmp/rlss-acceptance-rerun-go go test ./internal/extract -run 'TestCompleteSocialThread|TestBrowserExtractSocialCompleteOnly' -v`: PASS, package 1.268s. Covers full browser assembly/source links, contradictory identity, unknown beginning/extent, local reply sequences, late sibling, missing member, unrelated branch, loop/cap, and incomplete-only rejection.
+
+### 3. Failure honesty and file preservation — re-tested
+
+All eight failed actual entries save no new body/summary. Separate actual explicit dashboard reprocessing (`python3 /private/tmp/rlss-rerun-extra.py`) uses temporary old content and summary. Exit 1, complete reply extent unknown; exact before/after hashes unchanged:
+- Content: c6f945cd02c4767cefdc70f7f17b8afce8b7ad1a2edb6952f1de979e612695d4.
+- Summary: 95d622c7618d10e594b100c1d8bca7bd77e820ff3f4ab13d1fd0226b3cebb609.
+- Evidence: `/private/tmp/rlss-acceptance-rerun-extra/preserve/result.json` and `cli.log`.
+
+Focused pipeline command: `env GOCACHE=/private/tmp/rlss-acceptance-rerun-go go test ./internal/pipeline -run 'Test(ProcessItemSocialCache|ProcessItemWithFallback|ProcessBatchFailedPaginationPreservesFiles|ExtractionRejectsObservedWalls|IsSkipped|Stats_Report|Stats_Partial)' -v`; PASS, package 1.296s. Includes zero summary calls after failed refresh, old body preservation, completion/force/dry-run, cache identity and existing ordinary Partial behavior, walls and retry settings.
+
+The witness did not run the complete package suite. The automated test suite runs before acceptance and blocks it on failure; `go test ./...` belongs to finalize-review when otherwise eligible. No package-tests/finalize-review skip was instructed; Build's earlier full-suite result is context, not this witness's result.
+
+### 4. Existing standalone, long and ordinary content, retry settings — re-tested
+
+Fresh actual ordinary article `https://go.dev/blog/strings` exits 0, Success 1, Failed 0. Body file SHA-256: 29dbfcfbfca50014f6bdf9e5be4c845ad5b93457e4f29daf46a4d500558d2887. Raw evidence `/private/tmp/rlss-acceptance-rerun-extra/ordinary/`.
+
+Tried previous user URL `https://x.com/Sukiea1008/status/2112084040362897441` in another fresh guest: exit 1, headed result article end is unknown, no body. This does not establish a standalone source or a successful standalone/long-article regression. No live social standalone/long positive is claimed. Focused tests above verify existing single-target fixture behavior and all retry settings. Acceptance remains partly.
+
+### 5. First-post success — re-tested
+
+All eight first URLs actually run. Four groups fully source-match with 4/6/5/5 ordered source links; four fail. No missing-link finding remains in successful articles; full flow remains partly because four required first inputs fail.
+
+### 6. Middle-post success — re-tested
+
+All eight middle URLs actually run. Four successful pair body hashes match exactly and retain distinct supplied URL frontmatter/storage; four fail. No other note was merged, renamed or deleted. Whole flow remains partly.
+
+### 7. Correct scope and repetition — re-tested
+
+Entire-caption equality and exact ordered source link codes establish correct scope for all eight successful outputs. Focused exclusion/contradictory relationship tests pass. Distinct similar Google sections cannot be certified in saved output because no Google article is produced; partly.
+
+### 8. Progress and ordinary retry — re-tested
+
+Actual logs show item index/total and headless failure followed by headed retry for every X sample. Focused default fallback, explicit-headed single attempt, navigation/empty retry tests pass.
+
+### 9. Verification restriction — re-tested
+
+Focused pipeline cases pass challenge disabled/enabled, specialized challenge disabled, navigation and empty bodies with headed_on_block false. The false setting blocks recognized verification retries, while unrelated navigation/empty failures retain retry.
+
+### 10. Missing target/body — re-tested
+
+Current JavaScript target, preview, quoted-permalink and login/challenge cases reject; actual failed commands exit nonzero without new bodies. Actual failure preservation in section 3 and boundary receiver tests prove no replacement/summary from rejected bodies.
+
+### 11. Incomplete/ambiguous thread — re-tested
+
+Eight actual confirmed entries fail unknown extent or incomplete direct pagination without partial output. Contradictory identity, missing members, preview, unknown beginning/end, loop/cap and late sibling tests pass. Temporary old body/summary remain unchanged.
+
+### 12. Old body without summary — re-tested
+
+Focused verified-social-resume revalidates before summarizing, failed-refresh preserves files/makes zero summary calls, ordinary-cache-summary-partial retains ordinary behavior. PASS. No external provider used.
+
+### 13. Summary enabled — re-tested
+
+Focused recording receiver verifies newly validated body input, zero summary calls after extraction failure and existing Partial behavior after summary failure. No actual external summary provider was invoked; no live complete multi-member external-summary result was verified. Partly remains honest.
+
+### 14. Completed notes/explicit reprocessing — re-tested
+
+Focused completed-skip/completed-force/dry-run cases pass. Actual explicit reprocessing of temporary completed content/summary performs fresh extraction and preserves both on failure. No production data or bulk backfill touched.
+
+### 15. Batch/watch — re-tested
+
+`python3 /private/tmp/rlss-rerun-batch.py` serves a temporary localhost RSS feed with failed dashboard first, ordinary article second. Fresh actual watch operation completes TWO cycles, each Total 2 / Success 1 / Failed 1 / Skipped 0 / Partial 0. Second cycle actually retries the failed dashboard, then resumes ordinary cached content. Signal sent only to witness-created process during sleep; exit 0. New evidence `/private/tmp/rlss-acceptance-rerun-watch/cli.log`. Focused stats tests independently verify Skipped/Partial classification. This row now works.
+
+### 16. Empty/dry run — re-tested
+
+Fresh executable `process --config /private/tmp/rlss-acceptance-rerun-extra/ordinary/config.yaml --no-summary`: exit 0, no items to process. `url https://example.com --config <same isolated config> --dry-run --no-summary`: exit 0, Total 1 / Skipped 1 / Success 0 / Failed 0 / Partial 0. No new file is created.
+
+### 17. Existing standalone content — re-tested
+
+Actual ordinary article passes; single-target and rich-body fixture boundaries pass. The previous-user X candidate failed unknown end, so actual independent standalone social and social long article success remain unverified; partly.
+
+### 18. Isolated verification — re-tested
+
+All sixteen affected entries run using the new independent executable/worktree, individual guest profiles and isolated output/configuration. Four positive group original sources independently recaptured before injection, complete captions/order/exclusions/links checked against all eight actual outputs. Failed groups receive no invented content or completion claim; baseline source observations remain background only. Production settings, notes, accounts, executable and running processes were not changed. Raw source/full captions remain exclusively temporary; only prescribed public sample IDs/URLs, counts, hashes and outcomes are committed.
+
+### Current findings and remaining limits
+
+- **F1 — important — remains open**, anchor `spec.md REQ-1 / acceptance-test-report.md row 1`: eight mandatory entry points still fail (six X, two Threads AI colleague). Close by establishing complete permitted source membership/full bodies and passing independent full comparisons for both entry points of all remaining groups; do not weaken completeness or label safe failure successful extraction.
+- **F2 — closed**, anchor `spec.md REQ-2 / First-post success`: all eight positive entry points now contain exactly one verified source link per member with unchanged ordered captions and identical first/middle output. No live X completion is inferred from this closure.
+- Actual standalone social/long article success and actual external provider summary delivery remain unverified and disclosed as partly. Watch's later-cycle limitation is closed by two actual cycles. No required step was skipped; no important/fatal finding was dismissed.
