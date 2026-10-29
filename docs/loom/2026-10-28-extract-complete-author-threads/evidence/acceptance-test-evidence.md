@@ -603,3 +603,111 @@ between an article continuation and a separate same-author recommendation.
 Native SelfThread display metadata also marks the observed Japan MCP resource
 recommendation and cannot resolve that distinction by itself. No independent
 acceptance pass, final review round, attestation, publication or merge is claimed.
+
+## Build iteration: X source acquisition and faithful plain bodies (2026-10-29)
+
+Scope: orchestrator integration verification at functional HEAD
+`e1778a186824ea0c84a8ae0c2a48b58dffbfa9ab`. This section does not replace
+the independent sixteen-entry report or close F1/F3. All browser sessions,
+executables, settings and outputs below are isolated; original browser data,
+configuration, notes, executable and running production process are unchanged.
+Summarization is disabled for these live commands.
+
+W17 retains verified public X post observations only within the same document
+and full target URL, with 2,000-post and 16 MB bounds. It preserves complete
+bodies, rejects conflicting source fields, and recomputes extent from unique
+explicit direct children. W18 incrementally scrolls the current attempt and
+expands only recognized read-only probable-spam controls outside article and
+navigation links. Its 32 rounds, eight idle rounds and original deadline never
+become completeness evidence; unresolved extent remains failure. No API replay
+or credential capture is introduced.
+
+Actual dashboard source observations progress from one to eight known root
+children, then eleven after native expansion, matching the reported eleven.
+The root remains available after X removes its article from the rendered DOM.
+Local research evidence:
+`/private/tmp/rlss-x-dashboard-w17-retention-live/summary.json`.
+
+W19 source comparison found two body defects that matching first/middle output
+alone did not catch: collapsed line breaks and missing author-written reference
+URLs. Its initial fix at `196e369` restored references but incorrectly selected
+legacy previews as complete text: the first three captions became 191, 181 and
+159 characters instead of 363, 349 and 256. Those successful-but-short temporary
+outputs and failed comparisons remain at
+`/private/tmp/rlss-x-dashboard-w19-live/`; they are not acceptance passes.
+
+The integration fix reads the observed normalized `note_tweet.text` as well as
+the native API note path. The rendered source's `full_text` is still a preview;
+unknown note shapes fail rather than silently using it. Ordinary source text
+must agree with the owned rendered author text before replacing it; rendered
+fallback preserves line breaks. Verified URL entities preserve the author's
+reference link without expanding the referenced post. Metadata-only fragments
+cannot reassert flattened text over previously verified original text.
+
+At the final functional revision, actual dashboard first and middle commands
+both exit 0, Success 1, Failed 0. First takes 24 seconds and middle 23 seconds.
+They contain exactly the same six distinct authored posts, ordered:
+`2039372810053967953`, `2039372826311098624`, `2039372841913864418`,
+`2039373227672453129`, `2039373561148981507`, `2039375498183430212`.
+Combined Markdown SHA-256:
+`8a57dc62c95affbe89542995309cf4581bf25834ad25140f3ca413cff2710368`.
+
+Each caption is compared against native public source text from a separate
+original-site observation, not against product extraction as expected text.
+The comparison reverses Markdown hard-break notation and expanded URL entities
+before exact text equality. Both entries match all six native captions,
+including 59 authored line breaks and all three reference URLs. Native caption
+lengths are 363, 349, 256, 39, 50 and 43 Unicode characters. References include
+the author's two X links and the Digital Agency guidebook URL; referenced post
+bodies do not appear. Source links occur once per member, with no trailing
+extra text. This establishes faithful acquisition of these six authored posts;
+it is not independent approval of generic narrative membership.
+
+Local evidence:
+`/private/tmp/rlss-x-dashboard-w19b-live/source-comparison.json`, its first and
+middle `cli.log` and isolated output files;
+`/private/tmp/rlss-x-dashboard-w19-body-shapes/network-public-records.json`
+contains sanitized native source, while `rlss-x-dashboard-w19-rendered-body-shapes`
+contains only owned rendered-source keys and lengths. No captions or session
+data are committed here.
+
+Japan MCP remains incomplete. Final-version first-entry CLI exits 1 after
+30 seconds with `complete reply extent is unknown`, without a content file.
+The earlier diagnostic navigation proves eighteen of eighteen root direct
+children, but only three of four for middle `2038872379066327076`. Switching
+the site's read-only ranking from Relevance to Recency returns the same three
+identities. A scoped original-site conversation search adds no missing middle
+child; it is not exhaustive evidence. No missing reply is assumed to be a
+reader, deleted or outside the article. Actual extra author recommendations
+remain observations, not automatic narrative members. Local logs:
+`/private/tmp/rlss-x-mcp-w18-live/first/cli-w19b.log`,
+`middle/diagnostic.log`; source comparison:
+`/private/tmp/rlss-x-mcp-w19-sort-source/gap-summary.json`.
+
+Google I/O final-version first-entry CLI exits 1 after 38 seconds with the same
+unresolved-extent error and no content file:
+`/private/tmp/rlss-x-google-w18-live/first/cli-w19b.log`. Native source experiments
+observe fourteen direct children under Relevance and fifteen under Recency,
+against a reported sixty-eight; scrolling adds no scoped response in that run.
+Neither the missing identities nor their authorship/content is established.
+Changing ranking therefore does not justify a successful complete article.
+
+Verification at the final functional revision:
+
+- Trunk sync: HEAD already contains origin/main `8e37f33`; no commit added.
+- Complete uncached `go test -count=1 ./...`: PASS,
+  `/private/tmp/rlss-w19b-package-suite.log`, including JavaScript source tests.
+- Focused JavaScript suite: 21/21 PASS. Every W17–W19 fix observed RED before
+  GREEN, including the actual normalized-note integration regression.
+- Unchanged `go test -json internal/extract/probes/conflicting_root_test.go`:
+  PASS, `/private/tmp/rlss-w19b-adversarial.jsonl`; probe hash remains
+  `9d9389bfa8bac64f8c41829e9a2dcc02626f7ae7de2faf30bf813c380536489f`.
+- Source diff whitespace checks pass. Complete diff still reports the two
+  inherited third-party template-string whitespace locations in the generated
+  bundle; `/private/tmp/rlss-w19b-diff-check.log`. No generated string was
+  manually modified. Reproducible bundle SHA-256:
+  `e5e37f70c11a3ecc72e1adaa78320109090d0a8c07c7dcb124bcef0f8cc3d852`.
+
+F1/F3 remain open. No fresh independent sixteen-entry acceptance pass,
+closing-review round, attestation, publication, merge or production deployment
+is implied by this scoped source verification.
