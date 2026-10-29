@@ -4,6 +4,7 @@ package extract
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -73,6 +74,47 @@ window.socialSnapshot=()=>({version:1,platform:'x',targetID:'1',posts:[{id:'1',u
 	body, err = b.Extract(server.URL, js, 20*time.Second, 0)
 	if err != nil || body != "ordinary article" {
 		t.Fatalf("ordinary: %q, %v", body, err)
+	}
+}
+
+func TestBrowserExtractThreadsNativeReplies(t *testing.T) {
+	post := func(code, id string, reply bool) map[string]any {
+		return map[string]any{"pk": id, "code": code, "user": map[string]any{"id": "author", "username": "writer"}, "caption": map[string]any{"text": "Section " + code + "."}, "text_post_app_info": map[string]any{"id": "XDTTextPostAppMediaInfo:" + id, "is_reply": reply}}
+	}
+	root, mid := post("ROOT", "1", false), post("MID", "2", true)
+	mid["text_post_app_info"].(map[string]any)["containing_thread"] = map[string]any{"posts": map[string]any{"edges": []any{map[string]any{"node": root}}}}
+	terminal := map[string]any{"edges": []any{}, "page_info": map[string]any{"has_next_page": false, "end_cursor": nil}}
+	source, _ := json.Marshal(map[string]any{"data": map[string]any{"post": root, "connection": map[string]any{"id": "XDTTextPostAppMediaInfo:1", "self_thread": map[string]any{"posts": map[string]any{"edges": []any{map[string]any{"node": mid}}, "page_info": map[string]any{"has_next_page": false, "end_cursor": nil}}, "post_ids": map[string]any{"edges": []any{map[string]any{"node": map[string]any{"pk": "2"}}}}}, "direct_replies": map[string]any{"edges": []any{}, "page_info": map[string]any{"has_next_page": true, "end_cursor": "next"}}}}})
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/graphql" {
+			owner := "XDTTextPostAppMediaInfo:1"
+			if r.URL.Query().Get("bad") == "true" {
+				owner = "foreign"
+			}
+			json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"media": map[string]any{"text_post_app_info": map[string]any{"id": owner, "direct_replies": terminal}}}})
+			return
+		}
+		fmt.Fprintf(w, `<body><div style="height:100px;overflow:auto"><section style="height:3000px">fixture</section></div><script type="application/json">%s</script><script>let sent=false;document.addEventListener('scroll',()=>{if(sent)return;sent=true;fetch('/api/graphql?bad='+location.search.includes('bad'),{method:'POST',body:new URLSearchParams({variables:JSON.stringify({postID:'1',after:'next',sortOrder:'TOP',first:4})})})},true)</script></body>`, source)
+	}))
+	defer server.Close()
+	b := newTestBrowser(t, chromedp.Flag("host-resolver-rules", "MAP threads.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"), chromedp.Flag("no-proxy-server", true), chromedp.Flag("ignore-certificate-errors", true))
+	base := strings.Replace(server.URL, "127.0.0.1", "threads.com", 1)
+	// Canonical source permalinks omit the fixture's random TLS port.
+	js := assets.DefuddleJS + `;const nativeSnapshot=window.socialSnapshot;window.socialSnapshot=(pages=[])=>{const s=nativeSnapshot(pages);for(const p of s.posts)p.url=p.url.replace('https://threads.com',location.origin);return s}`
+	var firstBody string
+	for _, entry := range []string{"ROOT", "MID", "ROOT?bad"} {
+		body, err := b.Extract(base+"/@writer/post/"+entry, js, 10*time.Second, 0)
+		if strings.Contains(entry, "bad") {
+			if err == nil || body != "" {
+				t.Fatalf("wrong owner: %q, %v", body, err)
+			}
+		} else if err != nil || !strings.Contains(body, "Section ROOT.") || !strings.Contains(body, "Section MID.") || strings.Count(body, "[Source]") != 2 {
+			t.Fatalf("%s: %q, %v", entry, body, err)
+		} else if firstBody == "" {
+			firstBody = body
+		} else if body != firstBody {
+			t.Fatalf("first/middle bodies differ: %q, %q", firstBody, body)
+		}
 	}
 }
 

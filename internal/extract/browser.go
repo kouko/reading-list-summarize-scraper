@@ -100,8 +100,39 @@ func isSocialPostURL(address string) bool {
 // content until both source membership and every member body are complete.
 func (b *Browser) extractSocial(ctx context.Context, address, jsCode string, waitAfterLoad time.Duration) (string, error) {
 	return collectSocial(address, 32, func(memberURL string) (socialSnapshot, error) {
+		member, _ := url.Parse(memberURL)
+		threads := strings.HasPrefix(strings.TrimPrefix(member.Hostname(), "www."), "threads.")
+		// A navigation owns its listener and captures; no response crosses documents.
+		listenCtx, stop := context.WithCancel(ctx)
+		defer stop()
+		events := make(chan any, 64)
+		if threads {
+			chromedp.ListenTarget(listenCtx, func(ev any) {
+				switch e := ev.(type) {
+				case *network.EventResponseReceived:
+					u, err := url.Parse(e.Response.URL)
+					if err != nil || u.Scheme != "https" || u.Host != member.Host || u.Path != "/api/graphql" || e.Response.Status != 200 || (e.Type != network.ResourceTypeXHR && e.Type != network.ResourceTypeFetch) {
+						return
+					}
+					ev = e.RequestID // Retain no headers or unrelated response metadata.
+				case *network.EventLoadingFinished:
+				default:
+					return
+				}
+				select {
+				case events <- ev:
+				default:
+				}
+			})
+		}
 		var snapshot socialSnapshot
 		err := chromedp.Run(ctx,
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				if threads {
+					return network.Enable().WithMaxResourceBufferSize(16 << 20).WithMaxTotalBufferSize(16 << 20).Do(ctx)
+				}
+				return nil
+			}),
 			chromedp.Navigate(memberURL),
 			chromedp.WaitVisible(`body`, chromedp.ByQuery),
 			chromedp.Sleep(waitAfterLoad),
@@ -116,8 +147,130 @@ catch (sourceError) {
 }
 })()`, &snapshot, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) }),
 		)
+		if err == nil && threads {
+			snapshot, err = loadThreadsReplies(ctx, events, snapshot)
+		}
+		stop()
 		return snapshot, err
 	})
+}
+
+// Native requests are observed, never replayed. The source parser remains the
+// authority for response ownership and cursor continuity.
+func loadThreadsReplies(ctx context.Context, events <-chan any, snapshot socialSnapshot) (socialSnapshot, error) {
+	type supplement struct {
+		PostID    string          `json:"postID"`
+		After     string          `json:"after"`
+		SortOrder string          `json:"sortOrder"`
+		Data      json.RawMessage `json:"data"`
+	}
+	pages := make([]supplement, 0)
+	responses := make(map[network.RequestID]bool)
+	total := 0
+	idleScrolls := 0
+	for len(pages) < 32 {
+		pending := map[string]string{}
+		for _, page := range snapshot.ReplyPages {
+			if !page.End && page.Cursor != "" {
+				pending[page.RootID] = page.Cursor
+			}
+		}
+		if len(pending) == 0 {
+			return snapshot, nil
+		}
+		if err := chromedp.Run(ctx, page.BringToFront(), chromedp.Evaluate(`(()=>{window.scrollBy(0,Math.max(innerHeight,600));for(const e of document.querySelectorAll('main,div,section')){if(e.scrollHeight>e.clientHeight+50&&e.clientHeight>0&&['auto','scroll'].includes(getComputedStyle(e).overflowY))e.scrollTop+=Math.max(e.clientHeight,600)}})()`, nil)); err != nil {
+			return snapshot, err
+		}
+		timer := time.NewTimer(750 * time.Millisecond)
+		progress := false
+		waiting := true
+		for waiting && !progress {
+			select {
+			case ev := <-events:
+				switch e := ev.(type) {
+				case network.RequestID:
+					if len(responses) < 32 {
+						responses[e] = true
+					}
+				case *network.EventLoadingFinished:
+					if !responses[e.RequestID] {
+						continue
+					}
+					delete(responses, e.RequestID)
+					if e.EncodedDataLength > float64(16<<20-total) {
+						timer.Stop()
+						return snapshot, fmt.Errorf("Threads reply payload limit")
+					}
+					var body []byte
+					var request []byte
+					err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+						var err error
+						request, err = network.GetRequestPostData(e.RequestID).Do(ctx)
+						if err != nil {
+							return err
+						}
+						body, err = network.GetResponseBody(e.RequestID).Do(ctx)
+						return err
+					}))
+					if err != nil {
+						continue
+					}
+					if len(request)+len(body) > (16<<20)-total {
+						timer.Stop()
+						return snapshot, fmt.Errorf("Threads reply payload limit")
+					}
+					var page supplement
+					form, _ := url.ParseQuery(string(request))
+					variables := form.Get("variables")
+					if variables == "" {
+						var envelope struct {
+							Variables json.RawMessage `json:"variables"`
+						}
+						_ = json.Unmarshal([]byte(request), &envelope)
+						variables = string(envelope.Variables)
+					}
+					if json.Unmarshal([]byte(variables), &page) != nil || page.PostID == "" || pending[page.PostID] != page.After || page.After == "" || page.SortOrder != "TOP" {
+						continue
+					}
+					body = []byte(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(body)), "for (;;);")))
+					if !json.Valid(body) {
+						timer.Stop()
+						return snapshot, fmt.Errorf("invalid Threads reply response")
+					}
+					page.Data = json.RawMessage(body)
+					total += len(body) + len(request)
+					pages = append(pages, page)
+					encoded, _ := json.Marshal(pages)
+					err = chromedp.Run(ctx, chromedp.Evaluate(`window.socialSnapshot(`+string(encoded)+`)`, &snapshot))
+					if err != nil {
+						timer.Stop()
+						return snapshot, err
+					}
+					progress = true
+				}
+			case <-timer.C:
+				waiting = false
+			case <-ctx.Done():
+				timer.Stop()
+				return snapshot, ctx.Err()
+			}
+		}
+		timer.Stop()
+		if progress {
+			idleScrolls = 0
+		} else {
+			idleScrolls++
+			if idleScrolls >= 8 {
+				return snapshot, nil // collectSocial rejects the unresolved source.
+			}
+		}
+	}
+	for _, page := range snapshot.ReplyPages {
+		if !page.End {
+			return snapshot, fmt.Errorf("Threads reply page limit")
+		}
+	}
+	return snapshot, nil
 }
 
 // ExtractPaginated extracts a multi-page article by following the next-page
