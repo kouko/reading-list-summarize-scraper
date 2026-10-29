@@ -183,26 +183,56 @@ function modernXBody(own: Element, url: URL): string {
     }
     if (own.querySelector('[data-article-part], [data-testid="twitterArticleReadView"], [data-testid="twitterArticleRichTextView"]')) return '';
     const plain = own.querySelectorAll('[data-testid="tweetText"], [dir="auto"].whitespace-pre-wrap');
-    return plain.length === 1 ? bodyMarkdown(plain[0],url) : '';
+    if (plain.length !== 1) return '';
+    const clone = plain[0].cloneNode(true) as Element;
+    const breaks = (node: Node) => {
+        for (const child of Array.from(node.childNodes)) {
+            if (child.nodeType === 3 && child.textContent?.includes('\n')) {
+                const fragment = own.ownerDocument.createDocumentFragment();
+                child.textContent.split('\n').forEach((line,i) => {
+                    if (i) fragment.appendChild(own.ownerDocument.createElement('br'));
+                    fragment.appendChild(own.ownerDocument.createTextNode(line));
+                });
+                node.replaceChild(fragment,child);
+            } else breaks(child);
+        }
+    };
+    breaks(clone);
+    return bodyMarkdown(clone,url);
 }
 
 function xPlainSource(value: any, own: Element, url: URL) {
     // Rich articles have their own structured body and completeness guards.
     if (own.querySelector('[data-article-part], [data-testid="twitterArticleReadView"], [data-testid="twitterArticleRichTextView"]')) return;
-    const note = value.note_tweet?.note_tweet_results?.result;
+    const rawNote = value.note_tweet?.note_tweet_results?.result;
+    const renderedNote = value.note_tweet;
+    if (typeof rawNote?.text === 'string' && typeof renderedNote?.text === 'string' && rawNote.text !== renderedNote.text) fail('Inaccessible social target: conflicting source body');
+    const note = typeof rawNote?.text === 'string' ? rawNote : renderedNote;
     const isNote = typeof note?.text === 'string';
+    if (value.note_tweet != null && !isNote) fail('Inaccessible social target: unknown note body source');
     if (!isNote && typeof value.full_text === 'string' && typeof value.legacy?.full_text === 'string' && value.full_text !== value.legacy.full_text) fail('Inaccessible social target: conflicting source body');
     const text = isNote ? note.text : value.full_text ?? value.legacy?.full_text;
     if (typeof text !== 'string') return;
     const links = new Map<string, string>();
+    const presentationURLs = new Set<string>();
     for (const entities of [note?.entity_set,value.entities,value.legacy?.entities]) for (const entity of entities?.urls || []) {
         if (typeof entity.url !== 'string' || !entity.url || typeof entity.expanded_url !== 'string' || !text.includes(entity.url)) continue;
         let expanded: URL; try { expanded = new URL(entity.expanded_url); } catch { fail('Inaccessible social target: invalid source reference URL'); }
         if (!['https:','http:'].includes(expanded.protocol)) fail('Inaccessible social target: invalid source reference URL');
         if (links.has(entity.url) && links.get(entity.url) !== expanded.href) fail('Inaccessible social target: conflicting source body URL');
         links.set(entity.url,expanded.href);
+        for (const token of [entity.url,entity.expanded_url,expanded.href,entity.display_url]) if (typeof token === 'string' && token) presentationURLs.add(token);
         if (links.size > 5000) fail('Inaccessible social target: source snapshot limit');
     }
+    // Ordinary full_text can still be a legacy note preview without a
+    // truncated flag. Compare authored captions, ignoring known URL display
+    // forms, before allowing it to replace the owned rendered body.
+    const caption = (text: string) => {
+        for (const token of presentationURLs) text=text.split(token).join('');
+        return text.replace(/\s+/g,' ').trim();
+    };
+    const plain = own.querySelectorAll('[data-testid="tweetText"], [dir="auto"].whitespace-pre-wrap');
+    const agreesRendered = isNote || (plain.length === 1 && caption(text) === caption(plain[0].textContent || ''));
     const container = own.ownerDocument.createElement('div');
     const append = (text: string) => text.split('\n').forEach((line,i) => {
         if (i) container.appendChild(own.ownerDocument.createElement('br'));
@@ -222,7 +252,7 @@ function xPlainSource(value: any, own: Element, url: URL) {
         container.appendChild(anchor); cursor=next+source.length;
     }
     const body = bodyMarkdown(container,url);
-    return {body,note:isNote,complete:substantive(body) && (isNote || !(value.truncated === true || value.legacy?.truncated === true))};
+    return {body,note:isNote,agreesRendered,complete:substantive(body) && (isNote || !(value.truncated === true || value.legacy?.truncated === true))};
 }
 
 type SocialPost = {id: string; url: string; authorID: string; body: string; bodyComplete: boolean; bodySource?: 'native'; parentID?: string | null; rootID?: string; isReply?: boolean; replyCount?: number; conversationStart?: boolean; conversationEnd?: boolean};
@@ -417,12 +447,12 @@ export function socialSnapshot(document: Document = globalThis.document, address
             // Decide the owned body once after joining metadata fragments; a
             // later identity-only fragment cannot reassert flattened DOM text.
             for (const [id,fields] of evidence) if (fields.authorID) {
-                const source = sourceBodies.get(id), prior = posts.get(id);
+                const candidate = sourceBodies.get(id), source = candidate?.agreesRendered ? candidate : undefined, prior = posts.get(id);
                 const retained = prior?.bodySource === 'native' && prior.bodyComplete
                     && !own.querySelector('[data-article-part], [data-testid="twitterArticleReadView"], [data-testid="twitterArticleRichTextView"]') ? prior : undefined;
                 const body = source?.body ?? retained?.body ?? modernXBody(own,url);
                 add({id,url:permalinks.get(id)!,body,bodySource:source || retained ? 'native' : undefined,
-                    bodyComplete:(source?.complete ?? retained?.bodyComplete ?? substantive(body)) && !postPreview(own),...fields} as SocialPost);
+                    bodyComplete:(source?.complete ?? (candidate && !candidate.complete ? false : retained?.bodyComplete ?? substantive(body))) && !postPreview(own),...fields} as SocialPost);
             }
         }
         for (const post of posts.values()) {

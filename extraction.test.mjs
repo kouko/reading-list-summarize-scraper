@@ -113,13 +113,13 @@ test('thread A1/A2 source-ordered first and middle snapshots retain distinct mem
 });
 test('thread A1/A2/A3 owned X source text preserves authored breaks and reference links', () => {
  const text='First authored line.\nSecond authored line.\n\nReference https://t.co/ref';
- const entity={url:'https://t.co/ref',expanded_url:'https://example.com/resource',display_url:'example.com/resource',indices:[text.indexOf('https://t.co/ref'),text.length]};
- const expected='First authored line.  \nSecond authored line.  \n  \nReference [https://example.com/resource](https://example.com/resource)';
+ const entity={url:'https://t.co/ref',expanded_url:'https://x.com/foreign/status/99',display_url:'x.com/foreign/status/99',indices:[text.indexOf('https://t.co/ref'),text.length]};
+ const expected='First authored line.  \nSecond authored line.  \n  \nReference [https://x.com/foreign/status/99](https://x.com/foreign/status/99)';
  for(const normalized of [false,true]) for(const note of [false,true]) {
-  const d=doc('<article><a href="/writer/status/1">post</a><div data-testid="tweetText">First authored line. Second authored line. Reference <a href="/foreign/status/99">Author reference</a></div><div data-testid="quoteTweet"><a href="/foreign/status/99">quote</a><div data-testid="tweetText">QUOTED BODY</div></div></article>');
+  const d=doc('<article><a href="/writer/status/1">post</a><div data-testid="tweetText">First authored line. Second authored line. Reference <a href="/foreign/status/99">x.com/foreign/status/99</a></div><div data-testid="quoteTweet"><a href="/foreign/status/99">quote</a><div data-testid="tweetText">QUOTED BODY</div></div></article>');
   const legacy={full_text:note?'Legacy preview.':text,display_text_range:[0,note?7:text.length],entities:{urls:[entity]},reply_count:0};
   const tweet=normalized?{id_str:'1',user:{id_str:'author'},...legacy}:{rest_id:'1',core:{user_results:{result:{rest_id:'author'}}},legacy};
-  if(note) tweet.note_tweet={note_tweet_results:{result:{text,entity_set:{urls:[entity]}}}};
+  if(note) tweet.note_tweet=normalized?{text,is_expandable:false,entity_set:{urls:[entity]}}:{note_tweet_results:{result:{text,entity_set:{urls:[entity]}}}};
   const quote=normalized?{id_str:'99',user:{id_str:'foreign'},full_text:'QUOTED SOURCE BODY'}:{rest_id:'99',core:{user_results:{result:{rest_id:'foreign'}}},legacy:{full_text:'QUOTED SOURCE BODY'}};
   tweet[normalized?'quoted_status':'quoted_status_result']=normalized?quote:{result:quote};
   const fiber={memoizedProps:{tweet},memoizedState:{memoizedState:{snapshot:{data:{rest_id:'1',reply_to_results:null,counts:{reply_count:0}}}}}};
@@ -136,10 +136,22 @@ test('thread A1/A2/A3 owned X source text preserves authored breaks and referenc
   assert.equal(capture().posts[0].bodyComplete,note);
   delete (normalized?tweet:tweet.legacy).truncated;
   const contradictory=structuredClone(tweet);
-  if(note) contradictory.note_tweet.note_tweet_results.result.text='Contradictory complete authored text.';
+  if(note) (normalized?contradictory.note_tweet:contradictory.note_tweet.note_tweet_results.result).text='Contradictory complete authored text.';
   else (normalized?contradictory:contradictory.legacy).full_text='Contradictory complete authored text.';
   fiber.memoizedProps.otherObservation=contradictory;
   assert.throws(capture,/conflicting.*body/i);
+ }
+ for(const normalized of [false,true]) for(const truncated of [undefined,false]) {
+  const complete='First complete paragraph.\nSecond complete paragraph.';
+  const d=doc(`<article><a href="/writer/status/1">post</a><div data-testid="tweetText">${complete}</div></article>`);
+  const preview={full_text:'First complete paragraph. https://t.co/media',truncated,display_text_range:[0,25]};
+  const tweet=normalized?{id_str:'1',user:{id_str:'author'},...preview}:{rest_id:'1',core:{user_results:{result:{rest_id:'author'}}},legacy:preview};
+  d.querySelector('article').__reactFiber$fixture={memoizedProps:{tweet}};
+  const capture=()=>socialSnapshot(d,'https://x.com/writer/status/1');
+  assert.equal(capture().posts[0].body,'First complete paragraph.  \nSecond complete paragraph.');
+  assert.equal(capture().posts[0].bodyComplete,true);
+  tweet.note_tweet={is_expandable:true,unknown_fragment:{}};
+  assert.throws(capture,/note.*body|note.*source/i);
  }
 });
 test('thread A1/A3/A4 injected X snapshots retain bounded observations only within navigation', async () => {
