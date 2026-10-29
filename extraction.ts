@@ -267,7 +267,7 @@ export function socialSnapshot(document: Document = globalThis.document, address
                 if (!value || typeof value !== 'object' || seen.has(value) || depth > 14 || --budget < 0) return;
                 seen.add(value);
                 if (typeof value.conversationPosition?.isStart === 'boolean' && typeof value.conversationPosition?.isEnd === 'boolean') position = value.conversationPosition;
-                const user = value.core?.user_results?.result?.user;
+                const userResult = value.core?.user_results?.result;
                 if (typeof value.rest_id === 'string') {
                     const id = value.rest_id, own = ownTweet(article);
                     const links = Array.from(own.querySelectorAll('a[href]'));
@@ -275,16 +275,25 @@ export function socialSnapshot(document: Document = globalThis.document, address
                     if (!permalink) return;
                     const body = modernXBody(own,url);
                     const fields: Partial<SocialPost> = {...evidence.get(id)};
-                    if (typeof user?.rest_id === 'string') fields.authorID=user.rest_id;
-                    const count = value.counts?.reply_count;
-                    if (count !== undefined) {
+                    for (const author of [userResult?.user?.rest_id,userResult?.rest_id]) if (typeof author === 'string') {
+                        if (fields.authorID !== undefined && fields.authorID !== author) fail('Inaccessible social target: conflicting source identity');
+                        fields.authorID=author;
+                    }
+                    for (const count of [value.counts?.reply_count,value.legacy?.reply_count]) if (count !== undefined) {
                         if (replyCounts.has(id) && replyCounts.get(id) !== count) fail('Inaccessible social target: conflicting source reply count');
                         replyCounts.set(id,count);
+                        if (Number.isInteger(count) && count >= 0) fields.replyCount=count;
                     }
-                    if (Number.isInteger(count) && count >= 0) fields.replyCount=count;
                     if (position) { fields.conversationStart=position.isStart; fields.conversationEnd=position.isEnd; }
-                    if (value.reply_to_results === null) fields.parentID = null;
-                    else if (typeof value.reply_to_results?.rest_id === 'string') fields.parentID = value.reply_to_results.rest_id;
+                    const parents: (string | null)[] = [];
+                    if (value.reply_to_results === null) parents.push(null);
+                    else if (typeof value.reply_to_results?.rest_id === 'string') parents.push(value.reply_to_results.rest_id);
+                    if (typeof value.legacy?.in_reply_to_status_id_str === 'string') parents.push(value.legacy.in_reply_to_status_id_str);
+                    if (value.legacy?.conversation_id_str === id) parents.push(null);
+                    for (const parent of parents) {
+                        if (fields.parentID !== undefined && fields.parentID !== parent) fail('Inaccessible social target: conflicting source parent relationship');
+                        fields.parentID=parent;
+                    }
                     evidence.set(id,fields);
                     if (fields.authorID) add({id,url:new URL(permalink.getAttribute('href')!,url).href,body,
                         bodyComplete:substantive(body) && !postPreview(own),...fields} as SocialPost);

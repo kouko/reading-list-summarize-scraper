@@ -69,6 +69,28 @@ test('thread A1/A2 source-ordered first and middle snapshots retain distinct mem
   first.__reactFiber$fixture.memoizedProps.tweet.counts={reply_count:2};
   assert.throws(()=>socialSnapshot(d,'https://x.com/writer/status/1'),/conflicting.*count/i);
  }
+ const legacyPage=doc('<article><a href="/writer/status/1">post</a><div dir="auto" class="whitespace-pre-wrap">Synthetic root.</div></article><article><a href="/writer/status/2">post</a><div dir="auto" class="whitespace-pre-wrap">Synthetic reply.</div></article>');
+ const legacyTweets=[{rest_id:'1',core:{user_results:{result:{rest_id:'author'}}},legacy:{reply_count:1,conversation_id_str:'1'}},{rest_id:'2',core:{user_results:{result:{rest_id:'author'}}},legacy:{reply_count:0,conversation_id_str:'1',in_reply_to_status_id_str:'1'}}];
+ [...legacyPage.querySelectorAll('article')].forEach((a,i)=>{a.__reactFiber$fixture={memoizedProps:{tweet:legacyTweets[i]}};});
+ const snapshot=()=>socialSnapshot(legacyPage,'https://x.com/writer/status/1');
+ assert.deepEqual(snapshot().posts.map(p=>[p.id,p.authorID,p.parentID,p.replyCount]),[['1','author',null,1],['2','author','1',0]]);
+ assert.deepEqual(snapshot().replyPages,[{rootID:'1',end:true,cursor:null},{rootID:'2',end:true,cursor:null}]);
+ delete legacyTweets[1].legacy.in_reply_to_status_id_str;
+ assert.equal(snapshot().posts[1].parentID,undefined);
+ delete legacyTweets[0].legacy.conversation_id_str;
+ assert.equal(snapshot().posts[0].parentID,undefined);
+ for (const conflict of [
+  {core:{user_results:{result:{rest_id:'author',user:{rest_id:'other'}}}}},
+  {counts:{reply_count:2}},
+  {reply_to_results:{rest_id:'9'},legacy:{reply_count:1,conversation_id_str:'1'}},
+  {reply_to_results:null,legacy:{reply_count:1,in_reply_to_status_id_str:'9'}},
+  {legacy:{reply_count:1,conversation_id_str:'1',in_reply_to_status_id_str:'9'}},
+ ]) {
+  const prior=legacyTweets[0];legacyTweets[0]={...prior,...conflict};
+  legacyPage.querySelector('article').__reactFiber$fixture.memoizedProps.tweet=legacyTweets[0];
+  assert.throws(snapshot,/conflicting.*(identity|count|parent|relationship)/i);
+  legacyTweets[0]=prior;legacyPage.querySelector('article').__reactFiber$fixture.memoizedProps.tweet=prior;
+ }
 });
 test('thread A1/A3 missing members and unknown pagination never prove completeness', () => {
  const posts = [threadPost('ROOT','1')];
