@@ -131,6 +131,13 @@ charter: 1.1
 - Test: A1 positive: virtualized-first-middle-browser-equivalence; boundary: native-hidden-replies-loaded. A3 positive: exact-target-direct-child-extent; negative: unresolved-reply-count. A4 positive: existing-platform-dispatch; boundary: shared-attempt-deadline.
 - Risk: agent-decided — REQ-1,3–4: extend the existing isolated browser fixture using the real bundle. Scroll incrementally and click only observed read-only reply expansion controls outside articles. Bound idle rounds and total observations; preserve original deadlines, failure behavior and unresolved narrative membership.
 
+### Wave 19 — Complete authored X plain text
+
+**W19-01 Preserve source line breaks and author-written reference URLs** after: W18-01 acceptance: 1, 2, 3
+- Files: extraction.ts (owned X plain-body decoding), extraction.test.mjs, embed/defuddle.min.js
+- Test: A1 positive: native-full-text-line-breaks; boundary: rich-article-preserved. A2 positive: authored-reference-link-retained; negative: quoted-body-excluded. A3 positive: owned-public-text-source; negative: conflicting-or-truncated-body-source.
+- Risk: agent-decided — REQ-1–3: source comparison found collapsed line breaks and an omitted reference URL. Decode only verified own-post text and URL entities; retain preview and rich-body guards. References may remain links without expanding quoted articles.
+
 ## Simplicity check
 - none found
 
@@ -157,3 +164,4 @@ charter: 1.1
 16. agent-decided — W14 passes local first/middle tests but live canonical navigation redirects threads.com to www.threads.com. Exact pre-redirect host matching drops native replies on that navigation; same-site alias normalization is consistent with the existing social URL identity contract.
 17. agent-decided — W15 live first-entry pagination closes, then collection fails on missing per-post root IDs despite a verified native root-owned branch. Align this provenance guard with self-thread validation; retain contradictory-source rejection and unresolved semantic membership.
 18. user-decided — Continue with X dashboard source completeness before narrative membership, then Japan MCP and Google, followed by independent sixteen-entry acceptance. W17/W18 address one observed source-window defect without changing article selection.
+19. agent-decided — W18 dashboard first/middle outputs match, but direct native-source comparison finds line-break flattening and a lost author-written reference URL. Preserve these before calling the sample complete. Japan MCP still fails unresolved reply extent; no generic narrative-membership claim is made.
