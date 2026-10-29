@@ -122,6 +122,41 @@ func TestBrowserExtractThreadsNativeReplies(t *testing.T) {
 	}
 }
 
+func TestBrowserExtractXNativeReplies(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `<body><main style="min-height:4000px"></main><script>
+const main=document.querySelector('main');let scrolled=false;
+function post(id,author,parent,count,body){const a=document.createElement('article');a.innerHTML='<a href="/author/status/'+id+'">post</a><div dir="auto" class="whitespace-pre-wrap">'+body+'</div>';a.__reactFiber$fixture={memoizedProps:{tweet:{rest_id:id,core:{user_results:{result:{rest_id:author}}},reply_to_results:parent===null?null:{rest_id:parent},counts:{reply_count:count}}}};main.append(a);return a}
+const root=post('1','author',null,location.search.includes('missing')?3:2,'First section.');
+if(location.pathname.endsWith('/2'))post('2','author','1',0,'Second section.');
+const decoy=document.createElement('button');decoy.textContent='Show probable spam';decoy.onclick=()=>{main.replaceChildren()};root.append(decoy);
+addEventListener('scroll',()=>{if(scrolled)return;scrolled=true;root.remove();if(!main.querySelector('article'))post('2','author','1',0,'Second section.');const button=document.createElement('button');button.textContent='スパムの可能性がある返信を表示';button.onclick=()=>{post('3','reader','1',0,'Reader excluded.');button.remove()};main.append(button)});
+</script></body>`)
+	}))
+	defer server.Close()
+	b := newTestBrowser(t, chromedp.Flag("host-resolver-rules", "MAP x.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"), chromedp.Flag("no-proxy-server", true), chromedp.Flag("ignore-certificate-errors", true))
+	base := strings.Replace(server.URL, "127.0.0.1", "x.com", 1)
+	var first string
+	for _, entry := range []string{"1", "2", "1?missing"} {
+		timeout := 10 * time.Second
+		if strings.Contains(entry, "missing") {
+			timeout = 2 * time.Second
+		}
+		body, err := b.Extract(base+"/author/status/"+entry, assets.DefuddleJS, timeout, 0)
+		if strings.Contains(entry, "missing") {
+			if body != "" || err == nil {
+				t.Fatalf("unresolved count: %q, %v", body, err)
+			}
+		} else if err != nil || !strings.Contains(body, "First section.") || !strings.Contains(body, "Second section.") || strings.Contains(body, "Reader excluded.") || strings.Count(body, "[Source]") != 2 {
+			t.Fatalf("%s: %q, %v", entry, body, err)
+		} else if first == "" {
+			first = body
+		} else if first != body {
+			t.Fatalf("first/middle differ: %q, %q", first, body)
+		}
+	}
+}
+
 func TestBrowserExtractPaginated(t *testing.T) {
 	b := newTestBrowser(t)
 	// Check extraction behavior within the production budget, not a two-second

@@ -149,10 +149,60 @@ catch (sourceError) {
 		)
 		if err == nil && threads {
 			snapshot, err = loadThreadsReplies(ctx, events, snapshot)
+		} else if err == nil {
+			snapshot, err = loadXReplies(ctx, snapshot)
 		}
 		stop()
 		return snapshot, err
 	})
+}
+
+// Only source-proven target extent ends loading. Movement and native controls
+// acquire observations; neither proves completeness or article membership.
+func loadXReplies(ctx context.Context, snapshot socialSnapshot) (socialSnapshot, error) {
+	idle := 0
+	for round := 0; round < 32 && idle < 8; round++ {
+		for _, page := range snapshot.ReplyPages {
+			if page.RootID == snapshot.TargetID && page.End {
+				return snapshot, nil
+			}
+		}
+		before, _ := json.Marshal(snapshot)
+		var activity struct {
+			Clicked bool    `json:"clicked"`
+			Top     float64 `json:"top"`
+		}
+		var top float64
+		err := chromedp.Run(ctx,
+			page.BringToFront(),
+			chromedp.Evaluate(`(()=>{
+let progress=false;
+const labels=new Set(['Show probable spam','Show probable spam replies','スパムの可能性がある返信を表示','顯示可能的垃圾訊息']);
+for(const e of document.querySelectorAll('button,[role="button"]')){
+ if(e.closest('article,a[href],[role="link"]')||e.hasAttribute('href')||e.disabled||e.__rlssReplyExpanded)continue;
+ const rect=e.getBoundingClientRect();
+ if(rect.width<=0||rect.height<=0||getComputedStyle(e).visibility==='hidden')continue;
+ if(!labels.has((e.innerText||e.getAttribute('aria-label')||'').trim()))continue;
+ e.__rlssReplyExpanded=true;e.click();progress=true;
+}
+const top=scrollY;window.scrollBy(0,Math.max(innerHeight*.8,400));
+return {clicked:progress,top};
+})()`, &activity),
+			chromedp.Sleep(750*time.Millisecond),
+			chromedp.Evaluate(`window.socialSnapshot()`, &snapshot),
+			chromedp.Evaluate(`scrollY`, &top),
+		)
+		if err != nil {
+			return snapshot, err
+		}
+		after, _ := json.Marshal(snapshot)
+		if activity.Clicked || top != activity.Top || string(before) != string(after) {
+			idle = 0
+		} else {
+			idle++
+		}
+	}
+	return snapshot, nil // Existing collector rejects unresolved reply extent.
 }
 
 // Native requests are observed, never replayed. The source parser remains the
