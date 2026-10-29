@@ -89,6 +89,20 @@ charter: 1.1
 - Test: A1 positive: nested-native-rich-body; boundary: modern-rich-preserved. A2 positive: owned-read-view-retained; negative: quoted-article-excluded. A3 positive: complete-owned-body; negative: ambiguous-rich-body.
 - Risk: agent-decided — REQ-1–3: widen existing classic rich fixture to the observed nested article read-view. Preserve known quotation/card exclusions and reject duplicate bodies; nested native ownership differs from an arbitrary quoted article.
 
+### Wave 13 — Verified Threads response pages
+
+**W13-01 Merge root-owned native reply pages into the existing source snapshot** after: W12-01 acceptance: 1, 3
+- Files: extraction.ts (socialSnapshot), extraction.test.mjs, inject.ts (window.socialSnapshot), embed/defuddle.min.js
+- Test: A1 positive: native-reply-page-continuity; boundary: static-self-thread-preserved. A3 positive: matching-request-and-response-owner; negative: wrong-owner-or-cursor.
+- Risk: agent-decided — REQ-1,3: extend existing fixtures and snapshot entry with bounded supplemental pages. Match request post ID, previous cursor and response media-info owner before joining; retain source conflicts and unknown pagination. No article-membership relaxation.
+
+### Wave 14 — Browser reply-page ingestion
+
+**W14-01 Collect native Threads reply responses while loading the article** after: W13-01 acceptance: 1, 3, 4
+- Files: internal/extract/browser.go (Browser.Extract), internal/extract/browser_test.go
+- Test: A1 positive: native-replies-through-browser-entry; boundary: first-middle-source-equivalence. A3 positive: verified-page-delivered; negative: wrong-owner-or-unresolved-page. A4 positive: existing-social-and-ordinary-dispatch; boundary: shared-attempt-deadline.
+- Risk: agent-decided — REQ-1,3–4: widen browser_test.go using isolated intercepted hosts. Observe only first-party reply requests; keep headers out of captures and all data in bounded memory. Scroll existing containers within the attempt deadline; preserve X, retry and challenge behavior.
+
 ## Simplicity check
 - none found
 
@@ -110,3 +124,5 @@ charter: 1.1
 11. agent-decided — W9 fixes raw response compatibility but fails live authenticated identity: article props normalize rest_id/core/legacy into id_str/user/top-level fields. The bounded owned-article probe locates the target at ancestor props.tweet; use that observed shape rather than widening into account state.
 12. agent-decided — W10 recognizes authenticated targets and passes package/probe checks. Google yields an empty snapshot body despite its owned classic rich container; the existing focal reader returns 8,451 characters. Repair that layout while retaining unresolved pagination and membership findings.
 13. agent-decided — W11 passes fixtures but live cloning still removes the body. The target tweet contains a nested article explicitly marked twitterArticleReadView; generic nested-article removal deletes it before rich decoding. Retain this native owned view without admitting quoted cards.
+14. agent-decided — Implement proven Threads cursor ingestion before further X inference. Initial scripts remain authoritative for ownership; supplemental direct-reply pages must connect without gaps. Native TOP terminal pagination establishes that connection only; F1/F3 still require independent article verification.
+15. agent-decided — Observed X tweetDisplayType SelfThread also labels the Japan MCP resource recommendation. Neither that flag nor VerticalConversation modules prove narrative membership; do not replace the unresolved membership requirement with this display hint.
