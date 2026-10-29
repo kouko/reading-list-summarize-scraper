@@ -117,6 +117,20 @@ charter: 1.1
 - Test: A1 positive: scoped-branch-without-redundant-root; boundary: first-middle-equivalence. A3 positive: native-owner-provenance; negative: explicit-foreign-root-or-standalone-member.
 - Risk: agent-decided — REQ-1,3: extend the existing branch fixture with absent per-post root IDs observed live. Accept scoped native ownership while rejecting explicit conflicting ancestry or standalone identity; this repairs provenance only and does not settle narrative membership.
 
+### Wave 17 — Navigation-scoped X observations
+
+**W17-01 Retain verified X observations when source articles leave the DOM** after: W16-01 acceptance: 1, 3, 4
+- Files: extraction.ts (socialSnapshot X observations), extraction.test.mjs, inject.ts (navigation-scoped snapshot wrapper), embed/defuddle.min.js
+- Test: A1 positive: virtualized-root-and-later-replies; boundary: preserved-complete-body. A3 positive: cumulative-explicit-child-count; negative: conflicting-or-cross-document-observations. A4 positive: static-source-compatibility; boundary: navigation-resets-retention.
+- Risk: agent-decided — REQ-1,3–4: retain only verified public post fields within the same document and target. Bound observations and reject source conflicts; recompute completeness from unique explicit direct children. Never retain credentials, borrow another navigation, or infer terminal extent from scrolling.
+
+### Wave 18 — Bounded native X reply expansion
+
+**W18-01 Scroll X conversations and expand native reply controls before collection** after: W17-01 acceptance: 1, 3, 4
+- Files: internal/extract/browser.go (extractSocial X load), internal/extract/browser_test.go
+- Test: A1 positive: virtualized-first-middle-browser-equivalence; boundary: native-hidden-replies-loaded. A3 positive: exact-target-direct-child-extent; negative: unresolved-reply-count. A4 positive: existing-platform-dispatch; boundary: shared-attempt-deadline.
+- Risk: agent-decided — REQ-1,3–4: extend the existing isolated browser fixture using the real bundle. Scroll incrementally and click only observed read-only reply expansion controls outside articles. Bound idle rounds and total observations; preserve original deadlines, failure behavior and unresolved narrative membership.
+
 ## Simplicity check
 - none found
 
@@ -142,3 +156,4 @@ charter: 1.1
 15. agent-decided — Observed X tweetDisplayType SelfThread also labels the Japan MCP resource recommendation. Neither that flag nor VerticalConversation modules prove narrative membership; do not replace the unresolved membership requirement with this display hint.
 16. agent-decided — W14 passes local first/middle tests but live canonical navigation redirects threads.com to www.threads.com. Exact pre-redirect host matching drops native replies on that navigation; same-site alias normalization is consistent with the existing social URL identity contract.
 17. agent-decided — W15 live first-entry pagination closes, then collection fails on missing per-post root IDs despite a verified native root-owned branch. Align this provenance guard with self-thread validation; retain contradictory-source rejection and unresolved semantic membership.
+18. user-decided — Continue with X dashboard source completeness before narrative membership, then Japan MCP and Google, followed by independent sixteen-entry acceptance. W17/W18 address one observed source-window defect without changing article selection.
