@@ -188,10 +188,11 @@ function modernXBody(own: Element, url: URL): string {
 
 type SocialPost = {id: string; url: string; authorID: string; body: string; bodyComplete: boolean; parentID?: string | null; rootID?: string; isReply?: boolean; replyCount?: number; conversationStart?: boolean; conversationEnd?: boolean};
 type SocialSequence = {rootID: string; ids: string[]; end: boolean; cursor: string | null; missingIDs: string[]};
+type ThreadsReplyPage = {postID: string; after: string; sortOrder: 'TOP'; data: any};
 
 // A snapshot is evidence for the browser walker, never a complete-article claim.
 // Unknown parent/extent is deliberately distinct from an explicit null/end.
-export function socialSnapshot(document: Document = globalThis.document, address: string = globalThis.location.href) {
+export function socialSnapshot(document: Document = globalThis.document, address: string = globalThis.location.href, pages: ThreadsReplyPage[] = []) {
     const url = new URL(address), host = url.hostname.replace(/^www\./, '');
     const posts = new Map<string, SocialPost>();
     const sequences: SocialSequence[] = [], branches: {rootID: string; ids: string[]; end: boolean}[] = [];
@@ -219,7 +220,16 @@ export function socialSnapshot(document: Document = globalThis.document, address
                     ancestry.set(value.id,root);
                 }
             }
-            if (value.pk && value.code && value.user?.id && value.text_post_app_info?.id) rawPosts.set(String(value.pk), value);
+            if (value.pk && value.code && value.user?.id && value.text_post_app_info?.id) {
+                const prior = rawPosts.get(String(value.pk));
+                if (prior && (prior.code !== value.code || String(prior.user.id) !== String(value.user.id)
+                    || prior.user.username !== value.user.username || prior.text_post_app_info.id !== value.text_post_app_info.id
+                    || (prior.text_post_app_info.is_reply !== undefined && value.text_post_app_info.is_reply !== undefined && prior.text_post_app_info.is_reply !== value.text_post_app_info.is_reply)
+                    || (substantive(prior.caption?.text || '') && substantive(value.caption?.text || '') && prior.caption.text.trim() !== value.caption.text.trim()))) fail('Inaccessible social target: conflicting source identity or body');
+                rawPosts.set(String(value.pk), {...prior,...value,
+                    caption:substantive(value.caption?.text || '') ? value.caption : prior?.caption || value.caption,
+                    text_post_app_info:{...prior?.text_post_app_info,...value.text_post_app_info}});
+            }
             if (value.id && value.self_thread?.posts) collections.push(value);
             for (const child of Object.values(value)) visit(child, depth + 1);
         };
@@ -228,6 +238,30 @@ export function socialSnapshot(document: Document = globalThis.document, address
             if (text.length > 16000000) fail('Inaccessible social target: source snapshot limit');
             let parsed; try { parsed = JSON.parse(text); } catch { continue; }
             visit(parsed);
+        }
+        if (!Array.isArray(pages) || pages.length > 32) fail('Inaccessible social target: source page limit');
+        const cursors = new Map<string, Set<string>>();
+        for (const page of pages) {
+            if (JSON.stringify(page).length > 16000000) fail('Inaccessible social target: source snapshot limit');
+            const root = rawPosts.get(page?.postID), info = page?.data?.data?.media?.text_post_app_info;
+            const owned = collections.filter(c => c.id === root?.text_post_app_info.id);
+            const distinct = [...new Set(owned.map(c => JSON.stringify(c)))];
+            const connection = owned[0]?.direct_replies, incoming = info?.direct_replies;
+            const seen = cursors.get(page?.postID) || new Set<string>();
+            if (!root || !info || info.id !== root.text_post_app_info.id || distinct.length !== 1
+                || page.sortOrder !== 'TOP' || typeof page.after !== 'string' || !page.after
+                || connection?.page_info?.has_next_page !== true || connection.page_info.end_cursor !== page.after
+                || seen.has(page.after) || !Array.isArray(connection.edges) || !Array.isArray(incoming?.edges)
+                || typeof incoming.page_info?.has_next_page !== 'boolean'
+                || (incoming.page_info.has_next_page ? typeof incoming.page_info.end_cursor !== 'string' || !incoming.page_info.end_cursor
+                    || incoming.page_info.end_cursor === page.after || seen.has(incoming.page_info.end_cursor) : incoming.page_info.end_cursor !== null)) fail('Inaccessible social target: invalid source page owner or cursor');
+            seen.add(page.after); cursors.set(page.postID,seen);
+            // Decode public fragments without treating a response's absent
+            // self_thread as evidence that the initial sequence disappeared.
+            const count = collections.length;
+            visit(info);
+            collections.length = count;
+            for (const c of owned) c.direct_replies = {edges:[...connection.edges,...incoming.edges],page_info:incoming.page_info};
         }
         for (const [id, p] of rawPosts) {
             const caption = typeof p.caption?.text === 'string' ? p.caption.text.trim() : '';
@@ -247,10 +281,12 @@ export function socialSnapshot(document: Document = globalThis.document, address
             const sequence = {rootID, ids:[rootID,...members], end:connection.page_info?.has_next_page === false,
                 cursor:connection.page_info?.end_cursor || null, missingIDs:expected.filter((id: string) => !members.includes(id))};
             if (!sequences.some(s => JSON.stringify(s) === JSON.stringify(sequence))) sequences.push(sequence);
-            replyPages.push({rootID,end:c.direct_replies?.page_info?.has_next_page === false,cursor:c.direct_replies?.page_info?.end_cursor || null});
+            const replyPage = {rootID,end:c.direct_replies?.page_info?.has_next_page === false,cursor:c.direct_replies?.page_info?.end_cursor || null};
+            if (!replyPages.some(p => JSON.stringify(p) === JSON.stringify(replyPage))) replyPages.push(replyPage);
             for (const edge of c.direct_replies?.edges || []) {
                 const replies = edge.node?.posts;
-                branches.push({rootID, ids:ids(replies), end:replies?.page_info?.has_next_page === false});
+                const branch = {rootID, ids:ids(replies), end:replies?.page_info?.has_next_page === false};
+                if (!branches.some(b => JSON.stringify(b) === JSON.stringify(branch))) branches.push(branch);
             }
         }
     } else if (host === 'x.com' || host === 'twitter.com') {

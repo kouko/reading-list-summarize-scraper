@@ -122,6 +122,24 @@ test('thread A1/A3 missing members and unknown pagination never prove completene
  const recovered=socialSnapshot(separate,'https://www.threads.com/@writer/post/MID');
  assert.equal(recovered.posts.find(p=>p.id==='2').rootID,'1');assert.equal(recovered.posts.find(p=>p.id==='2').isReply,true);
  assert.equal(socialSnapshot(threadPage([mid,root]),'https://www.threads.com/@writer/post/MID').posts.find(p=>p.id==='2').rootID,undefined);
+ const initial=threadPage([root,mid],{direct_replies:{edges:[],page_info:{has_next_page:true,end_cursor:'next'}}});
+ const branch=node=>({node:{posts:{edges:[{node}],page_info:{has_next_page:false,end_cursor:null}}}});
+ const supplement=(after='next',owner=root.text_post_app_info.id)=>({postID:'1',after,sortOrder:'TOP',data:{data:{media:{text_post_app_info:{id:owner,direct_replies:{edges:[branch(threadPost('LATE','3',true)),branch({...mid,caption:null})],page_info:{has_next_page:false,end_cursor:null}}}}}}});
+ const merged=socialSnapshot(initial,'https://www.threads.com/@writer/post/ROOT',[supplement()]);
+ assert.deepEqual(merged.sequences[0].ids,['1','2']);
+ assert.deepEqual(merged.replyPages,[{rootID:'1',end:true,cursor:null}]);
+ assert.deepEqual(merged.posts.map(p=>p.id),['1','2','3']);
+ assert.equal(merged.posts.find(p=>p.id==='2').body,'Section MID.');
+ const advancing=supplement();advancing.data.data.media.text_post_app_info.direct_replies.page_info={has_next_page:true,end_cursor:'last'};
+ const terminal=supplement('last');terminal.data.data.media.text_post_app_info.direct_replies.edges=[branch(threadPost('FINAL','4',true))];
+ assert.deepEqual(socialSnapshot(initial,'https://www.threads.com/@writer/post/ROOT',[advancing,terminal]).posts.map(p=>p.id),['1','2','3','4']);
+ assert.deepEqual(socialSnapshot(initial,'https://www.threads.com/@writer/post/ROOT',[advancing]).replyPages,[{rootID:'1',end:false,cursor:'last'}]);
+ const loop=supplement('last');loop.data.data.media.text_post_app_info.direct_replies.page_info={has_next_page:true,end_cursor:'next'};
+ for(const pages of [[supplement('gap')],[supplement('next','foreign')],[{...supplement(),postID:'9'}],[{...supplement(),sortOrder:'RECENT'}],[advancing,loop],[supplement(),supplement()],Array(33).fill(supplement())]) {
+  assert.throws(()=>socialSnapshot(initial,'https://www.threads.com/@writer/post/ROOT',pages),/source|cursor|page/i);
+ }
+ const conflicting=supplement();conflicting.data.data.media.text_post_app_info.direct_replies.edges[1].node.posts.edges[0].node.caption={text:'Conflicting complete body.'};
+ assert.throws(()=>socialSnapshot(initial,'https://www.threads.com/@writer/post/ROOT',[conflicting]),/conflicting/i);
 });
 test('thread A2 reader branches are separate from explicit self-thread membership', () => {
  const root=threadPost('ROOT','1'), reader={...threadPost('READER','9',true),user:{id:'reader',username:'reader'}};
