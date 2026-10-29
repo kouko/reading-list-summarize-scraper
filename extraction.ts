@@ -189,19 +189,24 @@ function modernXBody(own: Element, url: URL): string {
 type SocialPost = {id: string; url: string; authorID: string; body: string; bodyComplete: boolean; parentID?: string | null; rootID?: string; isReply?: boolean; replyCount?: number; conversationStart?: boolean; conversationEnd?: boolean};
 type SocialSequence = {rootID: string; ids: string[]; end: boolean; cursor: string | null; missingIDs: string[]};
 type ThreadsReplyPage = {postID: string; after: string; sortOrder: 'TOP'; data: any};
+type SocialObservations = {document: Document; address: string; posts: SocialPost[]; counts: [string, string][]};
 
 // A snapshot is evidence for the browser walker, never a complete-article claim.
 // Unknown parent/extent is deliberately distinct from an explicit null/end.
-export function socialSnapshot(document: Document = globalThis.document, address: string = globalThis.location.href, pages: ThreadsReplyPage[] = []) {
+export function socialSnapshot(document: Document = globalThis.document, address: string = globalThis.location.href, pages: ThreadsReplyPage[] = [], previous?: SocialObservations) {
     const url = new URL(address), host = url.hostname.replace(/^www\./, '');
+    const isX = host === 'x.com' || host === 'twitter.com';
     const posts = new Map<string, SocialPost>();
+    const observedCounts = new Map<string, string>();
     const sequences: SocialSequence[] = [], branches: {rootID: string; ids: string[]; end: boolean}[] = [];
     const replyPages: {rootID: string; end: boolean; cursor: string | null}[] = [];
     const add = (post: SocialPost) => {
         const prior = posts.get(post.id);
         if (prior && (prior.authorID !== post.authorID || prior.url !== post.url || (prior.bodyComplete && post.bodyComplete && prior.body !== post.body)
             || (prior.parentID !== undefined && post.parentID !== undefined && prior.parentID !== post.parentID))) fail('Inaccessible social target: conflicting source identity or body');
-        if (!prior || post.bodyComplete || !prior.bodyComplete) posts.set(post.id, {...prior,...post});
+        if (isX && prior?.bodyComplete && !post.bodyComplete) posts.set(post.id, {...post,...prior});
+        else if (!prior || post.bodyComplete || !prior.bodyComplete) posts.set(post.id, {...prior,...post});
+        if (isX && posts.size > 2000) fail('Inaccessible social target: source snapshot limit');
     };
     if (host === 'threads.com' || host === 'threads.net') {
         const rawPosts = new Map<string, any>(), collections: any[] = [];
@@ -291,6 +296,10 @@ export function socialSnapshot(document: Document = globalThis.document, address
         }
     } else if (host === 'x.com' || host === 'twitter.com') {
         const replyCounts = new Map<string, unknown>();
+        if (previous?.document === document && previous.address === url.href) {
+            for (const post of previous.posts) add({...post});
+            for (const [id, count] of previous.counts) observedCounts.set(id,count);
+        }
         // Only inspect bounded props belonging to rendered articles. Never return
         // React/app objects, account state, fetch tokens or arbitrary script data.
         for (const article of Array.from(document.querySelectorAll('article'))) {
@@ -317,7 +326,7 @@ export function socialSnapshot(document: Document = globalThis.document, address
                     const permalink = links.find(a => new URL(a.getAttribute('href')!, url).pathname.endsWith('/status/' + id));
                     if (!permalink) return;
                     const body = modernXBody(own,url);
-                    const fields: Partial<SocialPost> = {...evidence.get(id)};
+                    const fields: Partial<SocialPost> = {authorID:posts.get(id)?.authorID,...evidence.get(id)};
                     for (const author of [userResult?.user?.rest_id,userResult?.rest_id,normalized ? value.user.id_str : undefined]) if (typeof author === 'string') {
                         if (fields.authorID !== undefined && fields.authorID !== author) fail('Inaccessible social target: conflicting source identity');
                         fields.authorID=author;
@@ -325,6 +334,12 @@ export function socialSnapshot(document: Document = globalThis.document, address
                     for (const count of [value.counts?.reply_count,value.legacy?.reply_count,normalized ? value.reply_count : undefined]) if (count !== undefined) {
                         if (replyCounts.has(id) && replyCounts.get(id) !== count) fail('Inaccessible social target: conflicting source reply count');
                         replyCounts.set(id,count);
+                        // Retain scalar public count evidence, never arbitrary
+                        // source objects. Invalid scalar counts prove no extent.
+                        if (previous && count !== null && !['number','string','boolean'].includes(typeof count)) fail('Inaccessible social target: invalid source reply count');
+                        const signature = JSON.stringify([typeof count,typeof count === 'number' ? String(count) : ['string','boolean'].includes(typeof count) ? count : null]);
+                        if (observedCounts.has(id) && observedCounts.get(id) !== signature) fail('Inaccessible social target: conflicting source reply count');
+                        observedCounts.set(id,signature);
                         if (Number.isInteger(count) && count >= 0) fields.replyCount=count;
                     }
                     if (position) { fields.conversationStart=position.isStart; fields.conversationEnd=position.isEnd; }
@@ -356,14 +371,17 @@ export function socialSnapshot(document: Document = globalThis.document, address
             }
         }
         for (const post of posts.values()) {
-            const count = replyCounts.get(post.id);
+            const count = post.replyCount;
             const children = [...posts.values()].filter(child => child.parentID === post.id);
             if (Number.isInteger(count) && (count as number) >= 0 && count === children.length) replyPages.push({rootID:post.id,end:true,cursor:null});
         }
     } else fail('Inaccessible social target: unsupported snapshot platform');
     const targets = [...posts.values()].filter(p => sameTarget(p.url,url));
     if (targets.length !== 1) fail('Inaccessible social target: source target identity unavailable or ambiguous');
-    return {version:1, platform:host.startsWith('threads')?'threads':'x', targetID:targets[0].id, posts:[...posts.values()], sequences, branches, replyPages};
+    const counts = [...observedCounts].filter(([id]) => posts.has(id));
+    if (isX && new TextEncoder().encode(JSON.stringify({posts:[...posts.values()],counts})).byteLength > 16000000) fail('Inaccessible social target: source snapshot limit');
+    return {version:1, platform:host.startsWith('threads')?'threads':'x', targetID:targets[0].id, posts:[...posts.values()], sequences, branches, replyPages,
+        ...(isX ? {observedReplyCounts:counts} : {})};
 }
 
 function social(document: Document, url: URL): string {

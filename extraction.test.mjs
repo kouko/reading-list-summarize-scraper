@@ -111,6 +111,58 @@ test('thread A1/A2 source-ordered first and middle snapshots retain distinct mem
  retained[0].memoizedProps.tweet={id:'1',user:{id_str:'author'},full_text:'Synthetic analytics.'};
  assert.throws(snapshot,/target.*identity/i);
 });
+test('thread A1/A3/A4 injected X snapshots retain bounded observations only within navigation', async () => {
+ const injected=await build({entryPoints:['inject.ts'],bundle:true,platform:'node',format:'esm',write:false});
+ const injectedPath=join(temporary,'injected.mjs');await writeFile(injectedPath,injected.outputFiles[0].contents);
+ const saved={window:globalThis.window,document:globalThis.document,location:globalThis.location};
+ const render=(d,posts)=>{
+  d.body.innerHTML=posts.map(p=>`<article><a href="/writer/status/${p.id_str}">post</a><div data-testid="tweetText">${p.full_text}</div>${p.preview?'<button>Show more</button>':''}</article>`).join('');
+  [...d.querySelectorAll('article')].forEach((a,i)=>{a.__reactFiber$fixture={memoizedProps:{tweet:posts[i]}};});
+ };
+ const root={id_str:'1',user:{id_str:'author'},full_text:'Complete synthetic root.',conversation_id_str:'1',reply_count:2};
+ const child=id=>({id_str:id,user:{id_str:'author'},full_text:`Synthetic child ${id}.`,conversation_id_str:'1',in_reply_to_status_id_str:'1',reply_count:0});
+ try {
+  const d=doc('');render(d,[root,child('2')]);
+  globalThis.window=d.defaultView;globalThis.document=d;globalThis.location={href:'https://x.com/writer/status/1'};
+  await import(pathToFileURL(injectedPath).href);
+  const capture=globalThis.window.socialSnapshot;
+  const initial=capture();assert.equal(initial.posts.length,2);assert.equal(initial.replyPages.some(p=>p.rootID==='1'),false);
+  initial.posts[0].body='Caller mutation';
+  render(d,[{...child('3'),in_reply_to_status_id_str:undefined}]);
+  assert.equal(capture().replyPages.some(p=>p.rootID==='1'),false);
+  render(d,[child('3'),child('3')]);
+  const cumulative=capture();assert.deepEqual(cumulative.posts.map(p=>p.id),['1','2','3']);
+  assert.equal(cumulative.posts[0].body,root.full_text);
+  assert.equal(cumulative.replyPages.some(p=>p.rootID==='1'&&p.end),true);
+  assert.throws(()=>socialSnapshot(d,globalThis.location.href),/target.*identity/i);
+  render(d,[{...root,full_text:'Short preview.',preview:true}]);
+  assert.equal(capture().posts[0].body,root.full_text);assert.equal(capture().posts[0].bodyComplete,true);
+  for(const conflict of [{user:{id_str:'other'}},{reply_count:3},{in_reply_to_status_id_str:'9'},{full_text:'Different complete body.'}]) {
+   render(d,[{...root,...conflict}]);assert.throws(capture,/conflicting/i);
+  }
+  render(d,[root]);d.querySelector('article').__reactFiber$fixture.memoizedProps.tweet={rest_id:'1',reply_to_results:{rest_id:'9'}};
+  assert.throws(capture,/conflicting/i);
+  render(d,[child('3')]);globalThis.location.href='https://x.com/writer/status/9';
+  assert.throws(capture,/target.*identity/i);
+  globalThis.location.href='https://x.com/writer/status/1';assert.throws(capture,/target.*identity/i);
+  render(d,[root]);assert.equal(capture().posts.length,1);
+  const other=doc('');render(other,[child('3')]);globalThis.document=other;
+  assert.throws(capture,/target.*identity/i);
+  globalThis.document=d;render(d,[child('3')]);assert.throws(capture,/target.*identity/i);
+  render(d,[root]);assert.equal(capture().posts.length,1);
+  render(d,[{...root,reply_count:'2'}]);assert.throws(capture,/conflicting.*count/i);
+  globalThis.location.href='https://x.com/writer/status/4';
+  render(d,[{...root,id_str:'4',conversation_id_str:'4',reply_count:'0'}]);capture();
+  render(d,[{...root,id_str:'4',conversation_id_str:'4',reply_count:0}]);assert.throws(capture,/conflicting.*count/i);
+  globalThis.location.href='https://x.com/writer/status/1';render(d,[root]);capture();
+  render(d,[...Array.from({length:2000},(_,i)=>child(String(i+2)))]);
+  assert.throws(capture,/snapshot limit/i);
+  globalThis.location.href='https://x.com/writer/status/5';
+  render(d,[{...root,id_str:'5',conversation_id_str:'5'}]);
+  d.querySelector('[data-testid="tweetText"]').textContent='x'.repeat(16000001);
+  assert.throws(capture,/snapshot limit/i);
+ } finally {Object.assign(globalThis,saved);}
+});
 test('thread A1/A3 missing members and unknown pagination never prove completeness', () => {
  const posts = [threadPost('ROOT','1')];
  const s = socialSnapshot(threadPage(posts,{self_thread:{post_ids:{edges:[{node:{pk:'2'}}]},posts:{edges:[],page_info:{has_next_page:true,end_cursor:'cursor'}}}}),'https://www.threads.com/@writer/post/ROOT');
