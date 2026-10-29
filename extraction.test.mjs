@@ -91,6 +91,25 @@ test('thread A1/A2 source-ordered first and middle snapshots retain distinct mem
   assert.throws(snapshot,/conflicting.*(identity|count|parent|relationship)/i);
   legacyTweets[0]=prior;legacyPage.querySelector('article').__reactFiber$fixture.memoizedProps.tweet=prior;
  }
+ const normalizedTweets=[{id_str:'1',user:{id_str:'author'},full_text:'Synthetic root.',reply_count:1,conversation_id_str:'1'},{id_str:'2',user:{id_str:'author'},text:'Synthetic reply.',reply_count:0,conversation_id_str:'1',in_reply_to_status_id_str:'1'}];
+ const retained=[];
+ [...legacyPage.querySelectorAll('article')].forEach((a,i)=>{
+  let fiber={memoizedProps:{tweet:normalizedTweets[i],analytics:{items:[{id:normalizedTweets[i].id_str,author_id:'analytics',reply_count:99}]}}};retained.push(fiber);
+  for(let depth=0;depth<11;depth++) fiber={return:fiber};
+  a.__reactFiber$fixture=fiber;
+ });
+ assert.deepEqual(snapshot().posts.map(p=>[p.id,p.authorID,p.parentID,p.replyCount]),[['1','author',null,1],['2','author','1',0]]);
+ assert.deepEqual(snapshot().replyPages,[{rootID:'1',end:true,cursor:null},{rootID:'2',end:true,cursor:null}]);
+ delete normalizedTweets[1].in_reply_to_status_id_str;
+ assert.equal(snapshot().posts[1].parentID,undefined);
+ delete normalizedTweets[0].conversation_id_str;
+ assert.equal(snapshot().posts[0].parentID,undefined);
+ for(const conflict of [{rest_id:'9'},{core:{user_results:{result:{rest_id:'other'}}}},{legacy:{reply_count:2}},{reply_to_results:null,in_reply_to_status_id_str:'9'},{conversation_id_str:'1',in_reply_to_status_id_str:'9'}]) {
+  retained[0].memoizedProps.tweet={...normalizedTweets[0],...conflict};
+  assert.throws(snapshot,/conflicting.*(identity|count|parent|relationship)/i);
+ }
+ retained[0].memoizedProps.tweet={id:'1',user:{id_str:'author'},full_text:'Synthetic analytics.'};
+ assert.throws(snapshot,/target.*identity/i);
 });
 test('thread A1/A3 missing members and unknown pagination never prove completeness', () => {
  const posts = [threadPost('ROOT','1')];

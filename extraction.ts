@@ -268,18 +268,23 @@ export function socialSnapshot(document: Document = globalThis.document, address
                 seen.add(value);
                 if (typeof value.conversationPosition?.isStart === 'boolean' && typeof value.conversationPosition?.isEnd === 'boolean') position = value.conversationPosition;
                 const userResult = value.core?.user_results?.result;
-                if (typeof value.rest_id === 'string') {
-                    const id = value.rest_id, own = ownTweet(article);
+                // Rendered tweet props normalize the API identity and legacy
+                // fields. Analytics IDs alone are never public post evidence.
+                const normalized = typeof value.id_str === 'string' && typeof value.user?.id_str === 'string'
+                    && (typeof value.full_text === 'string' || typeof value.text === 'string');
+                if (typeof value.rest_id === 'string' || normalized) {
+                    if (typeof value.rest_id === 'string' && typeof value.id_str === 'string' && value.rest_id !== value.id_str) fail('Inaccessible social target: conflicting source identity');
+                    const id = typeof value.rest_id === 'string' ? value.rest_id : value.id_str, own = ownTweet(article);
                     const links = Array.from(own.querySelectorAll('a[href]'));
                     const permalink = links.find(a => new URL(a.getAttribute('href')!, url).pathname.endsWith('/status/' + id));
                     if (!permalink) return;
                     const body = modernXBody(own,url);
                     const fields: Partial<SocialPost> = {...evidence.get(id)};
-                    for (const author of [userResult?.user?.rest_id,userResult?.rest_id]) if (typeof author === 'string') {
+                    for (const author of [userResult?.user?.rest_id,userResult?.rest_id,normalized ? value.user.id_str : undefined]) if (typeof author === 'string') {
                         if (fields.authorID !== undefined && fields.authorID !== author) fail('Inaccessible social target: conflicting source identity');
                         fields.authorID=author;
                     }
-                    for (const count of [value.counts?.reply_count,value.legacy?.reply_count]) if (count !== undefined) {
+                    for (const count of [value.counts?.reply_count,value.legacy?.reply_count,normalized ? value.reply_count : undefined]) if (count !== undefined) {
                         if (replyCounts.has(id) && replyCounts.get(id) !== count) fail('Inaccessible social target: conflicting source reply count');
                         replyCounts.set(id,count);
                         if (Number.isInteger(count) && count >= 0) fields.replyCount=count;
@@ -290,6 +295,8 @@ export function socialSnapshot(document: Document = globalThis.document, address
                     else if (typeof value.reply_to_results?.rest_id === 'string') parents.push(value.reply_to_results.rest_id);
                     if (typeof value.legacy?.in_reply_to_status_id_str === 'string') parents.push(value.legacy.in_reply_to_status_id_str);
                     if (value.legacy?.conversation_id_str === id) parents.push(null);
+                    if (normalized && typeof value.in_reply_to_status_id_str === 'string') parents.push(value.in_reply_to_status_id_str);
+                    if (normalized && value.conversation_id_str === id) parents.push(null);
                     for (const parent of parents) {
                         if (fields.parentID !== undefined && fields.parentID !== parent) fail('Inaccessible social target: conflicting source parent relationship');
                         fields.parentID=parent;
