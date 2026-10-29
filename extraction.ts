@@ -158,7 +158,9 @@ function bodyMarkdown(element: Element, url: URL): string {
 
 function ownTweet(article: Element): Element {
     const clone = article.cloneNode(true) as Element;
-    clone.querySelectorAll('[data-testid="quoteTweet"], [data-testid="simpleTweet"], article, [data-slot="embedded-tweet-frame"]').forEach(el => el.remove());
+    // The native long-article read view is itself an article owned by the
+    // enclosing tweet. Known quote containers still remove any read view inside.
+    clone.querySelectorAll('[data-testid="quoteTweet"], [data-testid="simpleTweet"], article:not([data-testid="twitterArticleReadView"]), [data-slot="embedded-tweet-frame"]').forEach(el => el.remove());
     // Upstream TwitterExtractor identifies quoted cards by their labelled
     // container and nested author header. They cannot identify the outer post.
     clone.querySelectorAll('[aria-labelledby*="id__"]').forEach(el => {

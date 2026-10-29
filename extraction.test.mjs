@@ -215,10 +215,13 @@ test('A2 target bodies on three platforms exclude replies', async () => {
  const snapshot=socialSnapshot(rich,'https://x.com/a/status/123');
  assert.equal(snapshot.posts[0].bodyComplete,true);assert.match(snapshot.posts[0].body,/# Own long title\s+Complete authored rich body\./);assert.match(snapshot.posts[0].body,/\[Reference\]\(https:\/\/example.com\/source\)/);assert.doesNotMatch(snapshot.posts[0].body,/OUTSIDE BODY|STYLES|QUOTED BODY/);assert.deepEqual(snapshot.replyPages,[]);
  assert.equal(await extractArticle(rich,'https://x.com/a/status/123'),snapshot.posts[0].body);
- const classic=doc('<article><a href="/a/status/123"><time>today</time></a><div data-testid="twitterArticleReadView"><h1 data-testid="twitter-article-title">Own long title</h1><div data-testid="twitterArticleRichTextView"><p>Complete authored rich body.</p><a href="https://example.com/source">Reference</a><div data-slot="embedded-tweet-frame">QUOTED BODY</div></div></div><div data-testid="tweetText">OUTSIDE BODY</div></article>');
+ const quotedReadView='<article data-testid="twitterArticleReadView"><div><div data-testid="twitterArticleRichTextView">FOREIGN RICH BODY</div></div></article>';
+ const quotedCards=`<div data-testid="quoteTweet">${quotedReadView}</div><div data-testid="simpleTweet">${quotedReadView}</div><div data-slot="embedded-tweet-frame">${quotedReadView}</div><div aria-labelledby="id__quote"><div data-testid="User-Name">Foreign author</div>${quotedReadView}</div><article>${quotedReadView}</article>`;
+ const classic=doc(`<article data-testid="tweet"><a href="/a/status/123"><time>today</time></a><article data-testid="twitterArticleReadView"><h1 data-testid="twitter-article-title">Own long title</h1><div><div data-testid="twitterArticleRichTextView"><p>Complete authored rich body.</p><a href="https://example.com/source">Reference</a><article>QUOTED ARTICLE</article><div data-slot="embedded-tweet-frame">QUOTED BODY</div></div></div></article>${quotedCards}<div data-testid="tweetText">OUTSIDE BODY</div></article>`);
  classic.querySelector('article').__reactFiber$fixture={memoizedProps:{tweet:{id_str:'123',user:{id_str:'author'},full_text:'Article reference.',conversation_id_str:'123',reply_count:2}}};
  const classicSnapshot=()=>socialSnapshot(classic,'https://x.com/a/status/123');
  assert.equal(classicSnapshot().posts[0].bodyComplete,true);
+ assert.equal(classicSnapshot().posts.length,1);
  assert.equal(classicSnapshot().posts[0].body,snapshot.posts[0].body);
  assert.deepEqual(classicSnapshot().replyPages,[]);
  const container=classic.querySelector('[data-testid="twitterArticleRichTextView"]');
