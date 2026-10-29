@@ -82,6 +82,13 @@ charter: 1.1
 - Test: A1 positive: owned-classic-rich-body; boundary: modern-rich-body-preserved. A3 positive: verified-owned-rich-container; negative: quoted-or-ambiguous-rich-body.
 - Risk: agent-decided — REQ-1,3: widen existing rich-body fixtures for the observed twitterArticleReadView/twitterArticleRichTextView layout and upstream title selector. Keep own-article identity, quotation removal and incomplete-body rejection; a readable root body does not prove full thread extent.
 
+### Wave 12 — Owned rich body versus quoted article
+
+**W12-01 Preserve the native owned rich read-view during quotation removal** after: W11-01 acceptance: 1, 2, 3
+- Files: extraction.ts (ownTweet used by socialSnapshot), extraction.test.mjs, embed/defuddle.min.js
+- Test: A1 positive: nested-native-rich-body; boundary: modern-rich-preserved. A2 positive: owned-read-view-retained; negative: quoted-article-excluded. A3 positive: complete-owned-body; negative: ambiguous-rich-body.
+- Risk: agent-decided — REQ-1–3: widen existing classic rich fixture to the observed nested article read-view. Preserve known quotation/card exclusions and reject duplicate bodies; nested native ownership differs from an arbitrary quoted article.
+
 ## Simplicity check
 - none found
 
@@ -102,3 +109,4 @@ charter: 1.1
 10. agent-decided — Guest Threads retains eighteen parseable public posts, including unrelated content, behind its login dialog; internal scrolling fetches no further replies. Read loaded source before classifying failure; a login overlay proves neither emptiness nor completeness.
 11. agent-decided — W9 fixes raw response compatibility but fails live authenticated identity: article props normalize rest_id/core/legacy into id_str/user/top-level fields. The bounded owned-article probe locates the target at ancestor props.tweet; use that observed shape rather than widening into account state.
 12. agent-decided — W10 recognizes authenticated targets and passes package/probe checks. Google yields an empty snapshot body despite its owned classic rich container; the existing focal reader returns 8,451 characters. Repair that layout while retaining unresolved pagination and membership findings.
+13. agent-decided — W11 passes fixtures but live cloning still removes the body. The target tweet contains a nested article explicitly marked twitterArticleReadView; generic nested-article removal deletes it before rich decoding. Retain this native owned view without admitting quoted cards.
