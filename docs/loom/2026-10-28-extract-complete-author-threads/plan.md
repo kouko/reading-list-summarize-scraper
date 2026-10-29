@@ -75,6 +75,13 @@ charter: 1.1
 - Test: A1 positive: normalized-rendered-source-identity; boundary: raw-and-modern-source-preserved. A3 positive: explicit-normalized-root-and-parent; negative: unknown-or-conflicting-normalized-relationship.
 - Risk: agent-decided — REQ-1,3: extend existing source-decoder fixtures for observed article props containing id_str, user.id_str and top-level legacy fields. Preserve W9 guards and bounded article scope; never interpret analytics IDs as posts or absent parent as root.
 
+### Wave 11 — Authenticated rich article body compatibility
+
+**W11-01 Preserve the owned classic X rich article body in source snapshots** after: W10-01 acceptance: 1, 3
+- Files: extraction.ts (modernXBody used by socialSnapshot), extraction.test.mjs, embed/defuddle.min.js
+- Test: A1 positive: owned-classic-rich-body; boundary: modern-rich-body-preserved. A3 positive: verified-owned-rich-container; negative: quoted-or-ambiguous-rich-body.
+- Risk: agent-decided — REQ-1,3: widen existing rich-body fixtures for the observed twitterArticleReadView/twitterArticleRichTextView layout and upstream title selector. Keep own-article identity, quotation removal and incomplete-body rejection; a readable root body does not prove full thread extent.
+
 ## Simplicity check
 - none found
 
@@ -94,3 +101,4 @@ charter: 1.1
 9. agent-decided — Authenticated experiments obtained all eleven dashboard and eighteen Japan MCP root replies through probable-spam expansion; Google remains partial. Threads followed its exact embedded cursor to two new root-owned posts, but TOP ordering does not prove unfiltered completeness.
 10. agent-decided — Guest Threads retains eighteen parseable public posts, including unrelated content, behind its login dialog; internal scrolling fetches no further replies. Read loaded source before classifying failure; a login overlay proves neither emptiness nor completeness.
 11. agent-decided — W9 fixes raw response compatibility but fails live authenticated identity: article props normalize rest_id/core/legacy into id_str/user/top-level fields. The bounded owned-article probe locates the target at ancestor props.tweet; use that observed shape rather than widening into account state.
+12. agent-decided — W10 recognizes authenticated targets and passes package/probe checks. Google yields an empty snapshot body despite its owned classic rich container; the existing focal reader returns 8,451 characters. Repair that layout while retaining unresolved pagination and membership findings.
