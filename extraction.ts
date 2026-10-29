@@ -173,13 +173,13 @@ function postPreview(own: Element): boolean {
 }
 
 function modernXBody(own: Element, url: URL): string {
-    const rich = own.querySelectorAll('[data-article-part="body"] .x-article-body');
+    const rich = own.querySelectorAll('[data-article-part="body"] .x-article-body, [data-testid="twitterArticleReadView"] [data-testid="twitterArticleRichTextView"]');
     if (rich.length === 1) {
-        const title = own.querySelector('[data-article-part="title"]');
+        const title = own.querySelector('[data-article-part="title"], [data-testid="twitter-article-title"]');
         const body = bodyMarkdown(rich[0],url);
         return substantive(body) ? [title ? '# ' + bodyMarkdown(title,url) : '',body].filter(Boolean).join('\n\n') : '';
     }
-    if (own.querySelector('[data-article-part]')) return '';
+    if (own.querySelector('[data-article-part], [data-testid="twitterArticleReadView"], [data-testid="twitterArticleRichTextView"]')) return '';
     const plain = own.querySelectorAll('[data-testid="tweetText"], [dir="auto"].whitespace-pre-wrap');
     return plain.length === 1 ? bodyMarkdown(plain[0],url) : '';
 }

@@ -215,6 +215,19 @@ test('A2 target bodies on three platforms exclude replies', async () => {
  const snapshot=socialSnapshot(rich,'https://x.com/a/status/123');
  assert.equal(snapshot.posts[0].bodyComplete,true);assert.match(snapshot.posts[0].body,/# Own long title\s+Complete authored rich body\./);assert.match(snapshot.posts[0].body,/\[Reference\]\(https:\/\/example.com\/source\)/);assert.doesNotMatch(snapshot.posts[0].body,/OUTSIDE BODY|STYLES|QUOTED BODY/);assert.deepEqual(snapshot.replyPages,[]);
  assert.equal(await extractArticle(rich,'https://x.com/a/status/123'),snapshot.posts[0].body);
+ const classic=doc('<article><a href="/a/status/123"><time>today</time></a><div data-testid="twitterArticleReadView"><h1 data-testid="twitter-article-title">Own long title</h1><div data-testid="twitterArticleRichTextView"><p>Complete authored rich body.</p><a href="https://example.com/source">Reference</a><div data-slot="embedded-tweet-frame">QUOTED BODY</div></div></div><div data-testid="tweetText">OUTSIDE BODY</div></article>');
+ classic.querySelector('article').__reactFiber$fixture={memoizedProps:{tweet:{id_str:'123',user:{id_str:'author'},full_text:'Article reference.',conversation_id_str:'123',reply_count:2}}};
+ const classicSnapshot=()=>socialSnapshot(classic,'https://x.com/a/status/123');
+ assert.equal(classicSnapshot().posts[0].bodyComplete,true);
+ assert.equal(classicSnapshot().posts[0].body,snapshot.posts[0].body);
+ assert.deepEqual(classicSnapshot().replyPages,[]);
+ const container=classic.querySelector('[data-testid="twitterArticleRichTextView"]');
+ const marker=classic.createElement('button');marker.textContent='Show more';container.append(marker);
+ assert.equal(classicSnapshot().posts[0].bodyComplete,false);marker.remove();
+ const duplicate=container.cloneNode(true);container.parentElement.append(duplicate);
+ assert.equal(classicSnapshot().posts[0].body,'');assert.equal(classicSnapshot().posts[0].bodyComplete,false);duplicate.remove();
+ container.innerHTML='';
+ assert.equal(classicSnapshot().posts[0].body,'');assert.equal(classicSnapshot().posts[0].bodyComplete,false);
 });
 test('A2/A3 explicit target previews fail while complete own bodies remain usable', async () => {
  const marker = '<a data-testid="tweet-text-show-more-link">Show more</a>';
