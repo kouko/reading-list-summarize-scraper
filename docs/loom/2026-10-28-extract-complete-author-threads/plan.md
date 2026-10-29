@@ -110,6 +110,13 @@ charter: 1.1
 - Test: A1 positive: native-replies-after-www-redirect; boundary: first-middle-equivalence. A3 positive: verified-alias-response; negative: wrong-response-owner.
 - Risk: agent-decided — REQ-1,3: extend the existing production-entry fixture with the observed bare-to-www redirect. Normalize only the established www alias and retain HTTPS, port, reply-operation, owner and cursor checks; do not broaden to unrelated hosts.
 
+### Wave 16 — Scoped direct-branch provenance
+
+**W16-01 Accept native root-owned branches without redundant per-post ancestry** after: W15-01 acceptance: 1, 3
+- Files: internal/extract/threads.go (collectSocial direct branch validation), internal/extract/threads_test.go
+- Test: A1 positive: scoped-branch-without-redundant-root; boundary: first-middle-equivalence. A3 positive: native-owner-provenance; negative: explicit-foreign-root-or-standalone-member.
+- Risk: agent-decided — REQ-1,3: extend the existing branch fixture with absent per-post root IDs observed live. Accept scoped native ownership while rejecting explicit conflicting ancestry or standalone identity; this repairs provenance only and does not settle narrative membership.
+
 ## Simplicity check
 - none found
 
@@ -134,3 +141,4 @@ charter: 1.1
 14. agent-decided — Implement proven Threads cursor ingestion before further X inference. Initial scripts remain authoritative for ownership; supplemental direct-reply pages must connect without gaps. Native TOP terminal pagination establishes that connection only; F1/F3 still require independent article verification.
 15. agent-decided — Observed X tweetDisplayType SelfThread also labels the Japan MCP resource recommendation. Neither that flag nor VerticalConversation modules prove narrative membership; do not replace the unresolved membership requirement with this display hint.
 16. agent-decided — W14 passes local first/middle tests but live canonical navigation redirects threads.com to www.threads.com. Exact pre-redirect host matching drops native replies on that navigation; same-site alias normalization is consistent with the existing social URL identity contract.
+17. agent-decided — W15 live first-entry pagination closes, then collection fails on missing per-post root IDs despite a verified native root-owned branch. Align this provenance guard with self-thread validation; retain contradictory-source rejection and unresolved semantic membership.
