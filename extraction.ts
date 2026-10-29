@@ -186,7 +186,46 @@ function modernXBody(own: Element, url: URL): string {
     return plain.length === 1 ? bodyMarkdown(plain[0],url) : '';
 }
 
-type SocialPost = {id: string; url: string; authorID: string; body: string; bodyComplete: boolean; parentID?: string | null; rootID?: string; isReply?: boolean; replyCount?: number; conversationStart?: boolean; conversationEnd?: boolean};
+function xPlainSource(value: any, own: Element, url: URL) {
+    // Rich articles have their own structured body and completeness guards.
+    if (own.querySelector('[data-article-part], [data-testid="twitterArticleReadView"], [data-testid="twitterArticleRichTextView"]')) return;
+    const note = value.note_tweet?.note_tweet_results?.result;
+    const isNote = typeof note?.text === 'string';
+    if (!isNote && typeof value.full_text === 'string' && typeof value.legacy?.full_text === 'string' && value.full_text !== value.legacy.full_text) fail('Inaccessible social target: conflicting source body');
+    const text = isNote ? note.text : value.full_text ?? value.legacy?.full_text;
+    if (typeof text !== 'string') return;
+    const links = new Map<string, string>();
+    for (const entities of [note?.entity_set,value.entities,value.legacy?.entities]) for (const entity of entities?.urls || []) {
+        if (typeof entity.url !== 'string' || !entity.url || typeof entity.expanded_url !== 'string' || !text.includes(entity.url)) continue;
+        let expanded: URL; try { expanded = new URL(entity.expanded_url); } catch { fail('Inaccessible social target: invalid source reference URL'); }
+        if (!['https:','http:'].includes(expanded.protocol)) fail('Inaccessible social target: invalid source reference URL');
+        if (links.has(entity.url) && links.get(entity.url) !== expanded.href) fail('Inaccessible social target: conflicting source body URL');
+        links.set(entity.url,expanded.href);
+        if (links.size > 5000) fail('Inaccessible social target: source snapshot limit');
+    }
+    const container = own.ownerDocument.createElement('div');
+    const append = (text: string) => text.split('\n').forEach((line,i) => {
+        if (i) container.appendChild(own.ownerDocument.createElement('br'));
+        container.appendChild(own.ownerDocument.createTextNode(line));
+    });
+    let cursor = 0;
+    while (cursor < text.length) {
+        let next = text.length, source = '';
+        for (const candidate of links.keys()) {
+            const index = text.indexOf(candidate,cursor);
+            if (index >= 0 && index < next) { next=index; source=candidate; }
+        }
+        append(text.slice(cursor,next));
+        if (!source) break;
+        const anchor = own.ownerDocument.createElement('a');
+        anchor.setAttribute('href',links.get(source)!); anchor.textContent=links.get(source)!;
+        container.appendChild(anchor); cursor=next+source.length;
+    }
+    const body = bodyMarkdown(container,url);
+    return {body,note:isNote,complete:substantive(body) && (isNote || !(value.truncated === true || value.legacy?.truncated === true))};
+}
+
+type SocialPost = {id: string; url: string; authorID: string; body: string; bodyComplete: boolean; bodySource?: 'native'; parentID?: string | null; rootID?: string; isReply?: boolean; replyCount?: number; conversationStart?: boolean; conversationEnd?: boolean};
 type SocialSequence = {rootID: string; ids: string[]; end: boolean; cursor: string | null; missingIDs: string[]};
 type ThreadsReplyPage = {postID: string; after: string; sortOrder: 'TOP'; data: any};
 type SocialObservations = {document: Document; address: string; posts: SocialPost[]; counts: [string, string][]};
@@ -309,6 +348,10 @@ export function socialSnapshot(document: Document = globalThis.document, address
             let budget = 5000;
             let position: any;
             const evidence = new Map<string, Partial<SocialPost>>();
+            const sourceBodies = new Map<string, NonNullable<ReturnType<typeof xPlainSource>>>();
+            const permalinks = new Map<string, string>();
+            const own = ownTweet(article);
+            const links = Array.from(own.querySelectorAll('a[href]'));
             const seen = new Set<any>();
             const visit = (value: any, depth = 0) => {
                 if (!value || typeof value !== 'object' || seen.has(value) || depth > 14 || --budget < 0) return;
@@ -321,11 +364,15 @@ export function socialSnapshot(document: Document = globalThis.document, address
                     && (typeof value.full_text === 'string' || typeof value.text === 'string');
                 if (typeof value.rest_id === 'string' || normalized) {
                     if (typeof value.rest_id === 'string' && typeof value.id_str === 'string' && value.rest_id !== value.id_str) fail('Inaccessible social target: conflicting source identity');
-                    const id = typeof value.rest_id === 'string' ? value.rest_id : value.id_str, own = ownTweet(article);
-                    const links = Array.from(own.querySelectorAll('a[href]'));
+                    const id = typeof value.rest_id === 'string' ? value.rest_id : value.id_str;
                     const permalink = links.find(a => new URL(a.getAttribute('href')!, url).pathname.endsWith('/status/' + id));
                     if (!permalink) return;
-                    const body = modernXBody(own,url);
+                    permalinks.set(id,new URL(permalink.getAttribute('href')!,url).href);
+                    const sourceBody = xPlainSource(value,own,url), priorBody = sourceBodies.get(id);
+                    if (sourceBody) {
+                        if (priorBody && priorBody.note === sourceBody.note && priorBody.complete && sourceBody.complete && priorBody.body !== sourceBody.body) fail('Inaccessible social target: conflicting source body');
+                        if (!priorBody || (sourceBody.note && !priorBody.note) || (sourceBody.note === priorBody.note && (sourceBody.complete || !priorBody.complete))) sourceBodies.set(id,sourceBody);
+                    }
                     const fields: Partial<SocialPost> = {authorID:posts.get(id)?.authorID,...evidence.get(id)};
                     for (const author of [userResult?.user?.rest_id,userResult?.rest_id,normalized ? value.user.id_str : undefined]) if (typeof author === 'string') {
                         if (fields.authorID !== undefined && fields.authorID !== author) fail('Inaccessible social target: conflicting source identity');
@@ -355,11 +402,9 @@ export function socialSnapshot(document: Document = globalThis.document, address
                         fields.parentID=parent;
                     }
                     evidence.set(id,fields);
-                    if (fields.authorID) add({id,url:new URL(permalink.getAttribute('href')!,url).href,body,
-                        bodyComplete:substantive(body) && !postPreview(own),...fields} as SocialPost);
                 }
                 // Props only; avoid React owner/DOM back references and functions.
-                for (const [key, child] of Object.entries(value)) if (!['children','_owner','ref'].includes(key)) visit(child,depth+1);
+                for (const [key, child] of Object.entries(value)) if (!['children','_owner','ref','quoted_status_result','quoted_status'].includes(key)) visit(child,depth+1);
             };
             for (let i=0; fiber && i<30; i++, fiber=fiber.return) {
                 visit(fiber.memoizedProps || fiber.pendingProps);
@@ -368,6 +413,16 @@ export function socialSnapshot(document: Document = globalThis.document, address
                 let hook=fiber.memoizedState;
                 for (let j=0; hook && j<20; j++, hook=hook.next) visit(hook.memoizedState?.snapshot?.data);
                 visit(fiber.updateQueue?.memoCache?.data);
+            }
+            // Decide the owned body once after joining metadata fragments; a
+            // later identity-only fragment cannot reassert flattened DOM text.
+            for (const [id,fields] of evidence) if (fields.authorID) {
+                const source = sourceBodies.get(id), prior = posts.get(id);
+                const retained = prior?.bodySource === 'native' && prior.bodyComplete
+                    && !own.querySelector('[data-article-part], [data-testid="twitterArticleReadView"], [data-testid="twitterArticleRichTextView"]') ? prior : undefined;
+                const body = source?.body ?? retained?.body ?? modernXBody(own,url);
+                add({id,url:permalinks.get(id)!,body,bodySource:source || retained ? 'native' : undefined,
+                    bodyComplete:(source?.complete ?? retained?.bodyComplete ?? substantive(body)) && !postPreview(own),...fields} as SocialPost);
             }
         }
         for (const post of posts.values()) {
