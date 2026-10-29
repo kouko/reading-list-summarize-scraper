@@ -215,7 +215,7 @@ func collectSocial(address string, limit int, fetch func(string) (socialSnapshot
 			}
 			for _, id := range b.IDs {
 				p, ok := posts[id]
-				if !ok || p.AuthorID != posts[root].AuthorID || p.RootID != root {
+				if !ok || p.AuthorID != posts[root].AuthorID || (p.RootID != "" && p.RootID != root) {
 					return "", fail("unproven direct author branch")
 				}
 				ids = append(ids, id)

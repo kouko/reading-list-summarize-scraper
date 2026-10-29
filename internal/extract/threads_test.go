@@ -45,7 +45,6 @@ func TestCompleteSocialThread(t *testing.T) {
 				q.Body = "second"
 				q.BodyComplete = true
 				r.URL = "https://www.threads.com/@author/post/three"
-				r.RootID = "1"
 				r.Body = "author supplement"
 				target := "1"
 				if strings.HasSuffix(address, "/two") {
