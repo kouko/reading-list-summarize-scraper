@@ -529,3 +529,77 @@ The source decoder now handles modern nested-user records, raw GraphQL legacy re
 The actual Google article places its original body inside a nested `article[data-testid="twitterArticleReadView"]`. Generic nested-article quotation removal deleted that body before decoding. The fix retains the explicit native owned read-view while continuing to remove quoted cards and arbitrary nested articles. Live snapshot verification now returns a complete focal body of 8,487 characters including its title, SHA-256 `a797588cb7ebcbd60f49e7bca959613edbdab7047f82ab27ac26c5b786575c42`. Removing the title yields exactly the existing focal reader's 8,451-character result, SHA-256 `f39b90fe6c5739074f9c38238d2c825b37e448212f1bfb6d652f4903929a56f1`. This is a focal-body comparison with an existing reader, not independent complete-thread acceptance.
 
 Verification: test-first RED/GREEN evidence for W9–W12 is retained in local `rlss-w9-*` through `rlss-w12-*` logs. The focused JavaScript suite passes all 19 tests. Trunk sync reports current origin/main already contained; the full `go test ./...` suite passes at the final functional revision (`/private/tmp/rlss-w12-package-suite.log`). The unchanged earned conflicting-root program passes (`/private/tmp/rlss-w12-adversarial.jsonl`). Final bundle generation is reproducible and the W12 complete diff whitespace check passes. No new independent acceptance success, standalone-social success, real summary-provider verification or resolution of F1/F3 is claimed.
+
+
+## Build iteration: native Threads reply pagination (2026-10-29)
+
+Scope: orchestrator integration verification at functional HEAD
+`812242a486d9f5195b89faf432178f4e4fcef488`. This is not a replacement
+independent acceptance report or a closing-review verdict. F1 and F3 remain
+open; the previous sixteen-entry acceptance matrix was not rerun.
+
+W13 joins supplemental native reply responses only when request post ID,
+previous cursor and response media-info owner match the initial source.
+W14 observes those first-party responses in bounded memory while scrolling
+existing containers within the original attempt deadline. No requests are
+replayed and no headers or credentials are retained. W15 preserves these
+responses across the observed bare-to-www redirect, with port and other
+response checks unchanged. W16 accepts absent per-post ancestry only within
+a verified root-owned branch; explicit conflicting ancestry and standalone
+identity remain failures. This proves source provenance, not narrative
+membership.
+
+Live production-entry runs used the previously authorized isolated Chrome
+site-session copy, temporary configuration, temporary executable and output,
+with summarization disabled. The original browser, configuration, notes,
+executable and running production process were untouched.
+
+- Before W15, the first entry failed with direct reply pagination incomplete.
+- After W15, both first and middle entries reached the next guard and failed
+  with unproven direct author branch; native source omitted redundant
+  per-post root IDs despite a verified root-owned connection.
+- After W16, both entries exit 0, Success 1, Failed 0. They produce identical
+  bodies containing five distinct source URLs exactly once, in the same order.
+- Group: Threads AI colleague, first `DW4Dy96FBAP`, middle `DW4D1bfFPUj`.
+  Ordered members: `DW4Dy96FBAP`, `DW4D1bfFPUj`, `DW4D2SNlP5l`,
+  `DW4D3LAFCCD`, `DW4D361FIv7`.
+- Each caption hash equals the corresponding earlier research-source caption;
+  character lengths are 321, 291, 349, 230 and 345. No trailing extra body
+  remains. Combined-body SHA-256 is
+  `86f73cd0e2198c40346625245817891d4ffe925c8ff59a1432c7ad8d85c3125c`.
+- The reader-branch author response `DW5dImTlBe6` is absent. This exact
+  comparison is research verification, not independent approval of generic
+  narrative membership or exhaustive TOP reply-filter semantics.
+
+Local evidence: `/private/tmp/rlss-w14-native-live/w16-comparison.json`,
+`first/cli-w16.log`, `middle/cli-w16.log`, with corresponding isolated output
+files. No article captions or session data are committed here.
+
+Verification at W16:
+
+- W13–W16 focused tests each observed RED before the minimal implementation
+  and GREEN afterward. W15's real TLS fixture redirects bare host to www;
+  W16 extends the existing first/middle branch fixture without its redundant
+  member root ID. Existing wrong-owner and contradictory-source negatives pass.
+- Trunk sync: HEAD already contains origin/main
+  `8e37f33e252337dc5f2727631b35460eb7086066`; no sync commit.
+- Complete `go test ./...`: PASS,
+  `/private/tmp/rlss-w16-package-suite.log`.
+- Direct `npm test`: PASS, `/private/tmp/rlss-w16-javascript-tests.log`;
+  run directly because Go's cached package result does not track JS inputs.
+- Unchanged adversarial program
+  `go test -json internal/extract/probes/conflicting_root_test.go`: PASS,
+  `/private/tmp/rlss-w16-adversarial.jsonl`. Probe SHA-256 remains
+  `9d9389bfa8bac64f8c41829e9a2dcc02626f7ae7de2faf30bf813c380536489f`.
+- Source diff whitespace checks pass. Complete cumulative diff check still
+  reports two pre-existing third-party string whitespace locations in the
+  regenerated bundle; no generated string was manually altered. Bundle SHA-256
+  remains `7e315b2cd558cf885d5785f5f8afa2dad062f3fa3a72b00986bd17220a954eaf`,
+  unchanged since the reproducible W13 generation.
+
+Unresolved: X source pagination/virtualized snapshots, complete first/middle
+source comparisons for all mandatory groups, and source-grounded distinction
+between an article continuation and a separate same-author recommendation.
+Native SelfThread display metadata also marks the observed Japan MCP resource
+recommendation and cannot resolve that distinction by itself. No independent
+acceptance pass, final review round, attestation, publication or merge is claimed.
