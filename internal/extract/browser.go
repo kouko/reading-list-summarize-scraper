@@ -111,7 +111,7 @@ func (b *Browser) extractSocial(ctx context.Context, address, jsCode string, wai
 				switch e := ev.(type) {
 				case *network.EventResponseReceived:
 					u, err := url.Parse(e.Response.URL)
-					if err != nil || u.Scheme != "https" || u.Host != member.Host || u.Path != "/api/graphql" || e.Response.Status != 200 || (e.Type != network.ResourceTypeXHR && e.Type != network.ResourceTypeFetch) {
+					if err != nil || u.Scheme != "https" || strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.") != strings.TrimPrefix(strings.ToLower(member.Hostname()), "www.") || u.Port() != member.Port() || u.Path != "/api/graphql" || e.Response.Status != 200 || (e.Type != network.ResourceTypeXHR && e.Type != network.ResourceTypeFetch) {
 						return
 					}
 					ev = e.RequestID // Retain no headers or unrelated response metadata.

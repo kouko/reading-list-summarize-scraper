@@ -86,6 +86,10 @@ func TestBrowserExtractThreadsNativeReplies(t *testing.T) {
 	terminal := map[string]any{"edges": []any{}, "page_info": map[string]any{"has_next_page": false, "end_cursor": nil}}
 	source, _ := json.Marshal(map[string]any{"data": map[string]any{"post": root, "connection": map[string]any{"id": "XDTTextPostAppMediaInfo:1", "self_thread": map[string]any{"posts": map[string]any{"edges": []any{map[string]any{"node": mid}}, "page_info": map[string]any{"has_next_page": false, "end_cursor": nil}}, "post_ids": map[string]any{"edges": []any{map[string]any{"node": map[string]any{"pk": "2"}}}}}, "direct_replies": map[string]any{"edges": []any{}, "page_info": map[string]any{"has_next_page": true, "end_cursor": "next"}}}}})
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.Host, "threads.com:") {
+			http.Redirect(w, r, "https://www."+r.Host+r.URL.RequestURI(), http.StatusFound)
+			return
+		}
 		if r.URL.Path == "/api/graphql" {
 			owner := "XDTTextPostAppMediaInfo:1"
 			if r.URL.Query().Get("bad") == "true" {
@@ -97,7 +101,7 @@ func TestBrowserExtractThreadsNativeReplies(t *testing.T) {
 		fmt.Fprintf(w, `<body><div style="height:100px;overflow:auto"><section style="height:3000px">fixture</section></div><script type="application/json">%s</script><script>let sent=false;document.addEventListener('scroll',()=>{if(sent)return;sent=true;fetch('/api/graphql?bad='+location.search.includes('bad'),{method:'POST',body:new URLSearchParams({variables:JSON.stringify({postID:'1',after:'next',sortOrder:'TOP',first:4})})})},true)</script></body>`, source)
 	}))
 	defer server.Close()
-	b := newTestBrowser(t, chromedp.Flag("host-resolver-rules", "MAP threads.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"), chromedp.Flag("no-proxy-server", true), chromedp.Flag("ignore-certificate-errors", true))
+	b := newTestBrowser(t, chromedp.Flag("host-resolver-rules", "MAP threads.com 127.0.0.1, MAP www.threads.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"), chromedp.Flag("no-proxy-server", true), chromedp.Flag("ignore-certificate-errors", true))
 	base := strings.Replace(server.URL, "127.0.0.1", "threads.com", 1)
 	// Canonical source permalinks omit the fixture's random TLS port.
 	js := assets.DefuddleJS + `;const nativeSnapshot=window.socialSnapshot;window.socialSnapshot=(pages=[])=>{const s=nativeSnapshot(pages);for(const p of s.posts)p.url=p.url.replace('https://threads.com',location.origin);return s}`
