@@ -103,6 +103,13 @@ charter: 1.1
 - Test: A1 positive: native-replies-through-browser-entry; boundary: first-middle-source-equivalence. A3 positive: verified-page-delivered; negative: wrong-owner-or-unresolved-page. A4 positive: existing-social-and-ordinary-dispatch; boundary: shared-attempt-deadline.
 - Risk: agent-decided — REQ-1,3–4: widen browser_test.go using isolated intercepted hosts. Observe only first-party reply requests; keep headers out of captures and all data in bounded memory. Scroll existing containers within the attempt deadline; preserve X, retry and challenge behavior.
 
+### Wave 15 — Native response host aliases
+
+**W15-01 Retain same-site reply responses after the observed www redirect** after: W14-01 acceptance: 1, 3
+- Files: internal/extract/browser.go (Browser.Extract native response filter), internal/extract/browser_test.go
+- Test: A1 positive: native-replies-after-www-redirect; boundary: first-middle-equivalence. A3 positive: verified-alias-response; negative: wrong-response-owner.
+- Risk: agent-decided — REQ-1,3: extend the existing production-entry fixture with the observed bare-to-www redirect. Normalize only the established www alias and retain HTTPS, port, reply-operation, owner and cursor checks; do not broaden to unrelated hosts.
+
 ## Simplicity check
 - none found
 
@@ -126,3 +133,4 @@ charter: 1.1
 13. agent-decided — W11 passes fixtures but live cloning still removes the body. The target tweet contains a nested article explicitly marked twitterArticleReadView; generic nested-article removal deletes it before rich decoding. Retain this native owned view without admitting quoted cards.
 14. agent-decided — Implement proven Threads cursor ingestion before further X inference. Initial scripts remain authoritative for ownership; supplemental direct-reply pages must connect without gaps. Native TOP terminal pagination establishes that connection only; F1/F3 still require independent article verification.
 15. agent-decided — Observed X tweetDisplayType SelfThread also labels the Japan MCP resource recommendation. Neither that flag nor VerticalConversation modules prove narrative membership; do not replace the unresolved membership requirement with this display hint.
+16. agent-decided — W14 passes local first/middle tests but live canonical navigation redirects threads.com to www.threads.com. Exact pre-redirect host matching drops native replies on that navigation; same-site alias normalization is consistent with the existing social URL identity contract.
