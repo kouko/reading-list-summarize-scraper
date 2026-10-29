@@ -44,22 +44,29 @@ charter: 1.1
 
 **W6-01 Establish X direct-reply extent from exact source counts** after: W5-01 acceptance: 1, 3, 4
 - Files: extraction.ts (socialSnapshot X producer), extraction.test.mjs, embed/defuddle.min.js
-- Test: A1 positive: exact-direct-child-count; A3 negative: missing-direct-child; A4 positive: bounded-complete-X-source.
+- Test: A1 positive: exact-direct-child-count; boundary: unknown-parent. A3 positive: exact-direct-child-count; negative: missing-direct-child. A4 positive: bounded-complete-X-source; negative: invalid-reply-count.
 - Risk: agent-decided — REQ-1,3–4: require exact nonnegative source counts and unique explicit direct children within one snapshot. Unknown or mismatched counts, display-group endings and timeline termination remain insufficient. Existing incomplete live samples remain failures.
 
 ### Wave 7 — Consistent reply-count evidence
 
 **W7-01 Reject contradictory reply counts across collection** after: W6-01 acceptance: 2, 3
 - Files: internal/extract/threads.go (collectSocial), internal/extract/threads_test.go
-- Test: A3 negative: contradictory-count-observations; A2 positive: reader-branch-excluded.
+- Test: A3 positive: consistent-count-observations; negative: contradictory-count-observations. A2 positive: reader-branch-excluded; negative: unrelated-author-branch.
 - Risk: agent-decided — REQ-2–3: reject changing explicit counts and counts smaller than known distinct direct children before accepting terminal evidence. Preserve unknown fields and source membership rules; correct the existing zero-count reader fixture without changing its exclusion assertion.
 
 ### Wave 8 — Production social dispatch coverage
 
 **W8-01 Exercise social browser behavior through Browser.Extract** after: W7-01 acceptance: 3, 4
 - Files: internal/extract/browser_test.go (TestBrowserExtractSocialCompleteOnly and existing browser helper)
-- Test: A3 negative: incomplete-social-entry; A4 positive: production-social-dispatch.
+- Test: A3 positive: complete-social-entry; negative: incomplete-social-entry. A4 positive: production-social-dispatch; negative: incomplete-social-entry.
 - Risk: agent-decided — REQ-3–4: move existing social assertions through the production entry using an isolated intercepted social hostname. Preserve ordinary extraction and remove superseded helper calls; use no production profile, external page requests or new production configuration.
+
+### Wave 9 — Authenticated X source compatibility
+
+**W9-01 Decode both observed public X post schemas without inventing ancestry** after: W8-01 acceptance: 1, 3
+- Files: extraction.ts (socialSnapshot X source decoder), extraction.test.mjs, embed/defuddle.min.js
+- Test: A1 positive: authenticated-legacy-source-identity; boundary: modern-source-preserved. A3 positive: explicit-source-parent-or-root; negative: unknown-or-conflicting-source-relationship.
+- Risk: agent-decided — REQ-1,3: widen extraction.test.mjs for authenticated legacy fields; preserve modern fixtures. Matching conversation_id_str establishes the root only without contradictory ancestry; absent fields remain unknown. Pagination and narrative membership remain unresolved.
 
 ## Simplicity check
 - none found
@@ -73,6 +80,9 @@ charter: 1.1
 2. agent-decided — Navigation may expose previews, unavailable members or incomplete lists; use bounded retries and fail without replacing existing outputs. A successful short extraction is insufficient evidence of completeness.
 3. agent-decided — Reuse the existing JavaScript test harness, register it in the declared Go package suite, and regenerate the embedded bundle deterministically. Run tasks sequentially, then independent adversary, complete package tests and independent acceptance.
 4. agent-decided — No paid service, new account, bulk rewrite or PR24 merge is authorized or necessary; use reversible isolated development and leave production profiles, configuration, notes and running process untouched.
-5. agent-decided — Acceptance F1 remains open: the observed public X guest timeline termination does not establish exhaustive author membership, and Threads AI-colleague direct pagination remains pending. Preserve failed acceptance until permitted complete source evidence is available.
-6. agent-decided — X selects partial conversation branches (https://help.x.com/en/resources/recommender-systems/conversations-recommendations); counts measure direct replies (https://help.x.com/en/using-x/x-conversations). Dashboard reports eleven direct replies but exposes two explicit direct children. Termination and module tip IDs do not prove author completeness.
+5. agent-decided — Acceptance F1 remains open: authenticated source progress does not repair product pagination or establish complete narrative membership. Preserve failed acceptance until all groups have permitted complete-source evidence and product verification.
+6. agent-decided — X selects partial conversation branches (https://help.x.com/en/resources/recommender-systems/conversations-recommendations); counts measure direct replies (https://help.x.com/en/using-x/x-conversations). Guest dashboard exposes two of eleven direct children. Termination and module tip IDs do not prove author completeness.
 7. agent-decided — Closing review also leaves source-grounded narrative membership unresolved: author identity plus reply ancestry may include a separate resource recommendation. Exact reply counts prove extent, not article membership. Retain this blocker alongside F1; do not weaken confirmed guarantees.
+8. user-decided — Existing Chrome website sessions may be reused through an isolated read-only copy for source experiments. The original browser stays open and unchanged; no credentials or account data enter committed evidence. Product profile selection is unchanged.
+9. agent-decided — Authenticated experiments obtained all eleven dashboard and eighteen Japan MCP root replies through probable-spam expansion; Google remains partial. Threads followed its exact embedded cursor to two new root-owned posts, but TOP ordering does not prove unfiltered completeness.
+10. agent-decided — Guest Threads retains eighteen parseable public posts, including unrelated content, behind its login dialog; internal scrolling fetches no further replies. Read loaded source before classifying failure; a login overlay proves neither emptiness nor completeness.
