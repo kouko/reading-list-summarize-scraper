@@ -1,4 +1,4 @@
-# 將作者串文合併成完整文章
+# 作者串文計畫：先釋出 X 指定貼文擷取
 originator: kouko
 kind: product
 needs-design: yes — This changes which posts belong to a saved article and what counts as complete extraction, including recovery from a middle post and rejection of incomplete or unrelated conversation content.
@@ -24,7 +24,7 @@ kouko 的既有閱讀筆記有些只包含作者分段發文中的一部分，�
 - 開發與驗證使用隔離設定、瀏覽器資料、執行檔及輸出，保留正式設定、筆記與執行中的程序。
 
 ## Value case
-受益者是使用閱讀清單產生文章筆記的 kouko。本次已逐篇開啟一百零一個已處理網址，確認八組串文且部分舊正文漏段；繼續只取得單篇內容，無法解決已觀察到的缺文。現有替代方式是逐篇開啟原頁與回覆人工核對，本次查核已付出這項工作。本輪優先處理已確認的串文案例，其他平台與其他擷取能力不納入。GO — 已有具體來源、漏段證據及明確的使用者實作要求。
+受益者是使用閱讀清單產生文章筆記的 kouko。先前逐篇查核確認完整串文擷取仍有缺文與文章歸屬問題；目前已可從 X 的指定貼文與長文取得可核對的內文。先交付清楚標示範圍的單篇內容，讓 X 可以使用，同時避免把未完成的完整串文當成成功。GO — 使用者接受先釋出此範圍，完整串文需求保留至後續。
 
 ## Out of scope
 - X 與 Threads 以外平台的串文。

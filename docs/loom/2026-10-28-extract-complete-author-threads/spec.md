@@ -1,4 +1,4 @@
-# Complete author threads — spec
+# X specified-post extraction — staged release spec
 intent: 2026-10-28-extract-complete-author-threads@183b82f
 confirmed-behavior: 2026-10-30 — user accepted the explicit X specified-post stage; original full-thread behavior remains deferred
 pre-build-review: required — Source identity, complete focal bodies, scope labels and replacement of saved content affect the article contract; experimental thread assembly must not be reachable in this stage.

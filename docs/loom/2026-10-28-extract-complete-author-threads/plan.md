@@ -1,4 +1,4 @@
-# Extract complete author threads — plan
+# X specified-post staged release — plan
 intent: 2026-10-28-extract-complete-author-threads@183b82f
 spec: docs/loom/2026-10-28-extract-complete-author-threads/spec.md@5b4361e
 charter: 1.1
