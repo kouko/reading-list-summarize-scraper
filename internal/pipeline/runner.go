@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
+	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 	"github.com/kouko/reading-list-summarize-scraper/internal/output"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
 	"github.com/kouko/reading-list-summarize-scraper/internal/summarize"
@@ -198,7 +199,7 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 	}
 
 	// ── 3. Resume detection ──
-	// Social caches cannot prove whole-thread completeness; revalidate them live.
+	// Social caches cannot prove the current delivered scope; revalidate live.
 	// Other content-only caches retain their existing summary-resume behavior.
 	var markdown string
 	info := p.index.Get(sha8)
@@ -388,6 +389,11 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 	var embedContent string
 	if p.config.Summary.EmbedContent {
 		embedContent = markdown
+	}
+	// The saved scope is program-owned, independent of generated wording and
+	// present even when the summary does not embed the source content.
+	if authorThreadTarget(item.URL) {
+		summaryText = extract.SocialScopeNotice + "\n\n[Source](" + item.URL + ")\n\n" + summaryText
 	}
 
 	summaryDoc := output.AssembleSummary(output.SummaryParams{

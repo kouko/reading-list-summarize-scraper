@@ -26,6 +26,8 @@ type stubExtractor struct {
 	retryErr error
 }
 
+const verifiedXPost = "<!-- rlss-social-v1 {\"platform\":\"x\",\"target\":\"123\",\"scope\":\"single_post\",\"source\":\"https://x.com/example/status/123\",\"body_sha256\":\"c812fbdf9231507e1a89c6af5f8ea00dec5d8ed83663e72ce93bf53911d805f6\"} -->\nOnly the specified X post was extracted; author follow-up replies are not included.\n\nThe target post explains how workers exchange files.\n\n[Source](https://x.com/example/status/123)"
+
 const verifiedTranscript = `<!-- rlss-video-v1 {"platform":"youtube","target":"abc","language":"ja","source":"automatic","evidence":"original-audio-asr-association"} -->` + "\n\nSubtitle language: ja\nSubtitle source: automatic\n\n今日は字幕について話します。"
 
 func (s *stubExtractor) UsesHeaded(string) bool { return s.headed }
@@ -56,7 +58,10 @@ func TestProcessItemWithFallback(t *testing.T) {
 		{"video description", stubExtractor{headed: true, first: "A description without subtitles"}, "", []string{"initial"}, true, false},
 		{"video metadata only", stubExtractor{headed: true, first: strings.Split(transcript, "今日は")[0]}, "", []string{"initial"}, true, false},
 		{"video wrong target", stubExtractor{headed: true, first: transcript}, "", []string{"initial"}, true, false},
-		{"social body", stubExtractor{first: "The target post explains how workers exchange files."}, "The target post explains how workers exchange files.", []string{"initial"}, false, false},
+		{"social body", stubExtractor{first: "The target post explains how workers exchange files."}, "", []string{"initial", "headed"}, true, false},
+		{"social verified", stubExtractor{first: verifiedXPost}, verifiedXPost, []string{"initial"}, false, false},
+		{"social retry", stubExtractor{first: "preview", retry: verifiedXPost}, verifiedXPost, []string{"initial", "headed"}, false, true},
+		{"social wrong marker", stubExtractor{headed: true, first: strings.Replace(verifiedXPost, `"target":"123"`, `"target":"456"`, 1)}, "", []string{"initial"}, true, false},
 		{"specialized challenge disabled", stubExtractor{firstErr: errors.New("Inaccessible social target: Cloudflare CAPTCHA"), retry: "article"}, "", []string{"initial"}, true, true},
 		{"load error", stubExtractor{firstErr: loadErr, retry: "article"}, "article", []string{"initial", "headed"}, false, false},
 		{"pagination retry replaces partial body", stubExtractor{first: "partial first attempt", firstErr: fmt.Errorf("pagination page 2: %w", loadErr), retry: "page one\n\npage two\n\npage three"}, "page one\n\npage two\n\npage three", []string{"initial", "headed"}, false, false},
@@ -88,7 +93,7 @@ func TestProcessItemWithFallback(t *testing.T) {
 					rawURL = "https://youtu.be/other"
 				}
 			}
-			if tt.name == "social body" || tt.name == "specialized challenge disabled" {
+			if strings.HasPrefix(tt.name, "social ") || tt.name == "specialized challenge disabled" {
 				rawURL = "https://x.com/example/status/123"
 			}
 			err := p.ProcessItem(source.ReadingItem{URL: rawURL})

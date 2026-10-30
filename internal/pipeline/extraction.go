@@ -95,6 +95,9 @@ func validateTargetContent(rawURL, content string) error {
 	if err := extract.ValidateContent(content); err != nil {
 		return err
 	}
+	if authorThreadTarget(rawURL) {
+		return extract.ValidateSocialContent(rawURL, content)
+	}
 	platform, target := videoTarget(rawURL)
 	if platform == "" {
 		return nil

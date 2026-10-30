@@ -1,14 +1,103 @@
 package extract
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 )
+
+// SocialScopeNotice is written by the program into content and summaries.
+const SocialScopeNotice = "Only the specified X post was extracted; author follow-up replies are not included."
+
+const socialMarkerPrefix = "<!-- rlss-social-v1 "
+
+type socialProvenance struct {
+	Platform   string `json:"platform"`
+	Target     string `json:"target"`
+	Scope      string `json:"scope"`
+	Source     string `json:"source"`
+	BodySHA256 string `json:"body_sha256"`
+}
+
+var xStatusPath = regexp.MustCompile(`^/(?:[^/]+/status|i/web/status)/([0-9]+)/?$`)
+
+func xTarget(address string) (*url.URL, string) {
+	u, err := url.Parse(address)
+	if err != nil || u.Scheme != "https" || u.User != nil {
+		return nil, ""
+	}
+	host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+	if host != "x.com" && host != "twitter.com" {
+		return nil, ""
+	}
+	match := xStatusPath.FindStringSubmatch(u.Path)
+	if match == nil {
+		return nil, ""
+	}
+	return u, match[1]
+}
+
+// Snapshot bodies are owned-source verified. Conversation extent and ancestry
+// are deliberately irrelevant to this explicitly single-post result.
+func focalSocial(address string, snapshot socialSnapshot) (string, error) {
+	requested, target := xTarget(address)
+	fail := func() (string, error) {
+		return "", fmt.Errorf("Inaccessible social target: verified complete specified X post unavailable")
+	}
+	if requested == nil || snapshot.Version != 1 || snapshot.Platform != "x" || snapshot.TargetID != target {
+		return fail()
+	}
+	var chosen *socialPost
+	for _, p := range snapshot.Posts {
+		if p.ID != target {
+			continue
+		}
+		source, id := xTarget(p.URL)
+		if chosen != nil || source == nil || id != target || source.Port() != requested.Port() || p.AuthorID == "" || !p.BodyComplete || ValidateContent(p.Body) != nil || !HasArticleBody(p.Body) {
+			return fail()
+		}
+		copy := p
+		chosen = &copy
+	}
+	if chosen == nil {
+		return fail()
+	}
+	marker, _ := json.Marshal(socialProvenance{Platform: "x", Target: target, Scope: "single_post", Source: chosen.URL, BodySHA256: fmt.Sprintf("%x", sha256.Sum256([]byte(chosen.Body)))})
+	content := socialMarkerPrefix + string(marker) + " -->\n" + SocialScopeNotice + "\n\n" + chosen.Body + "\n\n[Source](" + chosen.URL + ")"
+	return content, ValidateSocialContent(address, content)
+}
+
+// ValidateSocialContent binds the adapter's exact body and source to the
+// requested post. Legacy caches cannot supply an unlabelled success.
+func ValidateSocialContent(address, content string) error {
+	fail := func() error {
+		return fmt.Errorf("Inaccessible social target: missing or invalid target-bound single-post provenance")
+	}
+	requested, target := xTarget(address)
+	if requested == nil {
+		return fail()
+	}
+	line, body, ok := strings.Cut(content, "\n")
+	var p socialProvenance
+	if !ok || !strings.HasPrefix(line, socialMarkerPrefix) || !strings.HasSuffix(line, " -->") || json.Unmarshal([]byte(strings.TrimSuffix(strings.TrimPrefix(line, socialMarkerPrefix), " -->")), &p) != nil || p.Platform != "x" || p.Target != target || p.Scope != "single_post" {
+		return fail()
+	}
+	source, id := xTarget(p.Source)
+	if source == nil || id != target || source.Port() != requested.Port() || !strings.HasPrefix(body, SocialScopeNotice+"\n\n") || !strings.HasSuffix(body, "\n\n[Source]("+p.Source+")") {
+		return fail()
+	}
+	body = strings.TrimSuffix(strings.TrimPrefix(body, SocialScopeNotice+"\n\n"), "\n\n[Source]("+p.Source+")")
+	if p.BodySHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(body))) || !HasArticleBody(body) {
+		return fail()
+	}
+	return ValidateContent(body)
+}
 
 type socialPost struct {
 	ID           string          `json:"id"`

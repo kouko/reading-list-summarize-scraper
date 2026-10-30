@@ -60,8 +60,22 @@ func TestBrowserExtractSocialCompleteOnly(t *testing.T) {
 	js := `window.extractArticle=()=>document.querySelector('article').textContent;
 window.socialSnapshot=()=>({version:1,platform:'x',targetID:'1',posts:[{id:'1',url:location.href,authorID:'a',body:'verified article',bodyComplete:true,parentID:null,replyCount:0}]})`
 	body, err := b.Extract(socialURL, js, 20*time.Second, 0)
-	if err != nil || body != "verified article\n\n[Source]("+socialURL+")" {
+	if err != nil || !strings.Contains(body, "Only the specified X post") || !strings.HasPrefix(body, "<!-- rlss-social-v1 ") || !strings.HasSuffix(body, "verified article\n\n[Source]("+socialURL+")") {
 		t.Fatalf("social: %q, %v", body, err)
+	}
+	paginated, err := b.ExtractPaginated(socialURL, js, "a.next", 4, 20*time.Second, 0)
+	if err != nil || paginated != body {
+		t.Fatalf("pagination bypass: %q %v", paginated, err)
+	}
+	for _, invalid := range []string{strings.Replace(socialURL, "https:", "http:", 1), strings.TrimSuffix(socialURL, "1")} {
+		got, invalidErr := b.Extract(invalid, js, 20*time.Second, 0)
+		if invalidErr == nil || got != "" || !strings.Contains(invalidErr.Error(), "valid HTTPS X status") || strings.Contains(invalidErr.Error(), "Threads") {
+			t.Fatalf("invalid X identity: %q %v", got, invalidErr)
+		}
+	}
+	body, err = b.Extract(socialURL, strings.Replace(js, "targetID:'1'", "targetID:'2'", 1), 20*time.Second, 0)
+	if err == nil || body != "" {
+		t.Fatalf("wrong target: %q %v", body, err)
 	}
 	body, err = b.Extract(socialURL, strings.Replace(js, "bodyComplete:true", "bodyComplete:false", 1), 20*time.Second, 0)
 	if err == nil || body != "" {
@@ -107,7 +121,21 @@ func TestBrowserExtractThreadsNativeReplies(t *testing.T) {
 	js := assets.DefuddleJS + `;const nativeSnapshot=window.socialSnapshot;window.socialSnapshot=(pages=[])=>{const s=nativeSnapshot(pages);for(const p of s.posts)p.url=p.url.replace('https://threads.com',location.origin);return s}`
 	var firstBody string
 	for _, entry := range []string{"ROOT", "MID", "ROOT?bad"} {
-		body, err := b.Extract(base+"/@writer/post/"+entry, js, 10*time.Second, 0)
+		for _, paginated := range []bool{false, true} {
+			var denied string
+			var deniedErr error
+			if paginated {
+				denied, deniedErr = b.ExtractPaginated(base+"/@writer/post/"+entry, js, "a.next", 4, 10*time.Second, 0)
+			} else {
+				denied, deniedErr = b.Extract(base+"/@writer/post/"+entry, js, 10*time.Second, 0)
+			}
+			if deniedErr == nil || denied != "" || !strings.Contains(deniedErr.Error(), "deferred") {
+				t.Fatalf("Threads production bypass: %q %v", denied, deniedErr)
+			}
+		}
+		ctx, cancel := context.WithTimeout(b.ctx, 10*time.Second)
+		body, err := b.extractSocial(ctx, base+"/@writer/post/"+entry, js, 0)
+		cancel()
 		if strings.Contains(entry, "bad") {
 			if err == nil || body != "" {
 				t.Fatalf("wrong owner: %q, %v", body, err)
@@ -138,11 +166,21 @@ addEventListener('scroll',()=>{if(scrolled)return;scrolled=true;root.remove();if
 	base := strings.Replace(server.URL, "127.0.0.1", "x.com", 1)
 	var first string
 	for _, entry := range []string{"1", "2", "1?missing"} {
+		focal, focalErr := b.Extract(base+"/author/status/"+entry, assets.DefuddleJS, 10*time.Second, 0)
+		want, excluded := "First section.", "Second section."
+		if entry == "2" {
+			want, excluded = excluded, want
+		}
+		if focalErr != nil || !strings.Contains(focal, want) || strings.Contains(focal, excluded) || strings.Contains(focal, "Reader excluded.") || !strings.Contains(focal, SocialScopeNotice) {
+			t.Fatalf("production focal %s: %q %v", entry, focal, focalErr)
+		}
 		timeout := 10 * time.Second
 		if strings.Contains(entry, "missing") {
 			timeout = 2 * time.Second
 		}
-		body, err := b.Extract(base+"/author/status/"+entry, assets.DefuddleJS, timeout, 0)
+		ctx, cancel := context.WithTimeout(b.ctx, timeout)
+		body, err := b.extractSocial(ctx, base+"/author/status/"+entry, assets.DefuddleJS, 0)
+		cancel()
 		if strings.Contains(entry, "missing") {
 			if body != "" || err == nil {
 				t.Fatalf("unresolved count: %q, %v", body, err)

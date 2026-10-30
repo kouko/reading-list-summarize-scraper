@@ -189,3 +189,56 @@ func TestCompleteSocialThread(t *testing.T) {
 
 func jsonParent(s string) []byte { return []byte(s) }
 func intPointer(n int) *int      { return &n }
+
+func TestFocalSocialSnapshot(t *testing.T) {
+	address := "https://x.com/author/status/2"
+	for _, kind := range []string{"plain", "rich", "wrong-target", "preview", "empty", "wall", "foreign-url", "scheme", "port", "duplicate", "threads"} {
+		t.Run(kind, func(t *testing.T) {
+			p := socialPost{ID: "2", URL: address, AuthorID: "a", Body: "Owned text.\n\n[Reference](https://example.org)", BodyComplete: true}
+			s := socialSnapshot{Version: 1, Platform: "x", TargetID: "2", Posts: []socialPost{{ID: "1", Body: "Excluded previous post"}, p, {ID: "3", Body: "Excluded next post"}}}
+			switch kind {
+			case "rich":
+				s.Posts[1].Body = "# Owned title\n\nEntire owned rich article."
+			case "wrong-target":
+				s.TargetID = "1"
+			case "preview":
+				s.Posts[1].BodyComplete = false
+			case "empty":
+				s.Posts[1].Body = ""
+			case "wall":
+				s.Posts[1].Body = "Please sign in to read the full article."
+			case "foreign-url":
+				s.Posts[1].URL = "https://example.org/author/status/2"
+			case "scheme":
+				s.Posts[1].URL = "http://x.com/author/status/2"
+			case "port":
+				s.Posts[1].URL = "https://x.com:9999/author/status/2"
+			case "duplicate":
+				s.Posts = append(s.Posts, p)
+			case "threads":
+				s.Platform = "threads"
+			}
+			body, err := focalSocial(address, s)
+			if kind != "plain" && kind != "rich" {
+				if err == nil || body != "" {
+					t.Fatalf("accepted %s: %q %v", kind, body, err)
+				}
+				return
+			}
+			if err != nil || strings.Contains(body, "Excluded") || !strings.Contains(body, s.Posts[1].Body) {
+				t.Fatalf("focal %q %v", body, err)
+			}
+			if err := ValidateSocialContent(address, body); err != nil {
+				t.Fatal(err)
+			}
+			for _, invalid := range []string{strings.Replace(body, "single_post", "complete_thread", 1), strings.Replace(body, "Owned", "Changed", 1), strings.Replace(body, "Only the specified X post", "All posts", 1), strings.TrimPrefix(body, strings.Split(body, "\n")[0]+"\n")} {
+				if ValidateSocialContent(address, invalid) == nil {
+					t.Fatalf("invalid provenance accepted: %q", invalid)
+				}
+			}
+			if ValidateSocialContent("https://x.com/author/status/3", body) == nil {
+				t.Fatal("wrong target accepted")
+			}
+		})
+	}
+}

@@ -50,10 +50,16 @@ func TestProcessItemRejectsCachedWall(t *testing.T) {
 	}
 }
 
-type recordingSummary struct{ bodies []string }
+type recordingSummary struct {
+	bodies []string
+	result *summarize.SummarizeResult
+}
 
 func (s *recordingSummary) Summarize(body string, _ summarize.SummarizeOptions) (summarize.SummarizeResult, error) {
 	s.bodies = append(s.bodies, body)
+	if s.result != nil {
+		return *s.result, nil
+	}
 	return summarize.SummarizeResult{}, errors.New("summary unavailable")
 }
 
@@ -88,6 +94,9 @@ func TestProcessItemSocialCache(t *testing.T) {
 				}
 			}
 			s := &stubExtractor{first: "Verified complete author article", retry: "Verified complete author article"}
+			if tt.name == "verified-social-resume" {
+				s.first, s.retry = verifiedXPost, verifiedXPost
+			}
 			if tt.fail {
 				s.firstErr = errors.New("Inaccessible social target: Cloudflare CAPTCHA")
 				s.retryErr = s.firstErr
@@ -404,5 +413,72 @@ func TestIsBlockedPage_MultiLanguage(t *testing.T) {
 		if extract.IsBlockedPage(c) {
 			t.Errorf("isBlockedPage should NOT flag a normal article: %q", c)
 		}
+	}
+}
+
+func TestProcessItemFocalScope(t *testing.T) {
+	for _, kind := range []string{"summary", "embedded-summary", "unlabelled", "wrong-target", "thread-scope", "changed-body", "missing-notice", "threads"} {
+		t.Run(kind, func(t *testing.T) {
+			url := "https://x.com/example/status/123"
+			body := verifiedXPost
+			switch kind {
+			case "unlabelled":
+				body = "An unverified legacy cached body."
+			case "wrong-target":
+				body = strings.Replace(body, `"target":"123"`, `"target":"456"`, 1)
+			case "thread-scope":
+				body = strings.Replace(body, `"scope":"single_post"`, `"scope":"complete_thread"`, 1)
+			case "changed-body":
+				body = strings.Replace(body, "workers exchange files", "someone else's post", 1)
+			case "missing-notice":
+				body = strings.Replace(body, extract.SocialScopeNotice, "", 1)
+			case "threads":
+				url = "https://www.threads.com/@example/post/abc"
+			}
+			cfg := config.DefaultConfig()
+			cfg.OutputDir = t.TempDir()
+			cfg.Pipeline.SkipExisting = false
+			cfg.Summary.Keywords.Enabled = false
+			cfg.Summary.Mermaid.Enabled = false
+			cfg.Summary.EmbedContent = kind == "embedded-summary"
+			cfg.Extract.MinContentLength = 0
+			item := source.ReadingItem{URL: url, Title: "Focal post"}
+			out := filepath.Join(cfg.OutputDir, output.DomainDir(url))
+			if err := os.MkdirAll(out, 0755); err != nil {
+				t.Fatal(err)
+			}
+			now, sha := time.Now(), output.SHA8(url)
+			contentPath, summaryPath := filepath.Join(out, output.ContentFilename(now, sha)), filepath.Join(out, output.SummaryFilename(now, sha))
+			for path, text := range map[string]string{contentPath: "---\ntype: reading-list-content\n---\n\nOld body", summaryPath: "Old summary"} {
+				if err := os.WriteFile(path, []byte(text), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			s := &stubExtractor{first: body, retry: body}
+			sum := &recordingSummary{result: &summarize.SummarizeResult{Text: "Generated summary without any scope notice.", Provider: "fixture", Model: "fixture"}}
+			err := New(&cfg, s, sum).ProcessItem(item)
+			good := kind == "summary" || kind == "embedded-summary"
+			if !good {
+				if err == nil || IsPartial(err) || len(sum.bodies) != 0 {
+					t.Fatalf("invalid extraction summarized: %v %v", err, sum.bodies)
+				}
+				for path, want := range map[string]string{contentPath: "---\ntype: reading-list-content\n---\n\nOld body", summaryPath: "Old summary"} {
+					got, readErr := os.ReadFile(path)
+					if readErr != nil || string(got) != want {
+						t.Fatalf("existing file changed: %q %v", got, readErr)
+					}
+				}
+				return
+			}
+			if err != nil || len(sum.bodies) != 1 || sum.bodies[0] != verifiedXPost {
+				t.Fatalf("verified summary failed: %v %v", err, sum.bodies)
+			}
+			for _, path := range []string{contentPath, summaryPath} {
+				got, readErr := os.ReadFile(path)
+				if readErr != nil || !strings.Contains(string(got), extract.SocialScopeNotice) || !strings.Contains(string(got), "[Source]("+url+")") {
+					t.Fatalf("missing scope/source: %q %v", got, readErr)
+				}
+			}
+		})
 	}
 }

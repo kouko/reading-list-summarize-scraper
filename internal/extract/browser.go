@@ -71,7 +71,7 @@ func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, wait
 	ctx, cancel = context.WithTimeout(ctx, timeout)
 	defer cancel()
 	if isSocialPostURL(url) {
-		return b.extractSocial(ctx, url, jsCode, waitAfterLoad)
+		return b.extractFocalSocial(ctx, url, jsCode, waitAfterLoad)
 	}
 
 	var content string
@@ -94,6 +94,29 @@ func isSocialPostURL(address string) bool {
 	}
 	host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
 	return ((host == "x.com" || host == "twitter.com") && strings.Contains(u.Path, "/status/")) || ((host == "threads.com" || host == "threads.net") && strings.Contains(u.Path, "/post/"))
+}
+
+// Production social extraction intentionally never invokes thread assembly.
+func (b *Browser) extractFocalSocial(ctx context.Context, address, jsCode string, waitAfterLoad time.Duration) (string, error) {
+	if _, target := xTarget(address); target == "" {
+		u, _ := url.Parse(address)
+		if u != nil {
+			host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+			if host == "threads.com" || host == "threads.net" {
+				return "", fmt.Errorf("Inaccessible social target: Threads extraction is deferred; complete thread delivery is unavailable")
+			}
+		}
+		return "", fmt.Errorf("Inaccessible social target: a valid HTTPS X status URL is required")
+	}
+	var snapshot socialSnapshot
+	err := chromedp.Run(ctx,
+		chromedp.Navigate(address), chromedp.WaitVisible(`body`, chromedp.ByQuery), chromedp.Sleep(waitAfterLoad), chromedp.Evaluate(jsCode, nil),
+		chromedp.Evaluate(`(async()=>{try{return window.socialSnapshot()}catch(sourceError){try{await window.extractArticle()}catch(classifiedError){throw classifiedError}throw sourceError}})()`, &snapshot, func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) }),
+	)
+	if err != nil {
+		return "", err
+	}
+	return focalSocial(address, snapshot)
 }
 
 // Every member uses this attempt's tab and deadline. The walker returns no
@@ -328,6 +351,9 @@ func loadThreadsReplies(ctx context.Context, events <-chan any, snapshot socialS
 // markdown. Only a complete sequence returns content; failures, unusable
 // continuations, loops and a cap with remaining pages return an error.
 func (b *Browser) ExtractPaginated(startURL, jsCode, nextSelector string, maxPages int, timeout, waitAfterLoad time.Duration) (string, error) {
+	if isSocialPostURL(startURL) {
+		return b.Extract(startURL, jsCode, timeout, waitAfterLoad)
+	}
 	metadataJS := `(function(){
 var links=Array.from(document.querySelectorAll('link[rel~=first],a[rel~=first],link[rel~=prev],a[rel~=prev]'));
 var canonical=document.querySelector('link[rel~=canonical]');
