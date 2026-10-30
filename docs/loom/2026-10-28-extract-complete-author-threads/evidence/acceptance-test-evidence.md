@@ -748,3 +748,215 @@ F1/F3 remain open, including the admission of same-author non-narrative branches
 on Threads. A staged release still needs implemented scope controls and fresh
 independent acceptance of that exact behavior. This is feasibility evidence only,
 not a closing-review round, acceptance pass, publication or merge approval.
+
+## Archived prior acceptance report — preserved verbatim on 2026-10-30
+
+The following report describes the original full-thread contract, not this staged
+release. Its failures and unresolved F1/F3 findings remain historical/deferred;
+nothing below is reclassified as passing by the staged acceptance.
+
+# 將作者串文合併成完整文章 — 驗收結果
+
+於 2026-10-28 在最新版本的全新隔離副本重測；四組 Threads 的首篇與中段正文相同且來源連結完整，其餘四組仍失敗，另有資源推薦可能混入正文的未解問題，尚未通過驗收。
+逐項操作與結果：`docs/loom/2026-10-28-extract-complete-author-threads/evidence/acceptance-test-evidence.md`。
+
+## 逐項驗收
+
+| # | 你要求的結果 | 判定 | 實際結果 | 重測 |
+|---|---|---|---|---|
+| 1 | 已確認的三組 X 與五組 Threads 樣本均能交付完整文章；同一組樣本的首篇與中段網址均對應完整且順序一致的正文。 | fails | 四組 Threads 共八個入口通過來源逐段核對；三組 X 與另一組 Threads 共八個入口失敗。 | re-tested |
+| 2 | 組合內容只包含同一篇文章的作者正文與續文，保留原有內容順序，同一篇貼文不重複收錄，不混入讀者留言、作者回覆讀者的對話、引用貼文或推薦文章。 | partly | 成功文章可逐段核對；但同作者的資源推薦回覆仍可能被當成續文，未證明能排除。 | re-tested |
+| 3 | 無法確認目標、續文關係或完整正文時，不把缺段、預覽、登入或驗證畫面交付為完整文章的成功結果；擷取失敗時保留既有正文與摘要。 | partly | 實測失敗均未交付正文，舊檔保持不變；但尚未證明能拒絕文章歸屬不明的資源型回覆。 | re-tested |
+| 4 | 既有單篇貼文、長文及一般文章仍正常擷取，原有瀏覽器重試與驗證頁設定效果維持正常。 | partly | 一般文章實際成功、重試及驗證設定測試通過；獨立單篇社群貼文與社群長文的實際成功仍未證實。 | re-tested |
+| 5 | 從首篇處理完整串文 | partly | 四組成功取得完整正文，各篇來源連結均保留一次；另四組失敗。 | re-tested |
+| 6 | 從中段恢復完整文章 | partly | 四組成功文章與首篇正文逐位元相同，且保留各自儲存身分；另四組失敗。 | re-tested |
+| 7 | 排除非文章內容並避免重複 | partly | 成功文章逐段核對無多收或漏收；資源型回覆排除與兩個相似的 X 段落仍未證實。 | re-tested |
+| 8 | 進度顯示與一般重試 | works | 實際執行顯示進度，無視窗失敗後改用有視窗；明確指定有視窗的單次行為測試通過。 | re-tested |
+| 9 | 驗證頁重試開關 | works | 開關關閉時不重試驗證頁，開啟時允許重試；導航及空正文仍重試，相關測試通過。 | re-tested |
+| 10 | 目標或正文不存在 | works | 目標錯誤、預覽與登入畫面的拒絕測試通過，實際失敗命令回傳非零結果。 | re-tested |
+| 11 | 串文不完整或關係不明 | partly | 實際完整範圍或分頁不明的入口失敗並保留舊檔；資源型回覆是否屬於文章的拒絕仍未證實。 | re-tested |
+| 12 | 已有正文但沒有摘要 | works | 測試確認社群舊正文須先重新擷取，失敗不啟動摘要，且保留舊檔。 | re-tested |
+| 13 | 啟用摘要 | partly | 測試確認摘要接收已驗證正文，摘要失敗維持部分完成；未呼叫外部摘要服務驗證完整串文。 | re-tested |
+| 14 | 完成筆記與明確重新處理 | works | 完成項目略過、強制重抓及失敗保留通過測試，實際明確重抓未覆寫舊檔。 | re-tested |
+| 15 | 批次與持續監看 | works | 實際監看兩輪均在首項失敗後繼續處理第二項，下一輪會重試失敗項，等待及退出正常；結果分類測試通過。 | re-tested |
+| 16 | 無項目或僅預覽 | works | 實際無項目及僅預覽命令正常退出，未產生新正文或摘要。 | re-tested |
+| 17 | 既有獨立內容 | partly | 一般文章實際成功，社群單篇的機械測試通過；社群獨立長文實際成功仍未證實。 | re-tested |
+| 18 | 隔離驗證八組樣本 | works | 十六個入口全部實際嘗試，原頁保存在暫存區；成功四組已核對來源全文，失敗組未宣稱通過。 | re-tested |
+
+## 對你既有的資料做了什麼
+
+未讀取或改寫正式筆記、設定、瀏覽器帳號資料、執行檔或既有執行程序；所有擷取輸出及瀏覽器資料均在暫存區。另建立測試用舊正文與摘要，實際重抓失敗後兩者雜湊完全不變。正式使用時，明確重新處理成功仍會依原有規則替換該網址正文；失敗保留原正文及摘要，不會自動批次遷移或重寫舊筆記。
+
+## 代你決定的事項
+
+- **沿用既有擷取流程** — 不另建爬蟲或帳號索引；日後換方案須重新驗證擷取與儲存邊界。
+- **以明確來源關係認定續文** — 不以同作者、相鄰位置、時間或編號推測，避免混入讀者對話；變更標準須重新驗證所有樣本。
+- **先找開頭並走完整串文** — 缺篇、預覽、分頁不明、循環或超出既有限制便失敗，不截短交付；限制未放寬。
+- **不把未看到續文當成單篇證明** — 仍需足夠來源證據；這次無法證明完整的入口保留失敗。
+- **只在來源回覆數與已確認的直接回覆數相符時確認範圍** — 不把畫面到底當成全部已讀完；三組 X 樣本仍不足以通過，沒有降低成功標準。
+- **以貼文身分去重** — 相似文字的不同貼文保留各自身分，兩個相似的 X 段落尚未宣稱通過。
+- **保留作者內文連結但不展開外部內容** — 引用卡、推薦與回覆讀者的對話不能自動變成文章；本次成功輸出已逐篇補齊來源連結。
+- **保留輸入網址的儲存身分** — 首篇與中段不合併或刪除彼此筆記；將來若合併須另訂資料遷移。
+- **重查社群舊正文** — 明確或強制重抓先驗證來源，正常批次略過完成筆記；其他快取流程維持原樣。
+- **沿用摘要及結果分類** — 不完整正文不送摘要，摘要失敗仍屬部分完成；本次只使用隔離測試接收摘要輸入，未呼叫外部服務。
+- **沿用既有瀏覽器與時間限制** — 無新增付費服務、帳號、代理、登入或檔案格式；驗證資料均隔離。
+- **保留另一項未合併工作的原狀** — 僅沿用本次必要的新版頁面處理方式，未修改或合併其他待審工作。
+- **永久證據只留必要資訊** — 原頁及全文僅留暫存；提交來源網址、貼文身分、數量、雜湊與核對結果。
+- **沿用既有測試工具並保留邊界測試** — 驗證完整性、瀏覽器重試、儲存及摘要邊界；完整測試套件由正式結案檢查執行並在失敗時阻止接受。
+- **拒絕互相矛盾的來源關係** — 已修復的衝突歸屬問題未被擱置，相關回歸測試納入本次判讀。
+- **維持順序驗證與獨立查核** — 本次驗收不修產品，也不以既有研究或實作結果代替來源證據；沒有被忽略的重要或致命發現。
+- **保留文章歸屬的阻擋問題** — 同作者且有回覆關係，不代表資源推薦就是文章續文；這項致命缺口尚未解決，也沒有被忽略。回覆數量相符只能證明已知回覆範圍，不能代替文章歸屬判斷。
+
+## 你要求略過的步驟
+
+無；沒有依指示略過任何步驟。完整測試套件交由正式結案檢查執行，本次只跑各項驗收所需的測試。
+
+## 尚未確定是否符合你期待的地方
+
+無新增產品選擇問題；目前仍需要解決未成功的四組樣本與資源型作者回覆的文章歸屬，並補證社群單篇、社群長文及外部摘要的實際流程，才能宣稱全部完成。
+
+## Re-run on 2026-10-30, at 885d99d — independent staged acceptance
+
+Fresh detached worktree: /private/tmp/rlss-acceptance-885d99d.
+All 4 current Acceptance criteria and all 10 active staged UI flows re-tested.
+No earlier full-thread passes carried forward. No dismissed important/fatal
+finding supplied by closing-review. Original full-thread failures are deferred.
+
+### Setup and focused commands
+
+- README setup: `env GOCACHE=/private/tmp/rlss-acceptance-885d99d-cache make` — exit 0; npm dependencies, esbuild bundle, Go executable built. Initial default Go cache sandbox restriction was resolved by an isolated cache, with no product change.
+- `env GOCACHE=/private/tmp/rlss-acceptance-885d99d-cache go test ./internal/pipeline ./internal/extract ./cmd/rlss -run 'Test(ProcessItem|ProcessBatchFailedPagination|ExtractionRejects|Pool|BrowserExtract|FocalSocialSnapshot|ClassifyResult|Stats_Partial|ApplyFilters)' -count=1 -v` — PASS, three packages; output /private/tmp/rlss-acceptance-885d99d-focused.log.
+- `node --test --test-name-pattern='A1|A2|A3|A4|social' extraction.test.mjs extraction-boundaries.test.mjs` — PASS 20 focused tests, fail 0; /private/tmp/rlss-acceptance-885d99d-js.log. Full npm/package suite not run by this witness.
+- Actual CLI form: `env CHROME_CONFIG_HOME=/private/tmp/rlss-thread-pagination-authclone-20261029/chrome-config ./rlss --config acceptance.yaml url <retained-target> --no-summary`. Isolated user_data_dir points only to the explicitly authorized cloned session; output_dir /private/tmp/rlss-acceptance-885d99d-output.
+- Independent source observer copied from /private/tmp/rlss-pagination-observer.go to temporary /private/tmp/rlss-acceptance-observer.go; bundle path changed to clean worktree, added public DOM-only capture command. No credential file read/printed. No replay command used. Commands xgoogle, independent, source, quit; captures /private/tmp/rlss-acceptance-885d99d-source.
+- Local fixture scripts: /private/tmp/rlss-acceptance-{compare,flows,summary,failures}.py. All inputs, profiles, outputs and configuration temporary.
+
+### Independent source body comparison
+
+Plain source bodies come from sanitized native API records in
+/private/tmp/rlss-x-dashboard-w19-body-shapes/network-public-records.json,
+/private/tmp/rlss-x-mcp-w19-sort-source/network-public-records.json and
+/private/tmp/rlss-staged-20261030-headless/network-public-records.json.
+Rich source is fresh independent DOM innerText/HTML, not the product snapshot.
+Comparison normalizes Markdown wrappers, whitespace, expanded authored links and
+native media shortlinks. Rich prose diff is examined explicitly, not accepted
+merely because a completeness flag is true. Hashes below identify source prose,
+not expected product hashes. Full captured article text stays temporary.
+
+| Target | Independent source | Saved body characters | Source prose SHA256 | Result |
+|---|---|---:|---|---|
+| 2056894667413958907 | native API public body | 953 | 171c6aac4111b93a6bad7b4c3bea092ba23f621487b381ab46899122ec957b22 | Native prose match after Markdown, media and expanded-link normalization |
+| 2038872366743502989 | native API public body | 1092 | e1ebec6d2d24f238a1ecbb173bab6fd44c9c3706f3333455b1a5f94dd3800542 | Native prose match after Markdown, media and expanded-link normalization |
+| 2039372826311098624 | native API public body | 391 | 6caa1ba71655b2429d10bf546fdbdf87e49db82a71255fb46a67be40b2c1558e | Native prose match after Markdown, media and expanded-link normalization |
+| 2056894400320708671 | rich DOM | 8474 | 2a6725caa7cd44b739b7d961f879b52085f9865c8f55878855b39c265a338b12 | All source prose in order; title, 8 ordered-list markers, 6 headings and 13 image identities retained |
+| 2039372810053967953 | native API public body | 405 | b2a12e3b3a20c333a8f3cb128ee4342970139afe179061d86cf6d098efd3c5ee | Native prose match after Markdown, media and expanded-link normalization |
+| 2038872379066327076 | native API public body | 755 | 9009bdfc699f0f570606b998762ea51f113d1be322cf61b0917684859d33367f | Native prose match after Markdown, media and expanded-link normalization |
+
+Source comparison artifact: /private/tmp/rlss-acceptance-885d99d-source-comparison.json.
+All six URLs from retained sample table were actually executed; five plain
+comparisons pass; rich differences are accounted for by independent title and
+list DOM, with no missing, reordered or extra source prose. Other posts visible
+in source are not appended. Quote/recommendation adversarial fixtures pass.
+
+### 1. Current Acceptance 1
+
+- Re-tested: Actual clean CLI --no-summary runs for all six retained X first/middle URLs: exit 0, Success 1, Failed 0 each. Five plain posts compared independently to sanitized first-party API bodies; Google long article compared to fresh DOM captured independently (not socialSnapshot.bodyComplete or a product-derived expected hash).
+
+### 2. Current Acceptance 2
+
+- Re-tested: Each actual content contains SocialScopeNotice and exact target Source link. Actual local openai-compatible fixture returns prose deliberately lacking scope: one request; request includes scope, saved summary includes fixed notice and Source. JS target-body/rich/quote fixtures pass. Production social normal/headed/paginated guards pass focused browser tests.
+
+### 3. Current Acceptance 3
+
+- Re-tested: All ten retained Threads first/middle URLs tried (alternating normal/explicit --headed), exit 1 with deferred error; paired sentinel content and summary SHA256 unchanged. Missing X /status/1 actual exit 1 after retry. Focused wrong target, preview, empty, wall, altered marker/body, legacy cache and no-summary-on-failure tests pass.
+
+### 4. Current Acceptance 4
+
+- Re-tested: Actual ordinary example.com extraction exit 0. Synthetic Safari batch, dry-run, empty input and two watch cycles performed. Focused video original-language/cue validation, skip/force/cache, retry and challenge-policy tests pass. Full package suite deliberately not run by witness; package-tests and finalize-review are not skipped; automated suite runs before acceptance and blocks failure.
+
+### 5. Active UI flow: X 首篇、中段或獨立貼文
+
+- Re-tested: Six actual X runs and independent target comparison above; first/middle target identities and source hashes differ. Standalone body, newline and authored-link JS fixtures passed.
+
+### 6. Active UI flow: X 長文
+
+- Re-tested: Fresh observer independent command captures native DOM rich innerText and HTML. Saved article has all source prose in order. Diff against innerText consists only of separately rendered title and eight semantic ordered-list markers; DOM has exactly eight li elements. Title found in outer article text. All 13 source image URLs match saved images after size-name normalization; six body headings plus title saved.
+
+### 7. Active UI flow: 暫緩 Threads
+
+- Re-tested: All ten Threads actual CLI failures preserve both sentinel files; configured a.next/max_pages:4 cannot enable assembly. Browser.Extract / ExtractPaginated production entry fixture rejects Threads; X production entry yields only focal even with author replies.
+
+### 8. Active UI flow: 缺少或無法確認指定正文
+
+- Re-tested: Actual unavailable target fails and saves no replacement. Browser target mismatch/preview/challenge and pipeline corrupt marker/body/cache/wall fixtures passed; existing files checked by tests.
+
+### 9. Active UI flow: 重試與驗證頁限制
+
+- Re-tested: Actual unavailable target logs headless attempt plus one headed retry. Focused TestProcessItemWithFallback and TestPool* prove explicit headed single attempt, headed_on_block false blocks challenge retry, navigation/empty still retry. Configured pagination selector/headed true actual X run succeeds focal-only. Domain-rule mode precedence remains existing behavior (a pagination-only rule defaults headed false); final headed pagination rerun explicitly sets headed:true.
+
+### 10. Active UI flow: 啟用摘要
+
+- Re-tested: Actual CLI configured normal local openai-compat endpoint on 127.0.0.1 ephemeral port; fixture has no scope prose. requests=1, scope_in_request=true, saved_scope_notice=true, saved_source_link=true, fixture_prose_saved=true, exit=0. No external or paid LLM called. TestProcessItemFocalScope summary/embedded-summary and partial classification pass.
+
+### 11. Active UI flow: 既有筆記與明確重抓
+
+- Re-tested: Ten sentinel pairs unchanged on failure; focused TestProcessItemSocialCache completed-skip/completed-force/verified-social-resume/dry-run and invalid-scope preservation pass. Explicit URL actual summary re-extracts X even with saved content present.
+
+### 12. Active UI flow: 批次、持續監看、僅預覽及空輸入
+
+- Re-tested: Synthetic temporary plist contains Threads first then example.com. Batch Total2 Success1 Failed1 continues after failure. Actual watch two cycles at 11:07 and 11:08 each retry failed Threads and process second item; SIGINT sleep exit normal. Dry run Total2 Skipped2 and no extraction; empty plist logs no items and exits 0. No production Reading Lists read.
+
+### 13. Active UI flow: 其他內容擷取
+
+- Re-tested: Actual example.com saves ordinary body. Focused JS YouTube identity/original-language/blank automatic fallback/malformed or truncated cue tests pass; focused browser pagination tests pass. This is fixture validation for video, not new live YouTube witness.
+
+### 14. Active UI flow: 隔離驗證
+
+- Re-tested: Detached clean worktree at 885d99d. README make run, npm install + bundle + Go build complete with temporary GOCACHE (first default-cache sandbox write denied; rerun works). Authenticated browser uses only explicitly authorized temporary cloned profile and CHROME_CONFIG_HOME. All outputs temporary. No product source/test/probe edits. Original full-thread F1/F3 still unresolved, deferred and unreachable in stage, not counted as fixed/pass.
+
+### Captured actual results and boundaries
+
+- /private/tmp/rlss-acceptance-885d99d-x1.log and cli-0.log through cli-6.log; cli-results.json: all six X success, Threads failure, ordinary success.
+- /private/tmp/rlss-acceptance-885d99d-failure-proof.json: ten Threads exit1, deferred=true, files_unchanged=true, including first/middle of all five retained groups.
+- /private/tmp/rlss-acceptance-885d99d-x-headed-pagination-confirmed.log: headed:true plus configured selector; Success1 Failed0.
+- /private/tmp/rlss-acceptance-885d99d-threads-pagination.log: deferred failure; no assembly.
+- /private/tmp/rlss-acceptance-885d99d-missing-target.log: Failed1 exit1, headless attempt plus headed retry.
+- /private/tmp/rlss-acceptance-885d99d-summary-proof.json and summary.log: actual local fixture result; all booleans true, external_service_called=false.
+- /private/tmp/rlss-acceptance-885d99d-{batch,watch,dryrun,empty}.log: actual CLI evidence, synthetic plist only.
+- No paid/external summary service witness, no logged-out availability guarantee, no live YouTube claim, no full-thread acceptance claim.
+- Closing-review reports package-tests/finalize-review enabled. Root's separate uncached suite/probe results are integration evidence, not substituted for this witness's actual CLI/source evidence.
+
+## Re-run on 2026-10-30, at 6900a92 — final test-only revision
+
+- Fresh detached clean worktree: /private/tmp/rlss-acceptance-6900a92.
+- Inspected exact 885d99d..6900a92 diff: only internal/extract/browser_test.go
+  and internal/extract/threads_test.go changed. Runtime source, bundle, CLI,
+  configuration, output and documentation are unchanged. Private focal helper
+  duplicate tests were removed; corresponding negatives now exercise the
+  Browser.Extract production entry. Therefore all fourteen behavior rows retain
+  the prior actual CLI/source evidence rather than pretending live cases were
+  repeated on this revision.
+- README setup repeated: env GOCACHE=/private/tmp/rlss-acceptance-final-cache make
+  — exit 0. Evidence /private/tmp/rlss-acceptance-6900a92-make.log.
+- Focused check repeated:
+  env GOCACHE=/private/tmp/rlss-acceptance-final-cache go test ./internal/extract ./internal/pipeline -run 'Test(BrowserExtractSocialCompleteOnly|ProcessItemFocalScope|ProcessItemSocialCache|ProcessItemWithFallback|ProcessBatchFailedPaginationPreservesFiles|ExtractionRejectsObservedWalls|Pool)' -count=1 -v
+  — PASS both packages, including the changed Browser.Extract negatives for wrong
+  target, preview, foreign source host, wrong source post/port, missing author,
+  empty body and login body. Saved summary scope, invalid marker/body preservation,
+  social cache, forced refresh, retry and challenge policy checks also PASS.
+  Evidence /private/tmp/rlss-acceptance-6900a92-focused.log.
+- 1–4 (current Acceptance): carried over — inspected test-only diff changes no
+  delivered behavior; original six X source comparisons, scoped local-fixture
+  summary, ten Threads preservation checks and existing-flow evidence remain valid.
+- 5–14 (all active staged UI flows): carried over — the same test-only diff changes
+  no runtime path or output. Original actual source/CLI evidence is retained in
+  rows 5–14 above. New production-entry negatives were independently re-run as
+  additional evidence, not substituted for source completeness.
+- No new live cases, external summary service, full package suite or product fix
+  performed by this witness. Package-tests and finalize-review remain enabled;
+  the automated suite runs before acceptance and blocks acceptance on failure.
+- No important/fatal finding dismissed. Historical full-thread F1/F3 remain
+  unresolved and deferred; production assembly remains unavailable.
+- README npm install causes only package-lock package-name dirt in the differently
+  named temporary directory; excluded from acceptance commit. Generated bundle
+  matches committed bundle. Only report and evidence are committed.
