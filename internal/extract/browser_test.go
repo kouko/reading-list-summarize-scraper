@@ -73,13 +73,20 @@ window.socialSnapshot=()=>({version:1,platform:'x',targetID:'1',posts:[{id:'1',u
 			t.Fatalf("invalid X identity: %q %v", got, invalidErr)
 		}
 	}
-	body, err = b.Extract(socialURL, strings.Replace(js, "targetID:'1'", "targetID:'2'", 1), 20*time.Second, 0)
-	if err == nil || body != "" {
-		t.Fatalf("wrong target: %q %v", body, err)
-	}
-	body, err = b.Extract(socialURL, strings.Replace(js, "bodyComplete:true", "bodyComplete:false", 1), 20*time.Second, 0)
-	if err == nil || body != "" {
-		t.Fatalf("preview: %q, %v", body, err)
+	for _, invalid := range []struct{ name, from, to string }{
+		{"wrong target", "targetID:'1'", "targetID:'2'"},
+		{"preview", "bodyComplete:true", "bodyComplete:false"},
+		{"foreign source host", "url:location.href", "url:'https://example.org/author/status/1'"},
+		{"wrong source post", "url:location.href", "url:location.href.replace('/status/1','/status/2')"},
+		{"wrong source port", "url:location.href", "url:location.href.replace(location.port,'1')"},
+		{"missing author", "authorID:'a'", "authorID:''"},
+		{"empty body", "body:'verified article'", "body:''"},
+		{"login body", "body:'verified article'", "body:'Please sign in to read the full article.'"},
+	} {
+		body, err = b.Extract(socialURL, strings.Replace(js, invalid.from, invalid.to, 1), 20*time.Second, 0)
+		if err == nil || body != "" {
+			t.Fatalf("%s accepted: %q %v", invalid.name, body, err)
+		}
 	}
 	body, err = b.Extract(socialURL, `window.socialSnapshot=()=>{throw Error('missing target')};window.extractArticle=()=>{throw Error('Cloudflare security challenge')}`, 20*time.Second, 0)
 	if err == nil || body != "" || !strings.Contains(err.Error(), "Cloudflare") {
