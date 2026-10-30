@@ -711,3 +711,40 @@ Verification at the final functional revision:
 F1/F3 remain open. No fresh independent sixteen-entry acceptance pass,
 closing-review round, attestation, publication, merge or production deployment
 is implied by this scoped source verification.
+
+
+### Staged-release feasibility verification — 2026-10-30
+
+Scope: verify existing safeguards and authenticated focal-post acquisition before
+claiming a smaller release is possible. No product behavior, configuration,
+production output or confirmed full-thread acceptance condition was changed.
+
+- Fresh uncached complete package suite: PASS,
+  `/private/tmp/rlss-staged-20261030-package-suite.log`.
+- Unmodified conflicting-root adversarial probe: PASS,
+  `/private/tmp/rlss-staged-20261030-adversarial.jsonl`.
+- Current branch already contains origin/main; trunk sync added no commit.
+- Actual current bundled `socialSnapshot` was exercised serially in authenticated
+  headless and headed Chrome using the existing isolated profile. Target IDs:
+  `2039372810053967953`, `2038872366743502989`, `2056894400320708671`.
+  Both modes returned each focal target with `bodyComplete: true`. The first two
+  bodies match byte-for-byte (405 and 1092 Unicode characters, including Markdown).
+  Google I/O is 8474 versus 8487 characters: all differences are thirteen verified
+  `pbs.twimg.com/media` image URL `name=small` versus `name=medium` parameters;
+  text and image identities match. Normalizing only those parameters makes the
+  bodies identical. This is not an independent original-source completeness audit.
+- Captures: `/private/tmp/rlss-staged-20261030-{headless,headed}`;
+  target hashes and comparison:
+  `/private/tmp/rlss-staged-20261030-comparison.json`.
+  The temporary observer gained a headless flag; repository executable source
+  and generated bundle were not changed. Original Chrome was not modified.
+
+These three cases do not require headed acquisition once authenticated. They
+establish neither logged-out support nor full-thread completeness. Existing
+public CLI still routes X/Threads status URLs through complete-thread collection;
+there is no explicit single-post/long-article release mode or output scope label.
+No failed complete thread may silently become a successful single-post article.
+F1/F3 remain open, including the admission of same-author non-narrative branches
+on Threads. A staged release still needs implemented scope controls and fresh
+independent acceptance of that exact behavior. This is feasibility evidence only,
+not a closing-review round, acceptance pass, publication or merge approval.

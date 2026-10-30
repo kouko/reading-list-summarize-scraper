@@ -3,7 +3,37 @@ intent: 2026-10-28-extract-complete-author-threads@183b82f
 confirmed-behavior: 2026-10-28 @6c5aee3
 pre-build-review: required — Thread membership, source completeness and replacement of saved content affect the article contract; unrelated replies and cached partial bodies must not become successful articles.
 
+## Staged release — confirmed 2026-10-30
+
+The user accepted releasing X focal-post/long-article extraction first, with an
+explicit notice that subsequent author replies are excluded. Full X and Threads
+thread assembly is deferred, not an automatic fallback or a successful complete
+article. This section and REQ-1–4 below govern this release. The original sample
+audit and design below remain historical/deferred requirements; their complete
+thread UI flows are not shipped or represented as accepted.
+
+Agent-decided — Make this release's X behavior fixed and explicit in its saved
+content and summary, without adding an experimental full-thread configuration
+switch. Unverified complete-thread collection must be unreachable from normal,
+headed and paginated production entry points. Retain its isolated regression
+coverage for later work. Threads post processing fails clearly as deferred;
+completed-note skips remain unchanged. Do not silently downgrade a failed thread.
+
 ## Requirements
+REQ-1 — Complete specified X post or long article
+  WHEN an X/Twitter status URL is processed, the scraper shall save only the verified complete body belonging to that exact target, including source line breaks, authored reference URLs and owned rich article content. First and middle URLs intentionally produce their respective posts, not equivalent whole-thread bodies. Unknown conversation extent must not block a verified focal body → Acceptance #1
+
+REQ-2 — Explicit delivered scope and exclusions
+  WHEN a focal X post succeeds, both its content note and any generated summary shall visibly state that only the specified post was extracted and author follow-up replies are not included; retain its target source link, exclude other posts, reader replies, quoted bodies and recommendations, and do not claim full-thread success. Full X/Threads thread collection is unavailable in production entry points for this stage → Acceptance #2
+
+REQ-3 — Honest failures and preserved files
+  IF target identity or complete focal body cannot be established, or a Threads post is processed in this deferred stage, THEN report extraction failure, do not use legacy social cache or generic page extraction to bypass the scope checks, start no summary and preserve existing body and summary files. Login/verification pages, previews, mismatched targets and empty bodies are never successful articles → Acceptance #3
+
+REQ-4 — Existing extraction and retries
+  WHEN extraction runs, retain headless-first and headed retry behavior, headed_on_block effects, standalone/long article and ordinary/YouTube extraction, completed-item skipping and explicit forced refresh. Verification uses isolated settings, profile, executable and outputs; installing this stage does not bulk rewrite existing notes → Acceptance #4
+
+## Deferred original requirements
+
 REQ-1 — Complete articles from first and middle posts
   WHEN an article from any of the three confirmed X groups or five confirmed Threads groups is processed, the scraper shall deliver its complete ordered author body from either a first-post or middle-post URL, with equivalent body content across those entry points and independent source comparisons for all eight groups → Acceptance #1
 

@@ -3,6 +3,12 @@ intent: 2026-10-28-extract-complete-author-threads@183b82f
 spec: docs/loom/2026-10-28-extract-complete-author-threads/spec.md@5b4361e
 charter: 1.1
 
+## Active staged release — confirmed 2026-10-30
+
+Original W1–W19 are retained experimental work. Their full-thread delivery is
+not releasable. The staged spec REQ-1–4 supersede original whole-thread release
+acceptance; preserve failed original acceptance evidence as historical.
+
 ## Task DAG
 
 ### Wave 1 — First-party source interpretation
@@ -138,6 +144,18 @@ charter: 1.1
 - Test: A1 positive: native-full-text-line-breaks; boundary: rich-article-preserved. A2 positive: authored-reference-link-retained; negative: quoted-body-excluded. A3 positive: owned-public-text-source; negative: conflicting-or-truncated-body-source.
 - Risk: agent-decided — REQ-1–3: source comparison found collapsed line breaks and an omitted reference URL. Decode only verified own-post text and URL entities; retain preview and rich-body guards. References may remain links without expanding quoted articles.
 
+### Wave 20 — Explicit X focal-post release boundary
+
+**W20-01 Deliver only verified focal X bodies and defer thread assembly** after: W19-01 acceptance: 1, 2, 3, 4
+- Files: internal/extract/browser.go (Extract and ExtractPaginated), internal/extract/threads.go, internal/extract/browser_test.go, internal/extract/threads_test.go, internal/extract/pool.go, internal/extract/pool_test.go
+- Test: A1 positive: verified-focal-plain-and-rich-body; boundary: distinct-first-middle. A2 positive: target-bound-scope-marker; negative: other-posts-and-thread-entry-excluded. A3 positive: validated-focal-body; negative: preview-wall-wrong-target. A4 positive: existing-browser-retry; boundary: paginated-social-dispatch.
+- Risk: agent-decided — REQ-1–4: reuse verified snapshot bodies and existing intercepted browser fixtures. Require target-bound scope provenance; close headed/paginated thread bypasses and defer Threads explicitly. Extend existing tests first; preserve adversarial programs.
+
+**W20-02 Validate delivered scope before saving and label summaries** after: W20-01 acceptance: 2, 3, 4
+- Files: internal/pipeline/extraction.go, internal/pipeline/runner.go, internal/pipeline/pipeline_test.go, internal/pipeline/extraction_test.go, README.md
+- Test: A2 positive: scope-in-content-and-summary; negative: missing-or-wrong-scope. A3 positive: validated-fresh-source; negative: failed-refresh-preserves-files. A4 positive: ordinary-video-retry-preserved; boundary: headed-on-block-false.
+- Risk: agent-decided — REQ-2–4: validate provenance before writes; label summaries independently of generated prose. Retain social cache revalidation, existing skip and retry effects. No unsafe full-thread switch or unnecessary new configuration. Use existing pipeline tests.
+
 ## Simplicity check
 - none found
 
@@ -165,3 +183,5 @@ charter: 1.1
 17. agent-decided — W15 live first-entry pagination closes, then collection fails on missing per-post root IDs despite a verified native root-owned branch. Align this provenance guard with self-thread validation; retain contradictory-source rejection and unresolved semantic membership.
 18. user-decided — Continue with X dashboard source completeness before narrative membership, then Japan MCP and Google, followed by independent sixteen-entry acceptance. W17/W18 address one observed source-window defect without changing article selection.
 19. agent-decided — W18 dashboard first/middle outputs match, but direct native-source comparison finds line-break flattening and a lost author-written reference URL. Preserve these before calling the sample complete. Japan MCP still fails unresolved reply extent; no generic narrative-membership claim is made.
+
+20. user-decided — X focal-post stage accepted 2026-10-30; follow-up replies excluded, Threads deferred. Original F1/F3 remain unresolved. Agent-decided: make unsafe thread delivery unreachable; fixed staged behavior and durable labels avoid an experimental opt-in or unnecessary configuration.

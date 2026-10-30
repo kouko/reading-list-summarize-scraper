@@ -34,3 +34,14 @@ kouko 能從 X 與 Threads 的作者串文取得正確、完整且按原文順�
 
 ## Open questions
 - none
+
+
+## Confirmed staged outcome — 2026-10-30
+
+user-decided — Release X specified-post and long-article extraction first.
+Content and summaries explicitly exclude follow-up author replies. Complete
+X/Threads thread assembly is deferred; a failed complete thread must never be
+silently presented as a successful single-post article. The user accepted this
+visible behavior with “好” after the recommendation. The spec's staged REQ-1–4
+are this release's acceptance contract; original full-thread goals above remain
+unmet and deferred, not waived as passing.
