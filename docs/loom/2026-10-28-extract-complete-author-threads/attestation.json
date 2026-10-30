@@ -1,0 +1,83 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-28-extract-complete-author-threads",
+  "content_digest": "bc6c13275da809b49b104f4629ee1f6c401174e7",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json internal/extract/probes/conflicting_root_test.go",
+      "artifact": "internal/extract/probes/conflicting_root_test.go",
+      "result": "pass",
+      "command_digest": "4eb24fe2e400257fec76496c378cadfa6a1a970789ae2ff9e0a1cdcd9058ddd6",
+      "evidence": "parsed",
+      "passed": 1
+    }
+  ],
+  "verdicts": [
+    {
+      "verdict": "PASS_WITH_NOTES",
+      "lens": "code",
+      "reviewed_sha": "8e37f33e252337dc5f2727631b35460eb7086066",
+      "review_target_sha": "f9d81c159edd597e92ade6cc0263afe2fb00e1b6",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS_WITH_NOTES",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Terminal Round3 of the same episode; prior findings retained. Count-consistency fatal FIXED and production-entry-test important FIXED remain verified. Original mandatory-full-thread F1 remains UNFIXED but explicitly deferred by the user's confirmed 2026-10-30 stage, not dismissed or marked passing. Normal, headed and paginated production paths cannot reach experimental thread assembly; X returns only target-bound focal content and Threads fails deferred. The separate reviewer's historical narrative-membership F3 is likewise not claimed resolved. No remaining finding blocks the accepted staged contract.",
+        "Reviewed fix delta 8e8f980..f9d81c1, current intent/spec/plan/report/evidence, runtime callers and changed test entries. Fresh isolated host execution passed: env CHROME_CONFIG_HOME=/private/tmp/rlss-w20-code-review-chrome GOCACHE=/private/tmp/rlss-go-build go test -count=1 ./internal/extract ./internal/pipeline -run 'Test(BrowserExtract|CompleteSocialThread|Pool|ProcessItem|ProcessBatchFailedPaginationPreservesFiles|ExtractionRejectsObservedWalls|IsBlockedPage|IsSkipped|Stats|StripFrontmatter|IsUnavailablePage)' -v. All selected tests executed; no skips observed. node --test extraction.test.mjs extraction-boundaries.test.mjs passed 21/21. No full suite or declared adversarial program reran. Target SHA and clean worktree confirmed. Only this requested temporary verdict artifact was written.",
+        "Independent acceptance reports six actual X focal-source comparisons, ten Threads preservation failures and local-fixture CLI summary scope checks, with test-only final changes explicitly carried over. I read that evidence rather than independently repeating live source visits. Public external documentation was not freshly fetched, retaining the prior external-grounding verification limit. Read supplied target-HEAD adversarial JSONL: Test_collectSocial_conflictingRoot_rejects ran and passed; no optional probe confirmation emitted because its output lacks the artifact filename stem. Full-thread success, universal/logged-out availability and live external-summary-provider delivery are not asserted."
+      ],
+      "reviewer": "/root/author_threads_code_review",
+      "vendor": "OpenAI",
+      "model": "inherited (host model not observable)"
+    },
+    {
+      "verdict": "PASS_WITH_NOTES",
+      "lens": "spec+adversarial",
+      "reviewed_sha": "8e37f33e252337dc5f2727631b35460eb7086066",
+      "review_target_sha": "f9d81c159edd597e92ade6cc0263afe2fb00e1b6",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS_WITH_NOTES",
+        "design-conformance": "N/A — No DESIGN.md exists; the active staged UI flows are specified in spec.md.",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Terminal Round 3 of the same episode; reviewed fix delta 8e8f980a1b159f23dbb43123514262780e5f4731..f9d81c159edd597e92ade6cc0263afe2fb00e1b6. Prior F1: unfixed and explicitly deferred by the user-confirmed 2026-10-30 staged contract; prior F3: unfixed in experimental assembly, but its production exposure is fixed by making that assembly unreachable. Neither original full-thread finding is marked fixed, dismissed or accepted as passing.",
+        "The current staged contract is satisfied: normal/headed/paginated production routes deliver only verified focal X content or reject deferred Threads, the pipeline validates target-bound provenance before writes, and content plus saved summaries carry program-owned scope notices and source links. Read the independent six-X source comparisons, ten Threads preservation records, local summary-service proof and archived original failures; evidence accurately discloses authenticated-session and external-provider limits. Later changes contain only test placement and acceptance documentation.",
+        "Independently passed 21 JavaScript tests with zero skips, focused pipeline scope/cache/retry tests, and the isolated Browser.Extract social-entry test (3.384s; sandbox listener denial resolved by authorized escalation). Read the handed uncached package-suite PASS and exact-target adversarial PASS without rerunning either. No new blocking finding in this fix delta; this verdict covers only the accepted focal-post stage, not complete-thread readiness."
+      ],
+      "reviewer": "/root/author_threads_spec_final_review",
+      "vendor": "OpenAI",
+      "model": "inherited (host model not observable)"
+    }
+  ],
+  "findings": [],
+  "selection": null
+}

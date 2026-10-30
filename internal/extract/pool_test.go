@@ -145,6 +145,24 @@ func TestPoolRecoveryPreservesPaginationProfile(t *testing.T) {
 			t.Fatalf("extraction settings lost: %+v", b)
 		}
 	}
+	// A social-domain pagination rule must never route around focal checks,
+	// including the explicit headed entry.
+	cfg.DomainRules = []config.DomainRule{{Domains: []string{"x.com", "threads.com"}, NextPageSelector: "a.next", MaxPages: 3}}
+	p.CloseAll()
+	p.newBrowser = func(bool, string, string) (poolBrowser, error) { return b, nil }
+	for _, address := range []string{"https://x.com/author/status/1", "https://threads.com/@author/post/one"} {
+		for _, headed := range []bool{false, true} {
+			b.selector = ""
+			if headed {
+				_, _ = p.ExtractURLHeaded(address)
+			} else {
+				_, _ = p.ExtractURL(address)
+			}
+			if b.selector != "" {
+				t.Fatalf("social pagination bypass: %+v", b)
+			}
+		}
+	}
 }
 
 func TestPoolRecoveryBrowserFailure(t *testing.T) {

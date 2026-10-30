@@ -4,6 +4,7 @@ package extract
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,18 +12,22 @@ import (
 	"testing"
 	"time"
 
+	cu "github.com/Davincible/chromedp-undetected"
 	"github.com/chromedp/chromedp"
 
 	assets "github.com/kouko/reading-list-summarize-scraper/embed"
 	"github.com/kouko/reading-list-summarize-scraper/internal/config"
 )
 
-func newTestBrowser(t *testing.T) *Browser {
+func newTestBrowser(t *testing.T, flags ...chromedp.ExecAllocatorOption) *Browser {
 	t.Helper()
-	b, err := NewBrowser(false, "", t.TempDir())
+	// Allocator flags apply to every tab, including those opened by Extract.
+	ctx, cancel, err := cu.New(cu.NewConfig(cu.WithUserDataDir(t.TempDir()),
+		cu.WithChromeFlags(append(flags, chromedp.Flag("headless", true))...)))
 	if err != nil {
 		t.Fatal(err)
 	}
+	b := &Browser{ctx: ctx, cancel: cancel}
 	// Register after TempDir so Chrome finishes writing before profile removal.
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(b.ctx, 10*time.Second)
@@ -38,6 +43,163 @@ func newTestBrowser(t *testing.T) *Browser {
 		t.Fatalf("start test browser: %v", err)
 	}
 	return b
+}
+
+func TestBrowserExtractSocialCompleteOnly(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `<body><article>ordinary article</article></body>`)
+	}))
+	defer server.Close()
+	// Keep the real social hostname for production dispatch while every tab
+	// resolves it only to this fixture; other hostnames cannot resolve.
+	b := newTestBrowser(t,
+		chromedp.Flag("host-resolver-rules", "MAP x.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"),
+		chromedp.Flag("no-proxy-server", true),
+		chromedp.Flag("ignore-certificate-errors", true))
+	socialURL := strings.Replace(server.URL, "127.0.0.1", "x.com", 1) + "/author/status/1"
+	js := `window.extractArticle=()=>document.querySelector('article').textContent;
+window.socialSnapshot=()=>({version:1,platform:'x',targetID:'1',posts:[{id:'1',url:location.href,authorID:'a',body:'verified article',bodyComplete:true,parentID:null,replyCount:0}]})`
+	body, err := b.Extract(socialURL, js, 20*time.Second, 0)
+	if err != nil || !strings.Contains(body, "Only the specified X post") || !strings.HasPrefix(body, "<!-- rlss-social-v1 ") || !strings.HasSuffix(body, "verified article\n\n[Source]("+socialURL+")") {
+		t.Fatalf("social: %q, %v", body, err)
+	}
+	paginated, err := b.ExtractPaginated(socialURL, js, "a.next", 4, 20*time.Second, 0)
+	if err != nil || paginated != body {
+		t.Fatalf("pagination bypass: %q %v", paginated, err)
+	}
+	for _, invalid := range []string{strings.Replace(socialURL, "https:", "http:", 1), strings.TrimSuffix(socialURL, "1")} {
+		got, invalidErr := b.Extract(invalid, js, 20*time.Second, 0)
+		if invalidErr == nil || got != "" || !strings.Contains(invalidErr.Error(), "valid HTTPS X status") || strings.Contains(invalidErr.Error(), "Threads") {
+			t.Fatalf("invalid X identity: %q %v", got, invalidErr)
+		}
+	}
+	for _, invalid := range []struct{ name, from, to string }{
+		{"wrong target", "targetID:'1'", "targetID:'2'"},
+		{"preview", "bodyComplete:true", "bodyComplete:false"},
+		{"foreign source host", "url:location.href", "url:'https://example.org/author/status/1'"},
+		{"wrong source post", "url:location.href", "url:location.href.replace('/status/1','/status/2')"},
+		{"wrong source port", "url:location.href", "url:location.href.replace(location.port,'1')"},
+		{"missing author", "authorID:'a'", "authorID:''"},
+		{"empty body", "body:'verified article'", "body:''"},
+		{"login body", "body:'verified article'", "body:'Please sign in to read the full article.'"},
+	} {
+		body, err = b.Extract(socialURL, strings.Replace(js, invalid.from, invalid.to, 1), 20*time.Second, 0)
+		if err == nil || body != "" {
+			t.Fatalf("%s accepted: %q %v", invalid.name, body, err)
+		}
+	}
+	body, err = b.Extract(socialURL, `window.socialSnapshot=()=>{throw Error('missing target')};window.extractArticle=()=>{throw Error('Cloudflare security challenge')}`, 20*time.Second, 0)
+	if err == nil || body != "" || !strings.Contains(err.Error(), "Cloudflare") {
+		t.Fatalf("challenge identity: %q, %v", body, err)
+	}
+	body, err = b.Extract(server.URL, js, 20*time.Second, 0)
+	if err != nil || body != "ordinary article" {
+		t.Fatalf("ordinary: %q, %v", body, err)
+	}
+}
+
+func TestBrowserExtractThreadsNativeReplies(t *testing.T) {
+	post := func(code, id string, reply bool) map[string]any {
+		return map[string]any{"pk": id, "code": code, "user": map[string]any{"id": "author", "username": "writer"}, "caption": map[string]any{"text": "Section " + code + "."}, "text_post_app_info": map[string]any{"id": "XDTTextPostAppMediaInfo:" + id, "is_reply": reply}}
+	}
+	root, mid := post("ROOT", "1", false), post("MID", "2", true)
+	mid["text_post_app_info"].(map[string]any)["containing_thread"] = map[string]any{"posts": map[string]any{"edges": []any{map[string]any{"node": root}}}}
+	terminal := map[string]any{"edges": []any{}, "page_info": map[string]any{"has_next_page": false, "end_cursor": nil}}
+	source, _ := json.Marshal(map[string]any{"data": map[string]any{"post": root, "connection": map[string]any{"id": "XDTTextPostAppMediaInfo:1", "self_thread": map[string]any{"posts": map[string]any{"edges": []any{map[string]any{"node": mid}}, "page_info": map[string]any{"has_next_page": false, "end_cursor": nil}}, "post_ids": map[string]any{"edges": []any{map[string]any{"node": map[string]any{"pk": "2"}}}}}, "direct_replies": map[string]any{"edges": []any{}, "page_info": map[string]any{"has_next_page": true, "end_cursor": "next"}}}}})
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.Host, "threads.com:") {
+			http.Redirect(w, r, "https://www."+r.Host+r.URL.RequestURI(), http.StatusFound)
+			return
+		}
+		if r.URL.Path == "/api/graphql" {
+			owner := "XDTTextPostAppMediaInfo:1"
+			if r.URL.Query().Get("bad") == "true" {
+				owner = "foreign"
+			}
+			json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{"media": map[string]any{"text_post_app_info": map[string]any{"id": owner, "direct_replies": terminal}}}})
+			return
+		}
+		fmt.Fprintf(w, `<body><div style="height:100px;overflow:auto"><section style="height:3000px">fixture</section></div><script type="application/json">%s</script><script>let sent=false;document.addEventListener('scroll',()=>{if(sent)return;sent=true;fetch('/api/graphql?bad='+location.search.includes('bad'),{method:'POST',body:new URLSearchParams({variables:JSON.stringify({postID:'1',after:'next',sortOrder:'TOP',first:4})})})},true)</script></body>`, source)
+	}))
+	defer server.Close()
+	b := newTestBrowser(t, chromedp.Flag("host-resolver-rules", "MAP threads.com 127.0.0.1, MAP www.threads.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"), chromedp.Flag("no-proxy-server", true), chromedp.Flag("ignore-certificate-errors", true))
+	base := strings.Replace(server.URL, "127.0.0.1", "threads.com", 1)
+	// Canonical source permalinks omit the fixture's random TLS port.
+	js := assets.DefuddleJS + `;const nativeSnapshot=window.socialSnapshot;window.socialSnapshot=(pages=[])=>{const s=nativeSnapshot(pages);for(const p of s.posts)p.url=p.url.replace('https://threads.com',location.origin);return s}`
+	var firstBody string
+	for _, entry := range []string{"ROOT", "MID", "ROOT?bad"} {
+		for _, paginated := range []bool{false, true} {
+			var denied string
+			var deniedErr error
+			if paginated {
+				denied, deniedErr = b.ExtractPaginated(base+"/@writer/post/"+entry, js, "a.next", 4, 10*time.Second, 0)
+			} else {
+				denied, deniedErr = b.Extract(base+"/@writer/post/"+entry, js, 10*time.Second, 0)
+			}
+			if deniedErr == nil || denied != "" || !strings.Contains(deniedErr.Error(), "deferred") {
+				t.Fatalf("Threads production bypass: %q %v", denied, deniedErr)
+			}
+		}
+		ctx, cancel := context.WithTimeout(b.ctx, 10*time.Second)
+		body, err := b.extractSocial(ctx, base+"/@writer/post/"+entry, js, 0)
+		cancel()
+		if strings.Contains(entry, "bad") {
+			if err == nil || body != "" {
+				t.Fatalf("wrong owner: %q, %v", body, err)
+			}
+		} else if err != nil || !strings.Contains(body, "Section ROOT.") || !strings.Contains(body, "Section MID.") || strings.Count(body, "[Source]") != 2 {
+			t.Fatalf("%s: %q, %v", entry, body, err)
+		} else if firstBody == "" {
+			firstBody = body
+		} else if body != firstBody {
+			t.Fatalf("first/middle bodies differ: %q, %q", firstBody, body)
+		}
+	}
+}
+
+func TestBrowserExtractXNativeReplies(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `<body><main style="min-height:4000px"></main><script>
+const main=document.querySelector('main');let scrolled=false;
+function post(id,author,parent,count,body){const a=document.createElement('article');a.innerHTML='<a href="/author/status/'+id+'">post</a><div dir="auto" class="whitespace-pre-wrap">'+body+'</div>';a.__reactFiber$fixture={memoizedProps:{tweet:{rest_id:id,core:{user_results:{result:{rest_id:author}}},reply_to_results:parent===null?null:{rest_id:parent},counts:{reply_count:count}}}};main.append(a);return a}
+const root=post('1','author',null,location.search.includes('missing')?3:2,'First section.');
+if(location.pathname.endsWith('/2'))post('2','author','1',0,'Second section.');
+const decoy=document.createElement('button');decoy.textContent='Show probable spam';decoy.onclick=()=>{main.replaceChildren()};root.append(decoy);
+addEventListener('scroll',()=>{if(scrolled)return;scrolled=true;root.remove();if(!main.querySelector('article'))post('2','author','1',0,'Second section.');const button=document.createElement('button');button.textContent='スパムの可能性がある返信を表示';button.onclick=()=>{post('3','reader','1',0,'Reader excluded.');button.remove()};main.append(button)});
+</script></body>`)
+	}))
+	defer server.Close()
+	b := newTestBrowser(t, chromedp.Flag("host-resolver-rules", "MAP x.com 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"), chromedp.Flag("no-proxy-server", true), chromedp.Flag("ignore-certificate-errors", true))
+	base := strings.Replace(server.URL, "127.0.0.1", "x.com", 1)
+	var first string
+	for _, entry := range []string{"1", "2", "1?missing"} {
+		focal, focalErr := b.Extract(base+"/author/status/"+entry, assets.DefuddleJS, 10*time.Second, 0)
+		want, excluded := "First section.", "Second section."
+		if entry == "2" {
+			want, excluded = excluded, want
+		}
+		if focalErr != nil || !strings.Contains(focal, want) || strings.Contains(focal, excluded) || strings.Contains(focal, "Reader excluded.") || !strings.Contains(focal, SocialScopeNotice) {
+			t.Fatalf("production focal %s: %q %v", entry, focal, focalErr)
+		}
+		timeout := 10 * time.Second
+		if strings.Contains(entry, "missing") {
+			timeout = 2 * time.Second
+		}
+		ctx, cancel := context.WithTimeout(b.ctx, timeout)
+		body, err := b.extractSocial(ctx, base+"/author/status/"+entry, assets.DefuddleJS, 0)
+		cancel()
+		if strings.Contains(entry, "missing") {
+			if body != "" || err == nil {
+				t.Fatalf("unresolved count: %q, %v", body, err)
+			}
+		} else if err != nil || !strings.Contains(body, "First section.") || !strings.Contains(body, "Second section.") || strings.Contains(body, "Reader excluded.") || strings.Count(body, "[Source]") != 2 {
+			t.Fatalf("%s: %q, %v", entry, body, err)
+		} else if first == "" {
+			first = body
+		} else if first != body {
+			t.Fatalf("first/middle differ: %q, %q", first, body)
+		}
+	}
 }
 
 func TestBrowserExtractPaginated(t *testing.T) {

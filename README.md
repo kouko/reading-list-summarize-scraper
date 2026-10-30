@@ -180,12 +180,24 @@ recognized unsupported video platforms also fail
 instead of saving descriptions. Pending video caches without current target-bound
 validation are re-extracted; completed summaries retain existing skip behavior.
 
-Threads, Medium and X/Twitter extraction checks the target permalink or canonical
-identity before returning the main body. Missing targets, detected previews and
-access walls fail; unavailable private or member-only content is not promised.
-Existing social caches retain the normal wall checks but cannot retroactively
-prove target identity. Requests use first-party platform data and media endpoints
-with existing access, without outside mirrors, proxies or audio uploads.
+X/Twitter extraction accepts HTTPS status URLs and saves only the complete
+specified post or its owned long article, including authored line breaks and
+reference links. Earlier posts,
+author follow-up replies, reader replies and quoted bodies are excluded. Content
+and generated summaries visibly state this single-post scope and retain a source
+link. A middle-post URL saves that middle post, not the whole thread. Full-thread
+assembly is unavailable in this release, and Threads post processing explicitly
+fails as deferred. Pagination rules and headed retries do not bypass these checks.
+Medium retains its target permalink/canonical identity checks. Missing targets,
+detected previews and access walls fail; unavailable private or member-only
+content is not promised.
+X/Twitter and Threads content-only caches are re-extracted before summarization
+because legacy bodies cannot prove the current extraction scope. Completed
+summaries retain normal batch skipping; explicit URL or forced reprocessing
+revalidates the live article. Failed extraction preserves existing body and
+summary files. Medium caches retain their existing content checks. Requests use
+first-party platform data and media endpoints with existing access, without
+outside mirrors, proxies or audio uploads.
 
 ## Output Structure
 

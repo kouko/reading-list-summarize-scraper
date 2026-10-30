@@ -51,7 +51,7 @@ func (p *Pool) ExtractURL(rawURL string) (string, error) {
 
 	// Paginated article: when a DomainRule configures a next-page selector,
 	// follow it and concatenate pages. Otherwise single-page extraction.
-	if selector, maxPages := MatchPaginationRule(rawURL, p.cfg.DomainRules); selector != "" {
+	if selector, maxPages := MatchPaginationRule(rawURL, p.cfg.DomainRules); selector != "" && !isSocialPostURL(rawURL) {
 		return browser.ExtractPaginated(rawURL, p.jsCode, selector, maxPages, timeout, p.cfg.WaitAfterLoad)
 	}
 
@@ -72,7 +72,7 @@ func (p *Pool) ExtractURLHeaded(rawURL string) (string, error) {
 
 	// Mirror ExtractURL's pagination routing so a paginated site that falls
 	// back to the headed path (anti-bot retry) still gets the full article.
-	if selector, maxPages := MatchPaginationRule(rawURL, p.cfg.DomainRules); selector != "" {
+	if selector, maxPages := MatchPaginationRule(rawURL, p.cfg.DomainRules); selector != "" && !isSocialPostURL(rawURL) {
 		return browser.ExtractPaginated(rawURL, p.jsCode, selector, maxPages, timeout, p.cfg.WaitAfterLoad)
 	}
 
