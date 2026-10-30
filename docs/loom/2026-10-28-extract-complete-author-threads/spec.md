@@ -1,7 +1,7 @@
 # Complete author threads — spec
 intent: 2026-10-28-extract-complete-author-threads@183b82f
-confirmed-behavior: 2026-10-28 @6c5aee3
-pre-build-review: required — Thread membership, source completeness and replacement of saved content affect the article contract; unrelated replies and cached partial bodies must not become successful articles.
+confirmed-behavior: 2026-10-30 — user accepted the explicit X specified-post stage; original full-thread behavior remains deferred
+pre-build-review: required — Source identity, complete focal bodies, scope labels and replacement of saved content affect the article contract; experimental thread assembly must not be reachable in this stage.
 
 ## Staged release — confirmed 2026-10-30
 
@@ -32,33 +32,53 @@ REQ-3 — Honest failures and preserved files
 REQ-4 — Existing extraction and retries
   WHEN extraction runs, retain headless-first and headed retry behavior, headed_on_block effects, standalone/long article and ordinary/YouTube extraction, completed-item skipping and explicit forced refresh. Verification uses isolated settings, profile, executable and outputs; installing this stage does not bulk rewrite existing notes → Acceptance #4
 
-## Deferred original requirements
+## Active staged UI flows
 
-REQ-1 — Complete articles from first and middle posts
-  WHEN an article from any of the three confirmed X groups or five confirmed Threads groups is processed, the scraper shall deliver its complete ordered author body from either a first-post or middle-post URL, with equivalent body content across those entry points and independent source comparisons for all eight groups → Acceptance #1
+| Case | What the user does | What they see |
+|---|---|---|
+| X first, middle or standalone post | Run the existing URL command with summary disabled | Only the specified complete post is saved, with its source and a visible notice excluding author follow-up replies. First and middle posts remain distinct. Success 1, Failed 0, exit 0. No new switch is required. |
+| X long article | Process a status containing an owned rich article | Its full owned body, title, formatting and image references are retained, with the same single-post notice. Quoted articles and other posts are not expanded. |
+| Threads deferred | Process a Threads post through normal, headed or paginated extraction | Clear unsupported/deferred extraction failure, no content or summary replacement, no summary request. Full-thread collection cannot be enabled through existing domain rules. |
+| Missing or unverified focal body | Process an unavailable, wrong-target, preview-only, login or verification page | Failure with no saved replacement or summary request; a generic readable page or old social cache cannot turn it into success. |
+| Retry and verification restriction | Use headless or explicit headed settings, or encounter a recognized challenge | Existing single headed retry and explicit headed behavior remain. headed_on_block false prevents headed retry for recognized challenges; ordinary failures keep the existing retry policy. |
+| Summary enabled | Process a verified focal post with summary configured | The summary receives only verified focal content and a scope instruction; the saved summary visibly excludes follow-up replies independently of generated prose. Summary-service failure retains existing Partial behavior. |
+| Existing notes and force | Run normal batch skip, explicit URL/forced refresh, or resume content without summary | Completed items skip as before; requested social refresh validates live scope before writing. Failure preserves both old files. No bulk rewrite, rename or migration. |
+| Batch, watch, dry run and empty input | Run existing processing entry points | Existing result buckets, continuation after an individual failure, retries on later watch cycles, no-item and no-write dry-run behavior remain. |
+| Other extraction | Process ordinary articles or YouTube | Existing extraction, original-language subtitle validation and pagination/retry behavior remain. |
+| Isolated verification | Check the staged behavior | Fresh build and actual CLI/source checks use temporary outputs, executable and isolated browser session; production config, notes and process are unchanged. Original eight-group full-thread failures remain recorded as deferred. |
 
-REQ-2 — Correct membership, ordering and deduplication
-  WHEN the scraper combines an author thread, the scraper shall retain the original author-body order and source links, include each member post once, and exclude reader comments, author conversations with readers, quoted-post bodies and recommended articles → Acceptance #2
+## Design decisions
 
-REQ-3 — Honest incomplete results and preserved existing files
-  IF target identity, continuation membership or complete body cannot be established THEN the scraper shall report extraction failure without delivering missing sections, previews, login or verification content as a complete successful article or using unverified cached social content to bypass that failure, while preserving existing body and summary files → Acceptance #3
+- user-decided — Ship X specified-post/long-article extraction first; exclude
+  author follow-up replies explicitly. Defer full X/Threads thread delivery.
+- agent-decided — Use existing verified `socialSnapshot` target ownership and
+  complete-body checks, not the older generic single-post fallback. Source
+  reply counts and thread extent are irrelevant to the smaller delivered scope.
+- agent-decided — Return a target-bound, versioned single-post result and validate
+  it at the pipeline save boundary. Visible content and saved summary scope
+  labels do not depend on the summary model following instructions.
+- agent-decided — Keep the experimental complete-thread code inaccessible from
+  production entry points, including domain pagination rules and headed retry.
+  Preserve its regression tests for later work without claiming its original
+  acceptance conditions pass.
+- agent-decided — Reject incomplete focal bodies, unavailable/mismatched targets,
+  login and verification pages; preserve existing body/summary files and start
+  no summary on extraction failure. Cached social text cannot bypass validation.
+- agent-decided — Preserve input URL storage identity, completed-item skipping,
+  explicit/forced refresh, summary Partial handling and the existing retries.
+  No automatic bulk rewrite, file migration, new account, paid API or login.
+- agent-decided — Keep development/acceptance browser sessions and outputs
+  isolated. Permanent evidence contains sanitized fixtures and public identities,
+  URLs, counts and hashes; no credentials or full captured source articles.
 
-REQ-4 — Existing extraction and retry behavior
-  WHEN supported standalone posts, long articles or ordinary articles are processed, the scraper shall retain their successful extraction and existing headless-first, headed-retry and verification-setting behavior, with development verification isolated from production configuration, browser data, notes, executable and running processes → Acceptance #4
+## Retained sample groups
 
-## Design decision
-- agent-decided — Extend the existing browser extraction and save boundary rather than introduce a second crawler, account index or conversation archive; the requested result is one complete author article for the supplied URL.
-- agent-decided — Treat author identity and explicit source conversation relationships as necessary membership evidence. Same-author spelling, adjacent display, timestamps, numbering or matching text alone cannot prove continuation; a reader branch must not be merged back into the article.
-- agent-decided — Discover the first member and exhaust the verified continuation sequence before returning content. Expand or open member previews through first-party source pages when necessary; stop with failure on missing members, unresolved pagination, inaccessible bodies, loops or exhausted existing request limits rather than silently truncate.
-- agent-decided — A page with no observed continuation is not automatically proven to be a standalone post. Require adequate source evidence for the delivered article's extent; the audit's single-scroll snapshots establish positive samples, not proof of absence or complete membership.
-- agent-decided — Deduplicate repeated observations by stable post identity. Preserve distinct authored posts instead of silently deleting them merely because their wording is similar; the Google sample has two distinct URLs for its seventh section and requires source-grounded resolution, not a text-similarity shortcut.
-- agent-decided — Retain author-written references and links inside member bodies, but do not expand quoted social cards, recommended content or linked articles into the combined body. Resource-only author replies are not automatically article members merely because the author matches.
-- agent-decided — Preserve the supplied URL's existing output identity and storage conventions; equivalent first/middle bodies do not authorize merging, renaming or deleting existing notes across URLs.
-- agent-decided — Explicit URL processing and forced social reprocessing must revalidate the live complete article even if a content-only cache exists. Normal completed-item skipping remains; no bulk backfill or migration is introduced. Unrelated resume behavior stays intact.
-- agent-decided — Retain existing result categories and summary behavior: successful extraction is followed by the configured summary step, and summary failure remains Partial. No summary starts from a partial or unverified social article.
-- agent-decided — Use existing browser configuration and first-party access without a new paid API, account requirement, proxy service, file-format migration or automatic login. These are reversible, zero-obligation choices; no new existing-data operation beyond explicitly requested normal reprocessing is authorized.
-- agent-decided — Keep PR #24 and its unmerged work untouched. Planning must account for its reviewed modern X layout fixes without claiming it has merged or modifying that PR without authorization.
-- agent-decided — Use sanitized permanent fixtures and counts, identities and source URLs in evidence. Full copyrighted source captures, account state and the personal reading-list inventory remain outside version control.
+These groups came from the earlier complete-thread audit. For this stage, X
+first/middle URLs test distinct focal bodies; Threads URLs test explicit deferred
+failure. They no longer imply complete-thread acceptance. Original full-thread
+requirements and failed results remain in the earlier committed spec/report and
+retained evidence; the staged release does not resolve or mark those failures
+as passing.
 
 ### Confirmed sample groups
 
@@ -78,36 +98,26 @@ The audit confirmed eight groups at nine previously processed URLs. Seven additi
 Audit provenance: 101 previously processed unique URLs were opened in a fresh logged-out browser on 2026-10-28, with observations before and after one bottom scroll. Nine inputs correspond to eight confirmed groups; thirteen other inputs have author replies or supplements without confirmed narrative membership, seventy-three showed no author continuation in the observed page, and six targets were unavailable. None of those negative observations proves no hidden continuation exists. Local research evidence is retained at `/private/tmp/rlss-thread-audit-20261028/`; raw captures and the personal inventory are not committed.
 
 ## Alternatives considered
-- Merge all same-author posts on screen: rejected because recommendations, quotations, earlier articles, resource replies and reader conversations can share the author.
-- Stop at the supplied post or the currently visible replies: rejected because the samples include middle entry points, omitted earlier members and truncated continuation previews.
-- Use numbering or a language model alone to infer membership and the end: rejected because inference does not establish source identity or completeness and introduces unsupported success claims.
-- Trust any cached nonempty body: rejected because existing saved social content demonstrably lacks continuations and the current content-only resume path can bypass fresh extraction.
-- Backfill all existing notes or canonicalize their storage automatically: not part of the requested capability; normal explicit reprocessing is sufficient and preserves existing-data boundaries.
 
-## Current state evidence
-- Forward: `cmd/rlss/url.go`, `runURL` starts explicit URL processing and sets SkipExisting false; `cmd/rlss/process.go`, `runProcess` and force handling supply batch entry points.
-- Reverse: `internal/pipeline/runner.go`, `ProcessItem` calls `extractWithFallback`, then writes body and invokes summarization; content-only resume currently bypasses extraction.
-- Error: `extraction.ts`, `social` rejects unavailable targets but selects a matching single post; `internal/pipeline/extraction.go`, `extractWithFallback` validates returned text and controls headed retry.
-- Data: `extraction.ts`, `sameTarget`, `ownTweet`, `bodyMarkdown` and the Threads post/container/JSON-LD branches handle source identity and Markdown; saved files currently do not establish whole-thread membership or completeness.
-- Boundary: `internal/pipeline/extraction.go`, headedOnBlock behavior and `internal/output/index.go` existing URL/file indexing remain; the production configuration, notes and running process are outside verification writes.
+- Keep full-thread processing enabled experimentally: rejected for this release
+  because unresolved narrative membership can admit unrelated author replies.
+- Treat a failed complete thread as a single-post success: rejected because the
+  delivered article would silently change scope. This stage selects focal scope
+  before extraction and marks it explicitly.
+- Defer all X support: unnecessary; isolated source experiments prove focal plain
+  and rich bodies can be read in authenticated headless and headed Chrome.
+- Add a full-thread opt-in or a second crawler/API: deferred; neither is needed
+  to deliver the accepted smaller scope, and neither resolves narrative proof.
+- Automatically rewrite or merge earlier notes: outside scope. Normal explicit
+  reprocessing retains existing per-URL replacement behavior after validation.
 
-## UI flows
+## Verification boundaries
 
-| Case | What the user does | What they see |
-|---|---|---|
-| First-post success | Run the existing single-URL command for a complete first-post sample with summary disabled | One article body contains the entire verified author thread in order, with original sections and source links; the report shows Success 1 and Failed 0, exit 0. Thread detection is automatic and requires no new switch. |
-| Middle-post success | Run the same command for a middle member of that sample | The article includes verified earlier and later members and has the same body as first-post processing. The supplied URL retains its existing output identity; existing notes for other URLs are not merged or deleted. |
-| Correct scope and repetition | Process a thread containing comments, quoted posts, recommendation cards or repeated observations | Only verified author article members appear. A member seen more than once is included once. Author-written reference links remain; quoted-card bodies, reader conversations and recommendation bodies do not. Distinct authored posts are not silently deleted just because their wording is similar. |
-| In progress and ordinary retry | Start extraction with the existing default configuration | Existing progress remains visible; the scraper may take longer while loading article members. Failed headless extraction follows the existing headed retry. Explicit headed execution retains its existing behavior. |
-| Verification restriction | Encounter a recognized verification page | With headed_on_block false, the blocked attempt does not open a headed retry; with it enabled, the existing headed retry is allowed. Normal navigation or missing-body failures retain their existing retry behavior. |
-| Missing target or body | Process an unavailable, mismatched, login-only or empty target | The existing Failed count increases; the single-URL command exits nonzero with an Inaccessible social target error explaining the reason. No article body or summary is replaced. Retry after the source becomes accessible. |
-| Incomplete or ambiguous thread | Process a thread with missing members, unreadable previews, unresolved earlier/later content or ambiguous membership/order | The command reports Failed 1 and exits nonzero; the Inaccessible social target error explains that the complete thread could not be established. Existing body and summary remain unchanged. Retry after source availability is restored; the next attempt revalidates the whole article. |
-| Old content without summary | Explicitly process a social URL whose old body exists but summary is missing | The scraper first revalidates the complete article instead of immediately summarizing the old body. Success replaces that URL's body through normal processing; extraction failure preserves the old body and summary and starts no summary from partial content. |
-| Summary enabled | Process a verified complete article using the existing summary configuration | The summary step receives the complete combined body. Existing summary success and Partial behavior remain; an extraction failure starts no summary. External summary-service availability is not changed by this feature. |
-| Completed notes and explicit reprocessing | Run batch processing with existing skip settings, or explicitly request URL/forced reprocessing | Completed notes retain existing Skipped behavior. Explicit reprocessing verifies a fresh complete social article and may replace that URL's saved body after extraction succeeds. Installing this change does not automatically batch-rewrite old notes. |
-| Batch and watch | Continue the existing batch or watch operation | Each selected article follows the same complete-content checks. An individual Failed item does not stop later items; existing Success, Failed, Skipped and Partial reporting and batch exit behavior remain. Watch may retry a failed item on a later cycle. |
-| Empty or dry run | Run with no selected items or use the existing dry-run option | Existing no-items or dry-run reporting remains, with no new extraction or body/summary writes. |
-| Existing standalone content | Process an ordinary article, standalone post or single long article | Existing body extraction and output conventions remain. A known incomplete social thread does not silently fall back to single-post success. |
-| Isolated verification | Verify the eight groups during development and acceptance | Evidence compares complete source members, order, body sections and exclusions for each group and both entry points. All settings, browser data, executables and outputs are isolated; production notes and running processes remain unchanged. An unavailable or incompletely verified sample is not reported as passing. |
-
-No bulk rewrite, deletion, new paid service, new required account or data-format migration is introduced. Normal explicit reprocessing has the existing consequence of replacing that URL's content after successful extraction; failure preserves its previous files. Every sample group must pass independent actual-source verification before the feature is described as completed.
+Independent staged acceptance must build from a clean committed copy, compare
+actual X focal output to original target source across the retained plain/rich
+and first/middle cases, verify excluded posts and durable scope notices, exercise
+failure preservation and headed/pagination guards, and run the active UI flows.
+Existing complete-thread research is context, not a staged acceptance pass.
+All production config, browser data, notes, executable and running processes stay
+unchanged. Authenticated source availability does not guarantee logged-out or
+universal site support; unavailable or unverified cases remain honest failures.
