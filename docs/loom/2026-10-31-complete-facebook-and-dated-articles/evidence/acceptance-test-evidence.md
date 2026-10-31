@@ -250,6 +250,158 @@ posts were excluded only after checking their distinct status IDs.
 
 ---
 
+## Re-run on 2026-10-31, at 6706a06 — independent acceptance, Round 2
+
+### Fix, scope and clean setup
+
+- Final input: `6706a060d4a0ec81fc112ff59386b6035d121ad4`. Earlier independent
+  report/evidence landed as `b4a756e` (original detached acceptance commit 3a9bda8).
+- Reviewed `git diff b4a756e..6706a06`: two plan updates, Facebook adapter changes,
+  added cases within existing adapter tests, and rebuilt browser bundle. No X,
+  dated article, browser wrapper, pipeline, command, configuration, batch or watch
+  logic changed. The generated bundle change corresponds to the Facebook adapter.
+- Round 1 review's fatal finding was fixed, not dismissed: another matching-post
+  record without a complete message could explicitly contradict attachment extent
+  or photo identity yet be ignored. The fix reconciles every supplied root/known
+  nested story attachment record, rejects explicit conflicts, and retains positives
+  when optional fields are simply absent. There are no dismissed important/fatal
+  findings and no skipped-by-instruction steps.
+- Created a NEW clean detached worktree:
+  `git worktree add --detach /private/tmp/rlss-accept-round2-6706a06 6706a06`.
+  Did not reuse the earlier acceptance worktree or its artifacts.
+- README setup again: `npm ci` (26 packages, audit 27, vulnerabilities 0),
+  `npm run build:defuddle` (809.1kb bundle),
+  `go build -o /private/tmp/rlss-accept-round2-bin ./cmd/rlss/`; all exited 0.
+- New config, logged-out profile, output and public-source captures are under
+  `/private/tmp/rlss-accept-round2-fresh`. Safari/Chrome reading-list sources, copy-to
+  and LLM calls disabled. Source capture and CLI execution were sequential separate
+  browser sessions using that new profile, with fresh navigation for each.
+  Public native/owned DOM capture waited six seconds; CLI wait remained three.
+  Neither production state nor the earlier X clone was touched in this rerun.
+- Full source/profiles remain temporary and uncommitted. Prior helpers were
+  inspected, paths adapted, and comparisons rerun only against new captures.
+
+### Focused commands actually executed
+
+- `node --test --test-name-pattern='facebook-|dated-body-' extraction.test.mjs`:
+  4 passed, 0 failed, exit 0 (211.616ms). Includes both supported URL forms and the
+  positive duplicate with partial optional media fields. The existing negative
+  aggregate now also executes 22 root/nested sparse-record attachment variants:
+  explicit empty extent, conflicting media IDs/type/URL/image/story, invalid image
+  dimensions, extra nodes and outstanding pagination. Existing wrong target,
+  conflicting message, truncation, login-only, missing body and missing owned photo
+  negatives remain covered. Dated-article unit-loss/ambiguity negatives also passed.
+  Synthetic fixture URL diagnostics were emitted by Defuddle; assertions passed.
+- `node --test --test-reporter=junit test_facebook_conflictingPermalink_rejected.mjs`:
+  exit 0, overall pass 3/fail 0; named suite failures 0. Original identity probe
+  remains unchanged; both conflicting numeric permalink/author cases passed.
+- `go test ./internal/pipeline -run 'TestProcessBatchScopedFailureCategory|TestProcessItemWithFallback|TestProcessBatchFailedPaginationPreservesFiles|TestExtractionRejectsObservedWalls|TestProcessItemFocalScope|TestProcessItemSocialCache|TestClassifyResult|TestStats_Partial' -count=1 -v`:
+  PASS, 0.671s. Fresh execution covered all four categories with both attempt causes,
+  failure statistics, scoped/ordinary cache behavior, file preservation, summary
+  input and Partial behavior, walls, headed selection and blocked/load/empty retry.
+- After all live source sessions finished:
+  `go test ./internal/extract -run 'TestBrowserExtractRequestedArticle|TestBrowserExtractSocialCompleteOnly' -count=1 -v`:
+  PASS, 3.874s. Requested numeric/slug/confirmed-alias and ordinary positives,
+  redirected-target negatives, scoped load/target/body/incomplete causes, challenge
+  retention, pagination entry and complete-single-post boundaries passed.
+- Package suite is NOT run by this tester. `go test ./...` remains the automated
+  test suite that runs before acceptance and blocks it on failure, owned by
+  finalize-review. Parent-reported suite results are not substituted for these runs.
+- New logs: `/private/tmp/rlss-accept-round2-{adapter.log,identity.xml,pipeline.log,browser.log}`.
+
+### Fresh actual-source comparisons
+
+Each sample was freshly captured, then processed with
+`/private/tmp/rlss-accept-round2-bin url URL --no-summary --config TEMP_CONFIG`.
+All three exited 0 and reported Total 1 / Success 1 / Failed 0.
+
+| Sample | Newly observed original vs saved body |
+|---|---|
+| Original slugged Facebook reading-list URL | Full normalized prose equal; all 148 nonempty/blank authored source lines checked in sequence, source message 4,400 Unicode characters; all six hashtags, ordered six hashtag destinations, 16 ◾, 2 ▪, 8 ■ retained; exactly one owned photo |
+| https://www.facebook.com/fatality1117/posts/10234719952645505/ | Same independently checked full prose/line sequence, six hashtag destinations, every glyph and one owned photo; not inferred from the slugged result |
+| https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/ | 43 visible owned units including blockquote in sequence; four heading labels in order; all eight body link destinations and one image; no hidden PART labels, navigation/player controls or subscription form |
+
+- For EACH Facebook URL, native post message equals exactly one owned rendered
+  message after emoji alt expansion; independently saved prose equals that native
+  source. Line order is checked separately from full whitespace-normalized equality.
+  Six hashtag-link paths match in order after URL decoding; there are no additional
+  non-hashtag prose references. No comments or extra interface prose are present.
+- Target native attachment/owned DOM photo identity is 10234719952085491 for both
+  URLs; each saved image asset path matches the owned DOM image, excluding avatars
+  and comments. Hashtags and glyph counts supplement full sequence checks rather
+  than replacing them. Native records can omit optional fields; no contradiction
+  was observed in either newly loaded public sample.
+- Felix units were recollected from visible authored elements, including blockquote,
+  paragraphs, leaf list items and headings. Hidden labels were excluded using actual
+  rendered visibility. Every fresh unit/reference/image was compared to the new
+  CLI output, not to historical counts or output.
+- Captures/logs and comparison outputs are in new temp root:
+  `source-01` through `source-03`, `01-cli.log` through `03-cli.log`, `comparison.json`,
+  `facebook-dom-check.json`, `facebook-extra.json`, `linkcheck.json`.
+
+### Every report row: full re-test or checked carry-over
+
+- 1: re-tested — both Facebook URL forms across full ordered prose, paragraph/line
+  sequence, native/owned identity, all hashtag targets/glyphs and owned image, with
+  no extra prose. New positive CLI outputs and source comparisons above.
+- 2: re-tested — full fresh Felix authored units, section strings/order, links,
+  blockquote, image and excluded interface. Though its code did not change, row 6
+  names both scoped sources, so Felix was freshly compared again.
+- 3: re-tested — all wrong/ambiguous targets, contradictory/full-or-sparse native
+  sources, preview/truncated text, missing body/photo, login/challenge and protected
+  dated-unit negatives; real browser delivery plus seeded old body/summary preservation
+  and no-summary-on-extraction-failure pipeline cases. New attachment variants passed.
+- 4: re-tested — four named category cases retain initial/retry causes and Failed 1,
+  Success 0; actual adapter conflict rejection and browser category/cause transport
+  passed. New supplied-attachment contradiction paths reject rather than succeed.
+- 5: carried over — checked the entire fix diff: only Facebook attachment evidence
+  reconciliation changes product behavior. X parsing, general/dated extraction,
+  pagination, browser-mode/profile rules and retry policy are unchanged. Prior fresh
+  11-X comparisons and ordinary/pagination/retry tests remain valid, including their
+  explicitly disclosed root-slash, protocol-relative-link and heading-format limits.
+  No new X live run or broader regression claim is made in Round 2.
+- 6: re-tested — all source surfaces for BOTH scoped samples were independently
+  captured and compared again; neither count-only checks nor prior results stand in.
+- 7: re-tested — numeric Facebook, original slug and Felix final CLI each exit 0,
+  Success 1/Failed 0; saved bodies checked against fresh sources as above.
+- 8: re-tested — full scoped fresh Facebook/Felix summary-input and summary-failure
+  Partial cases plus generated/embedded success and file preservation. Isolated
+  summary fixtures were used; production provider availability remains untested.
+- 9: re-tested — fresh CLI processing messages; pipeline headless retry, retry
+  success/failure, same-check rejection and explicit-headed no-repeat cases passed.
+- 10: re-tested — adapter/browser recognized-wall negatives and pipeline blocked
+  retry enabled/disabled cases passed; no verification body is accepted or saved.
+- 11: re-tested — real-browser loading/category/cause fixture plus pipeline retry
+  exhaustion, Failed classification and preserved seeded-file cases passed. The
+  unchanged CLI error-exit boundary was also exercised by row 13 below.
+- 12: re-tested — fresh requested target positives and real-browser wrong redirect,
+  native conflicting identity/permalink/author negatives including earned probe.
+- 13: re-tested — adapter missing-body/login-only negatives, scoped body-category
+  propagation and actual single-URL owned empty-page command: exhausted retry,
+  Failed 1/Success 0, exit 1, no new body. Reused the existing empty-page fixture
+  scenario in the new environment, not a new probe or production page.
+- 14: re-tested — all source-message and attachment conflict/truncation/extent
+  negatives, including sparse duplicate records, plus Felix lost-unit/ambiguity and
+  seeded old-content/summary preservation. Both successful scoped sources also
+  pass, so the negatives do not replace testing complete bodies.
+- 15: carried over — batch/watch loops, statistics and next-cycle retry routing are
+  untouched by the diff. Prior actual two-item continuation and two-cycle watch
+  run remain evidence, including its graceful stop of only the isolated process.
+- 16: re-tested — completed skips, forced reprocess, pending scoped fresh extracts,
+  failures preserving both existing files, ordinary cached resume and dry-run tests;
+  actual scoped single-URL invocations freshly reprocess all three samples.
+- 17: carried over — no-work/dry-run return before invoking the changed Facebook
+  adapter; command/source-selection paths unchanged. Earlier real CLI results
+  (exit 0, no extraction or new notes) remain valid; focused dry-run cases also passed.
+- 18: re-tested — clean setup, all affected source surfaces and categories recorded;
+  remaining rows checked against actual fix diff with explicit reasons. Fatal review
+  finding history is preserved, none dismissed. No production writes or skipped steps.
+
+The extra row-13 CLI result is captured in
+`/private/tmp/rlss-accept-round2-fresh/flow-single-failure.log`.
+All runs finished; this tester did not fix product/test code, run a full suite,
+or leave a browser/watch process running.
+
 # Prior implementer evidence appendix — not independent acceptance
 
 The following pre-existing material is retained for provenance. Its results are
