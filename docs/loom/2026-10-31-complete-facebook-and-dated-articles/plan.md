@@ -35,6 +35,17 @@ charter: 1.1
 - Test: A6 positive: source-compared-final-cli; boundary: unavailable-source-disclosed.
 - Risk: agent-decided — REQ-6 uses isolated profiles/config/output and final bundle; keep full copyrighted captures and private browser state uncommitted, record actual-source changes and unavailable cases honestly.
 
+### Wave 5 — Adversarial identity regression
+**W5-01 Reject contradictory Facebook source identities** after: W4-01 acceptance: 1, 3
+- Files: facebook.ts, extraction.test.mjs, embed/defuddle.min.js
+- Test: A3 negative: committed facebook-identity.test.mjs adversarial probe must change from RED to GREEN; existing Facebook alias positives remain green.
+- Risk: agent-decided — Sweep requested/native/permalink/actor identities and duplicate public records as one contradiction class; preserve verified pfbid aliases and media ownership checks.
+
+**W5-02 Graduate the earned identity probe into maintained tests** after: W5-01 acceptance: 3
+- Files: docs/loom/2026-10-31-complete-facebook-and-dated-articles/evidence/probes/facebook-identity.test.mjs (move only), facebook-identity.test.mjs, extraction_test.go, package.json
+- Test: A3 negative: unchanged earned probe runs through npm test and go test -run '^TestExtraction$' .
+- Risk: agent-decided — Move the independent program unchanged; reuse existing runners without new dependencies or a test harness.
+
 ## Simplicity check
 - none found
 
