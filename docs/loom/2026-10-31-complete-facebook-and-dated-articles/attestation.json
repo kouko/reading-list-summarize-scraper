@@ -12,10 +12,10 @@
     },
     {
       "kind": "adversarial",
-      "command": "go test -json -count=1 -run '^TestExtraction$' .",
+      "command": "go test -json -count=1 extraction_test.go",
       "artifact": "extraction_test.go",
       "result": "pass",
-      "command_digest": "c1b52ca2c1c19bf2f98149ed69b9bbd0f3373b7293d0b1d681c2a7f9cec3b0fc",
+      "command_digest": "b60da93f8230568201eef06743bb437b9ee6ae58bb520383f5cddde0e3bb0ec3",
       "evidence": "parsed",
       "passed": 1
     }
