@@ -39,6 +39,10 @@ test('facebook-source-conflict rejects unverified identity, source, body and med
  for (const change of [
   ({story})=>{story.post_id='999';},
   ({story})=>{story.actors[0].url='https://www.facebook.com/other';},
+  ...['https://www.facebook.com/writer/posts/999/','https://www.facebook.com/other/posts/123/','https://www.facebook.com/writer/posts/pfbidOther/','https://user@www.facebook.com/writer/posts/123/','https://www.facebook.com:8443/writer/posts/123/'].flatMap(permalink=>[
+   ({story})=>{story.duplicate={post_id:'123',id:'story',permalink_url:permalink};},
+   ({story})=>{story.comet_sections.content.story.url=permalink;},
+  ]),
   ({story})=>{story.comet_sections.content.story.message.text='Wrong body';},
   ({story})=>{story.message={text:'Contradictory source'};},
   ({story})=>{story.duplicate={post_id:'123',id:'story',actors:[{id:'999',url:'https://www.facebook.com/writer'}]};},

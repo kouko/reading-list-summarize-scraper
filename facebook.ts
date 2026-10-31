@@ -4,7 +4,8 @@ export function facebook(document: Document, requested: URL): string {
     const url = (value: string) => { try { return new URL(value, requested.href); } catch { return null; } };
     const ownURL = (value: string) => {
         const parsed = url(value);
-        return parsed?.protocol === 'https:' && /^(?:www\.)?facebook\.com$/.test(parsed.hostname) ? parsed : null;
+        return parsed?.protocol === 'https:' && !parsed.username && !parsed.password && !parsed.port
+            && /^(?:www\.)?facebook\.com$/.test(parsed.hostname) ? parsed : null;
     };
     const identity = requested.pathname.match(/^\/([^/]+)\/posts\/(?:[^/]+\/)?(\d+)\/?$/);
     if (requested.protocol !== 'https:' || !identity) fail('target unverified', 'unsupported requested identity');
@@ -37,6 +38,15 @@ export function facebook(document: Document, requested: URL): string {
     if (!candidates.length) fail('body unavailable', 'original message absent');
     let agreed = '';
     let result = '';
+    let permalinkAlias = '';
+    const verifyPermalink = (value: string) => {
+        const path = ownURL(value)?.pathname.match(/^\/([^/]+)\/posts\/(?:[^/]+\/)?(\d+|pfbid[^/]+)\/?$/);
+        if (!path || path[1] !== author || (/^\d+$/.test(path[2]) && path[2] !== postID)) fail('target unverified', 'conflicting public permalink');
+        if (path![2].startsWith('pfbid')) {
+            if (permalinkAlias && permalinkAlias !== path![2]) fail('target unverified', 'conflicting public permalink');
+            permalinkAlias = path![2];
+        }
+    };
     for (const record of candidates) {
         const story = record.comet_sections.content.story;
         const actors = record.actors;
@@ -45,6 +55,9 @@ export function facebook(document: Document, requested: URL): string {
         const text = story.message.text;
         if (typeof text !== 'string' || !text.trim()) fail('body unavailable', 'empty original message');
         for (const source of [...records, story]) {
+            for (const field of ['permalink_url', 'url']) {
+                if (source[field] !== undefined) verifyPermalink(source[field]);
+            }
             if ((source.message?.text !== undefined && source.message.text !== text)
                 || (source.id && source.id !== record.id)
                 || source.is_truncated || source.message?.is_truncated) fail('incomplete', 'conflicting target sources');
