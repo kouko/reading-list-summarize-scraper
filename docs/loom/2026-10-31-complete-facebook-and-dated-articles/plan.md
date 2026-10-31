@@ -42,9 +42,9 @@ charter: 1.1
 - Risk: agent-decided — Sweep requested/native/permalink/actor identities and duplicate public records as one contradiction class; preserve verified pfbid aliases and media ownership checks.
 
 **W5-02 Graduate the earned identity probe into maintained tests** after: W5-01 acceptance: 3
-- Files: docs/loom/2026-10-31-complete-facebook-and-dated-articles/evidence/probes/facebook-identity.test.mjs (move only), facebook-identity.test.mjs, extraction_test.go, package.json
+- Files: docs/loom/2026-10-31-complete-facebook-and-dated-articles/evidence/probes/facebook-identity.test.mjs (move only), facebook-identity.test.mjs (intermediate move only), test_facebook_conflictingPermalink_rejected.mjs, extraction_test.go, package.json
 - Test: A3 negative: unchanged earned probe runs through npm test and go test -run '^TestExtraction$' .
-- Risk: agent-decided — Move the independent program unchanged; reuse existing runners without new dependencies or a test harness.
+- Risk: agent-decided — Move the independent program unchanged; reuse existing runners without new dependencies or a test harness. Match its final filename to its existing test name because Node 22 JUnit omits testcase.file; this lets independent reviewers quote the genuine passing suite output for the exact artifact without modifying the program or fabricating runner evidence.
 
 ## Simplicity check
 - none found
