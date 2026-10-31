@@ -1,6 +1,6 @@
 # Complete Facebook and dated articles — spec
 intent: 2026-10-31-complete-facebook-and-dated-articles@fc198038870a9f5a2af6b2b9f5e8575c4fd8e4ae
-confirmed-behavior: 2026-10-31 @ce6213d
+confirmed-behavior: 2026-10-31 @8871d5c
 pre-build-review: required — Target identity and completeness affect the saved-content contract; structured social-page data can contain unrelated posts and private state, and an incorrect match could be saved and summarized as the requested article.
 
 ## Requirements
