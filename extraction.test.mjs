@@ -74,7 +74,7 @@ test('dated-body-complete retains owned prose, headings, references and images o
  assert.equal(d.documentElement.outerHTML,original);
 });
 test('dated-body-unit-loss rejects ambiguous or lost owned units and ignores dated side content', async () => {
- for (const extra of [`<p class="advertisement">Unique authored sentence that must survive.</p>`,`<p>Case-sensitive authored SENTENCE.</p><div data-date="2026-10-13" class="gh-content">${datedProse}</div>`]) {
+ for (const extra of [`<p class="advertisement">Unique authored sentence that must survive.</p>`,`<div class="advertisement">Unique authored tail outside a paragraph.</div>`,`<p>Case-sensitive authored SENTENCE.</p><div data-date="2026-10-13" class="gh-content">${datedProse}</div>`]) {
   await assert.rejects(extractArticle(doc(`<article><h1>Authored article</h1><div class="gh-content" data-date="2026-10-13">${datedProse}${extra}</div></article>`),'https://example.com/article'),/Article incomplete|Article target unverified/);
  }
  const out=await extractArticle(doc(`<article><h1>Real article</h1><p>${'The genuine ordinary article remains readable. '.repeat(30)}</p><aside><div class="gh-content" data-date="2026-10-13">${datedProse}</div></aside><section class="comments"><div data-date="2026-10-13">${datedProse}</div></section></article>`),'https://example.com/article');

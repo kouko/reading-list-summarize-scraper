@@ -582,13 +582,21 @@ async function extractContent(document: Document, address: string, fetcher: type
             if (style?.display === 'none' || style?.visibility === 'hidden') copies[i].remove();
         });
         body.querySelectorAll('[hidden], [aria-hidden="true"], [style*="display: none"], [style*="display:none"], script, style, form, nav, aside').forEach(el => el.remove());
-        const units = 'p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, figcaption, img';
-        for (const unit of Array.from(body.querySelectorAll(units))) {
-            if (unit.parentElement?.closest(units) && body.contains(unit.parentElement.closest(units))) continue;
-            const html = /^(?:H[1-6]|IMG|PRE)$/.test(unit.tagName) ? unit.outerHTML : unit.innerHTML;
-            const markdown = createMarkdownContent(html,url.href).trim();
-            if (markdown) expected.push(markdown);
-        }
+        const units = 'p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, figcaption, img, a';
+        const collect = (node: Node) => {
+            const element = node.nodeType === 1 ? node as Element : null;
+            if (element?.matches(units)) {
+                const html = /^(?:H[1-6]|IMG|PRE|A)$/.test(element.tagName) ? element.outerHTML : element.innerHTML;
+                const markdown = createMarkdownContent(html,url.href).trim();
+                if (markdown) expected.push(markdown);
+            } else if (node.nodeType === 3 && node.textContent?.trim()) {
+                // Custom wrappers and bare text are authored content too.
+                const holder = input.createElement('span');
+                holder.appendChild(node.cloneNode(true));
+                expected.push(createMarkdownContent(holder.innerHTML,url.href).trim());
+            } else node.childNodes.forEach(collect);
+        };
+        body.childNodes.forEach(collect);
     }
     const result = new Defuddle(input, { markdown: true }).parse();
     // Ignore whitespace (including spacing lost around empty inline markup):
