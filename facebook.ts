@@ -44,9 +44,13 @@ export function facebook(document: Document, requested: URL): string {
             || key(actors[0].url) !== `/${author}` || !key(record.permalink_url)) fail('target unverified', 'author or story identity');
         const text = story.message.text;
         if (typeof text !== 'string' || !text.trim()) fail('body unavailable', 'empty original message');
-        for (const source of records) {
+        for (const source of [...records, story]) {
             if ((source.message?.text !== undefined && source.message.text !== text)
-                || (source.id && source.id !== record.id)) fail('incomplete', 'conflicting target sources');
+                || (source.id && source.id !== record.id)
+                || source.is_truncated || source.message?.is_truncated) fail('incomplete', 'conflicting target sources');
+            if (source.actors !== undefined && (!Array.isArray(source.actors) || source.actors.length !== 1 || !source.actors[0]
+                || (source.actors[0].id !== undefined && source.actors[0].id !== actors[0].id)
+                || (source.actors[0].url !== undefined && key(source.actors[0].url) !== key(actors[0].url)))) fail('target unverified', 'conflicting public author');
         }
         if (story.message.is_truncated || story.is_truncated || record.is_truncated) fail('incomplete', 'truncated original message');
         const messages = Array.from(document.querySelectorAll('[data-ad-preview="message"], [data-ad-comet-preview="message"], [data-testid="post_message"]'));
@@ -87,8 +91,16 @@ export function facebook(document: Document, requested: URL): string {
             if (!media || media.__typename !== 'Photo' || !media.id || other?.id !== media.id || media.creation_story?.id !== record.id
                 || !Array.isArray(content.all_subattachments?.nodes) || content.all_subattachments.nodes.length
                 || content.all_subattachments.page_info?.has_next_page || attachment.all_subattachments?.nodes?.length
+                || attachment.all_subattachments?.page_info?.has_next_page
                 || !asset(media.photo_image?.uri) || !(media.photo_image.width > 0 && media.photo_image.height > 0)
                 || ownURL(media.url)?.searchParams.get('fbid') !== media.id) fail('incomplete', 'unverified attachment extent');
+            for (const copy of [attachment.media, content.media, content.styles?.attachment?.media].filter(Boolean)) {
+                if ((copy.id !== undefined && copy.id !== media.id)
+                    || (copy.__typename !== undefined && copy.__typename !== 'Photo')
+                    || (copy.photo_image?.uri !== undefined && asset(copy.photo_image.uri) !== asset(media.photo_image.uri))
+                    || (copy.creation_story?.id !== undefined && copy.creation_story.id !== record.id)
+                    || (copy.url !== undefined && ownURL(copy.url)?.searchParams.get('fbid') !== media.id)) fail('incomplete', 'conflicting attachment sources');
+            }
             const images = Array.from(owner.querySelectorAll('a[href] img')).filter(image => {
                 const anchor = image.closest('a[href]');
                 return ownURL(anchor?.getAttribute('href') || '')?.searchParams.get('fbid') === media.id && asset(image.getAttribute('src') || '') === asset(media.photo_image.uri);
