@@ -6,7 +6,7 @@ import (
 )
 
 func TestExtraction(t *testing.T) {
-	output, err := exec.Command("node", "--test", "extraction.test.mjs", "facebook-identity.test.mjs").CombinedOutput()
+	output, err := exec.Command("node", "--test", "extraction.test.mjs", "test_facebook_conflictingPermalink_rejected.mjs").CombinedOutput()
 	t.Logf("JavaScript extraction tests:\n%s", output)
 	if err != nil {
 		t.Fatalf("JavaScript extraction tests failed: %v", err)
