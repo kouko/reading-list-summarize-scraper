@@ -17,6 +17,22 @@ globalThis.document = browser.document;
 globalThis.DOMParser = browser.window.DOMParser;
 const { extractArticle, socialSnapshot } = await import(pathToFileURL(modulePath).href);
 const doc = (body) => parseHTML(`<html><head></head><body>${body}</body></html>`).document;
+const datedProse = `<p>${'A concrete authored observation deserves careful reading. '.repeat(12)}<a href="https://example.com/reference">Reference</a></p><h2><span aria-hidden="true">PART 2/5</span>Next section</h2><p>${'A second observation preserves its original wording. '.repeat(12)}</p><figure><img src="https://example.com/owned.jpg" alt="Owned illustration"></figure>`;
+test('dated-body-complete retains owned prose, headings, references and images on a copy', async () => {
+ const d=doc(`<article><h1>Authored article</h1><time data-date="2026-10-13">DATE ONLY METADATA</time><div class="gh-content" data-date="2026-10-13">${datedProse}</div><form>SUBSCRIBE NOW</form></article>`);
+ const original=d.documentElement.outerHTML;
+ const out=await extractArticle(d,'https://example.com/article');
+ for (const text of ['A concrete authored observation','A second observation','## Next section','[Reference](https://example.com/reference)','![Owned illustration](https://example.com/owned.jpg)']) assert.ok(out.includes(text),text);
+ assert.doesNotMatch(out,/PART 2\/5|DATE ONLY METADATA|SUBSCRIBE NOW/);
+ assert.equal(d.documentElement.outerHTML,original);
+});
+test('dated-body-unit-loss rejects ambiguous or lost owned units and ignores dated side content', async () => {
+ for (const extra of [`<p class="advertisement">Unique authored sentence that must survive.</p>`,`<p>Case-sensitive authored SENTENCE.</p><div data-date="2026-10-13" class="gh-content">${datedProse}</div>`]) {
+  await assert.rejects(extractArticle(doc(`<article><h1>Authored article</h1><div class="gh-content" data-date="2026-10-13">${datedProse}${extra}</div></article>`),'https://example.com/article'),/Article incomplete|Article target unverified/);
+ }
+ const out=await extractArticle(doc(`<article><h1>Real article</h1><p>${'The genuine ordinary article remains readable. '.repeat(30)}</p><aside><div class="gh-content" data-date="2026-10-13">${datedProse}</div></aside><section class="comments"><div data-date="2026-10-13">${datedProse}</div></section></article>`),'https://example.com/article');
+ assert.doesNotMatch(out,/A concrete authored observation/);
+});
 // Public Threads response shape, with synthetic captions and identities only.
 const threadPost = (code, id, reply = false) => ({pk:id, code, user:{id:'author',username:'writer'}, caption:{text:`Section ${code}.`},text_post_app_info:{id:`XDTTextPostAppMediaInfo:${id}`,is_reply:reply}});
 const threadPage = (posts, extra = {}) => doc(`<script type="application/json">${JSON.stringify({data:{post:posts[0],connection:{id:posts[0].text_post_app_info.id,self_thread:{posts:{edges:posts.slice(1).map(node=>({node})),page_info:{has_next_page:false,end_cursor:null}},post_ids:{edges:posts.slice(1).map(p=>({node:{pk:p.pk}}))}},direct_replies:{edges:[],page_info:{has_next_page:false,end_cursor:null}},...extra}}})}</script>`);
