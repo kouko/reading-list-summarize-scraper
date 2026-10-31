@@ -46,6 +46,12 @@ charter: 1.1
 - Test: A3 negative: unchanged earned probe runs through npm test and go test -run '^TestExtraction$' .
 - Risk: agent-decided — Move the independent program unchanged; reuse existing runners without new dependencies or a test harness. Match its final filename to its existing test name because Node 22 JUnit omits testcase.file; this lets independent reviewers quote the genuine passing suite output for the exact artifact without modifying the program or fabricating runner evidence.
 
+### Wave 6 — Cross-record attachment consistency
+**W6-01 Reject contradictory supplied attachment evidence across target records** after: W5-02 acceptance: 1, 3
+- Files: facebook.ts (entry: facebook), extraction.test.mjs, embed/defuddle.min.js
+- Test: A3 negative: extend facebook-source-conflict with supplied duplicate-record attachment extent/media contradictions, observe RED then GREEN; existing complete Facebook extraction remains green.
+- Risk: agent-decided — The closing review found matching target records without a full message bypass attachment reconciliation. Reconcile supplied attachment arrays and media fields across matching records and nested content stories; absent optional fields do not assert a contradiction. Preserve native/DOM ownership and original media checks.
+
 ## Simplicity check
 - none found
 
