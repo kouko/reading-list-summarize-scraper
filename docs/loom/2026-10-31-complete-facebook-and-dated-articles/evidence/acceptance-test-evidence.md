@@ -402,6 +402,70 @@ The extra row-13 CLI result is captured in
 All runs finished; this tester did not fix product/test code, run a full suite,
 or leave a browser/watch process running.
 
+## Re-run on 2026-10-31, at fbd78c9 — final annotation-only acceptance
+
+- Final input: `fbd78c9787c26c59dc2a0baefa04e391ae143434`. Reviewed the complete
+  `8415d58..fbd78c9` diff: six plan lines and two lines adding a concern comment
+  before imports in the existing native Go test entry. No executable test logic,
+  runner command, product source, browser bundle, dependency or configuration changed.
+- The previous finalization attempt at 8415d58 refused before execution because
+  its Go collector could not recognize the JavaScript subprocess file as a native
+  suite artifact. The final plan designates the EXISTING Go `TestExtraction` entry
+  as the execution artifact; its behavior and JavaScript children are unchanged.
+  The refusal was a collection failure, not a passing test result. No outside
+  service, new test function or product repair was introduced for this resolution.
+- NEW clean checkout:
+  `git worktree add --detach /private/tmp/rlss-accept-final-fbd78c9 fbd78c9`.
+  README setup run once in this checkout: `npm ci` (26 installed/27 audited,
+  vulnerabilities 0), `npm run build:defuddle` (809.1kb), and
+  `go build -o /private/tmp/rlss-accept-final-bin ./cmd/rlss/`; all exited 0.
+- Actual focused execution:
+  `go test -json -count=1 -run '^TestExtraction$' .` exited 0. Captured native
+  `Action: pass`, `Test: TestExtraction`, elapsed 0.59s; package PASS, 1.219s.
+  The uncached entry executed all 26 child JavaScript tests with pass 26/fail 0,
+  including the unchanged earned identity program. Log:
+  `/private/tmp/rlss-accept-final-native.json`.
+- `git hash-object test_facebook_conflictingPermalink_rejected.mjs` returned
+  `94602b5707815c79969c9d010fbf2704498ab653`, matching the original earned program.
+  Collection/runner acceptance is the orchestrator's responsibility; this witness
+  independently verifies actual native-entry execution, without claiming a fresh
+  full-package run or substituting parent-reported results.
+- Full suite remains `go test ./...`, owned by finalize-review: it runs before
+  acceptance and blocks acceptance on failure. No step is skipped. No important
+  or fatal finding was dismissed; Round 1's attachment issue remains fixed and
+  independently re-tested in the Round 2 record above.
+- No live-source, browser-profile, batch or watch rerun was needed or performed:
+  executable behavior is identical. Production notes, configuration, executable
+  and running processes remain untouched; setup artifacts are isolated.
+
+Every report row carries its previous verdict with a reason checked against that
+complete diff; no new source result is claimed:
+
+- 1: carried over — only plan/comment changes; both Facebook URLs' full ordered
+  text, blank lines, hashtag targets, glyphs and owned image checks remain valid.
+- 2: carried over — dated-body extraction and Felix source/output are unchanged;
+  the prior fresh 43-unit, four-heading, eight-link, one-image comparison remains valid.
+- 3: carried over — rejection, attachment reconciliation and file-preservation logic
+  unchanged; prior full scoped negatives and preservation runs remain valid.
+- 4: carried over — error categories, causes and reporting unchanged.
+- 5: carried over — no X/general/pagination/profile/retry logic changed; prior
+  actual-source comparisons and focused checks remain valid with disclosed limits.
+- 6: carried over — source comparison method and all delivered bodies unchanged;
+  both scoped samples retain their full independent Round 2 source evidence.
+- 7: carried over — successful CLI commands, saved outputs and exit handling unchanged.
+- 8: carried over — verified summary input, Partial status and body preservation unchanged.
+- 9: carried over — progress, headed retry and explicit-headed no-repeat unchanged.
+- 10: carried over — recognized verification-page rejection and retry switch unchanged.
+- 11: carried over — loading, cause retention, failure reporting and preservation unchanged.
+- 12: carried over — requested-target binding and identity contradiction checks unchanged.
+- 13: carried over — missing-body rejection, Failed status and exit 1 handling unchanged.
+- 14: carried over — incomplete/conflicting-body and media rejection unchanged.
+- 15: carried over — batch continuation, watch next-cycle retry and statistics unchanged.
+- 16: carried over — completed skipping, pending revalidation and ordinary resume unchanged.
+- 17: carried over — no-work/dry-run still return before extraction; no command changes.
+- 18: carried over — acceptance evidence/source-isolation behavior unchanged; mandatory
+  clean setup and focused native execution were freshly verified as recorded above.
+
 # Prior implementer evidence appendix — not independent acceptance
 
 The following pre-existing material is retained for provenance. Its results are
