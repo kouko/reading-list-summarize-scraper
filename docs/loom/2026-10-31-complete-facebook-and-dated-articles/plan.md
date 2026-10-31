@@ -52,6 +52,12 @@ charter: 1.1
 - Test: A3 negative: extend facebook-source-conflict with supplied duplicate-record attachment extent/media contradictions, observe RED then GREEN; existing complete Facebook extraction remains green.
 - Risk: agent-decided — Matching records without full messages bypass attachment reconciliation. Reconcile supplied attachment extent/media across matching records and nested stories; absent optional fields assert no contradiction. Preserve native/DOM ownership and original media checks.
 
+### Wave 7 — Native suite evidence binding
+**W7-01 Bind adversarial execution to the existing Go suite entry** after: W6-01 acceptance: 3
+- Files: extraction_test.go (existing TestExtraction runner, concern comment only), test_facebook_conflictingPermalink_rejected.mjs (read-only retained program)
+- Test: A3 negative: go test -json . -run '^TestExtraction$' executes the unchanged earned JavaScript regression through its maintained Go entry.
+- Risk: agent-decided — Loom's Go collector recognizes only selected _test.go files, not child JavaScript programs. Reuse the existing Go entry as execution evidence; the adversary adds its concern annotation. Preserve the earned JavaScript program, runner behavior and standing suite.
+
 ## Simplicity check
 - none found
 
