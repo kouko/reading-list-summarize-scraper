@@ -54,7 +54,8 @@ export function facebook(document: Document, requested: URL): string {
             || key(actors[0].url) !== `/${author}` || !key(record.permalink_url)) fail('target unverified', 'author or story identity');
         const text = story.message.text;
         if (typeof text !== 'string' || !text.trim()) fail('body unavailable', 'empty original message');
-        for (const source of [...records, story]) {
+        const sources = records.flatMap(source => [source, source.comet_sections?.content?.story].filter(Boolean));
+        for (const source of sources) {
             for (const field of ['permalink_url', 'url']) {
                 if (source[field] !== undefined) verifyPermalink(source[field]);
             }
@@ -96,6 +97,8 @@ export function facebook(document: Document, requested: URL): string {
         rendered += text.slice(offset);
         const attachments = record.attachments, contentAttachments = story.attachments;
         if (!Array.isArray(attachments) || !Array.isArray(contentAttachments) || attachments.length !== contentAttachments.length) fail('incomplete', 'attachment extent unavailable');
+        const attachmentSources = sources.filter(source => source.attachments !== undefined).map(source => source.attachments);
+        if (attachmentSources.some(copy => !Array.isArray(copy) || copy.length !== attachments.length)) fail('incomplete', 'conflicting attachment extent');
         const photos: string[] = [], mediaIDs: string[] = [];
         for (let i = 0; i < attachments.length; i++) {
             const attachment = attachments[i], content = contentAttachments[i];
@@ -107,12 +110,18 @@ export function facebook(document: Document, requested: URL): string {
                 || attachment.all_subattachments?.page_info?.has_next_page
                 || !asset(media.photo_image?.uri) || !(media.photo_image.width > 0 && media.photo_image.height > 0)
                 || ownURL(media.url)?.searchParams.get('fbid') !== media.id) fail('incomplete', 'unverified attachment extent');
-            for (const copy of [attachment.media, content.media, content.styles?.attachment?.media].filter(Boolean)) {
-                if ((copy.id !== undefined && copy.id !== media.id)
-                    || (copy.__typename !== undefined && copy.__typename !== 'Photo')
-                    || (copy.photo_image?.uri !== undefined && asset(copy.photo_image.uri) !== asset(media.photo_image.uri))
-                    || (copy.creation_story?.id !== undefined && copy.creation_story.id !== record.id)
-                    || (copy.url !== undefined && ownURL(copy.url)?.searchParams.get('fbid') !== media.id)) fail('incomplete', 'conflicting attachment sources');
+            for (const supplied of attachmentSources.map(copy => copy[i])) {
+                if (!supplied || (supplied.all_subattachments?.nodes !== undefined && (!Array.isArray(supplied.all_subattachments.nodes) || supplied.all_subattachments.nodes.length))
+                    || supplied?.all_subattachments?.page_info?.has_next_page) fail('incomplete', 'conflicting attachment extent');
+                for (const copy of [supplied.media, supplied.styles?.attachment?.media].filter(Boolean)) {
+                    if ((copy.id !== undefined && copy.id !== media.id)
+                        || (copy.__typename !== undefined && copy.__typename !== 'Photo')
+                        || (copy.photo_image?.uri !== undefined && asset(copy.photo_image.uri) !== asset(media.photo_image.uri))
+                        || (copy.photo_image?.width !== undefined && !(copy.photo_image.width > 0))
+                        || (copy.photo_image?.height !== undefined && !(copy.photo_image.height > 0))
+                        || (copy.creation_story?.id !== undefined && copy.creation_story.id !== record.id)
+                        || (copy.url !== undefined && ownURL(copy.url)?.searchParams.get('fbid') !== media.id)) fail('incomplete', 'conflicting attachment sources');
+                }
             }
             const images = Array.from(owner.querySelectorAll('a[href] img')).filter(image => {
                 const anchor = image.closest('a[href]');

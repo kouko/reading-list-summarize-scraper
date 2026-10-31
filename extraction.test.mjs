@@ -27,7 +27,10 @@ const fbPage = () => {
 };
 test('facebook-owned-complete preserves source lines, six hashtags, 18 glyphs and verified photo', async () => {
  for (const address of ['https://www.facebook.com/writer/posts/123/','https://www.facebook.com/writer/posts/original-title/123/']) {
-  const {d}=fbPage(); const before=d.documentElement.outerHTML;
+  const {d,story}=fbPage();
+  story.duplicate={post_id:'123',id:'story',comet_sections:{content:{story:{attachments:[{media:{id:'456'}}]}}}};
+  d.querySelector('script').textContent=JSON.stringify({data:{story}});
+  const before=d.documentElement.outerHTML;
   const out=await extractArticle(d,address);
   assert.ok(out.replace('[Reference](https://example.com/reference)','Reference').startsWith(fbText)); assert.equal((out.match(/🔹/gu)||[]).length,18);
   assert.match(out,/\[Reference\]\(https:\/\/example.com\/reference\)/);
@@ -52,6 +55,22 @@ test('facebook-source-conflict rejects unverified identity, source, body and med
   ({story})=>{story.comet_sections.content.story.message.is_truncated=true;},
   ({story})=>{delete story.comet_sections.content.story.message;},
   ({story})=>{story.attachments=[];},
+  ...[
+   attachments=>attachments.splice(0),
+   attachments=>{attachments[0].styles.attachment.media.id='999';},
+   attachments=>{attachments[0].media={id:'999'};},
+   attachments=>{attachments[0].styles.attachment.media.__typename='Video';},
+   attachments=>{attachments[0].styles.attachment.media.photo_image.uri='https://scontent.example.fbcdn.net/v/other.jpg';},
+   attachments=>{attachments[0].styles.attachment.media.photo_image.width=0;},
+   attachments=>{attachments[0].styles.attachment.media.photo_image.height=0;},
+   attachments=>{attachments[0].styles.attachment.media.creation_story.id='other';},
+   attachments=>{attachments[0].styles.attachment.media.url='https://www.facebook.com/photo/?fbid=999';},
+   attachments=>{attachments[0].all_subattachments.nodes.push({id:'missing'});},
+   attachments=>{attachments[0].all_subattachments.page_info={has_next_page:true};},
+  ].flatMap(mutate=>[false,true].map(nested=>({story})=>{
+   const source={attachments:structuredClone(story.attachments)};mutate(source.attachments);
+   story.duplicate={post_id:'123',id:'story',...(nested?{comet_sections:{content:{story:source}}}:source)};
+  })),
   ({story})=>{story.attachments[0].all_subattachments.nodes.push({id:'missing'});},
   ({story})=>{story.attachments=structuredClone(story.attachments);story.attachments[0].all_subattachments.page_info={has_next_page:true};},
   ({story})=>{story.comet_sections.content.story.attachments=structuredClone(story.attachments);story.comet_sections.content.story.attachments[0].styles.attachment.media.photo_image.uri='https://scontent.example.fbcdn.net/v/other.jpg';},
