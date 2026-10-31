@@ -17,6 +17,46 @@ globalThis.document = browser.document;
 globalThis.DOMParser = browser.window.DOMParser;
 const { extractArticle, socialSnapshot } = await import(pathToFileURL(modulePath).href);
 const doc = (body) => parseHTML(`<html><head></head><body>${body}</body></html>`).document;
+const fbText = `Original opening.\n\n${Array.from({length:18},(_,i)=>`🔹 Item ${i+1}`).join('\n')}\n\n#one #two #three #four #five #six\nReference…`;
+const fbPage = () => {
+ const media={__typename:'Photo',id:'456',photo_image:{uri:'https://scontent.example.fbcdn.net/v/photo.jpg',width:800,height:600},url:'https://www.facebook.com/photo/?fbid=456',creation_story:{id:'story'}};
+ const attachment={styles:{attachment:{media}},all_subattachments:{nodes:[]}};
+ const story={id:'story',post_id:'123',actors:[{id:'789',url:'https://www.facebook.com/writer'}],permalink_url:'https://www.facebook.com/writer/posts/pfbidAlias/',attachments:[attachment],comet_sections:{content:{story:{id:'story',message:{text:fbText},attachments:[attachment]}}}};
+ const d=doc(`<meta property="og:type" content="video.other"><script type="application/json">${JSON.stringify({data:{story}})}</script><div role="article"><a href="https://www.facebook.com/writer">Writer</a><a href="${story.permalink_url}">date</a><div data-ad-preview="message">${fbText.replaceAll('🔹','<img src="/images/emoji.php/a" alt="🔹">').replaceAll('\n','<br>').replace('Reference','<a href="https://example.com/reference">Reference</a>')}</div><a href="/photo/?fbid=456"><img src="https://scontent.other.fbcdn.net/v/photo.jpg?size=small" alt="Own image"></a><div role="article">COMMENT<img src="https://example.com/comment.jpg"></div></div>`);
+ return {d,story};
+};
+test('facebook-owned-complete preserves source lines, six hashtags, 18 glyphs and verified photo', async () => {
+ for (const address of ['https://www.facebook.com/writer/posts/123/','https://www.facebook.com/writer/posts/original-title/123/']) {
+  const {d}=fbPage(); const before=d.documentElement.outerHTML;
+  const out=await extractArticle(d,address);
+  assert.ok(out.replace('[Reference](https://example.com/reference)','Reference').startsWith(fbText)); assert.equal((out.match(/🔹/gu)||[]).length,18);
+  assert.match(out,/\[Reference\]\(https:\/\/example.com\/reference\)/);
+  assert.match(out,/!\[Own image\]\(https:\/\/scontent\.example\.fbcdn\.net\/v\/photo.jpg\)/);
+  assert.doesNotMatch(out,/COMMENT|comment.jpg/); assert.equal(d.documentElement.outerHTML,before);
+ }
+});
+test('facebook-source-conflict rejects unverified identity, source, body and media extent', async () => {
+ for (const change of [
+  ({story})=>{story.post_id='999';},
+  ({story})=>{story.actors[0].url='https://www.facebook.com/other';},
+  ({story})=>{story.comet_sections.content.story.message.text='Wrong body';},
+  ({story})=>{story.message={text:'Contradictory source'};},
+  ({story})=>{story.comet_sections.content.story.message.is_truncated=true;},
+  ({story})=>{delete story.comet_sections.content.story.message;},
+  ({story})=>{story.attachments=[];},
+  ({story})=>{story.attachments[0].all_subattachments.nodes.push({id:'missing'});},
+  ({d})=>{d.querySelector('[data-ad-preview]').append(d.createElement('button'));d.querySelector('button').textContent='See more';},
+  ({d})=>{d.querySelector('[role="article"]').append(d.querySelector('[data-ad-preview]').cloneNode(true));},
+  ({d})=>{d.querySelector('a[href^="/photo/"]').remove();},
+  ({d})=>{d.querySelector('[data-ad-preview]').remove();},
+  ({d})=>{d.querySelector('[role="article"]').innerHTML='<p>Log in to Facebook</p>';},
+  ({d,story})=>{const copy=structuredClone(story);copy.comet_sections.content.story.message.text='Conflict';d.querySelector('script').textContent=JSON.stringify({stories:[story,copy]});},
+ ]) {
+  const fixture=fbPage();change(fixture);
+  if (!fixture.d.querySelector('script').textContent.includes('Conflict')) fixture.d.querySelector('script').textContent=JSON.stringify({data:{story:fixture.story}});
+  await assert.rejects(extractArticle(fixture.d,'https://www.facebook.com/writer/posts/123/'),/Article (target unverified|body unavailable|incomplete)/);
+ }
+});
 const datedProse = `<p>${'A concrete authored observation deserves careful reading. '.repeat(12)}<a href="https://example.com/reference">Reference</a></p><h2><span aria-hidden="true">PART 2/5</span>Next section</h2><p>${'A second observation preserves its original wording. '.repeat(12)}</p><figure><img src="https://example.com/owned.jpg" alt="Owned illustration"></figure>`;
 test('dated-body-complete retains owned prose, headings, references and images on a copy', async () => {
  const d=doc(`<article><h1>Authored article</h1><time data-date="2026-10-13">DATE ONLY METADATA</time><div class="gh-content" data-date="2026-10-13">${datedProse}</div><form>SUBSCRIBE NOW</form></article>`);

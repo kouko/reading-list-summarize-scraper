@@ -1,5 +1,6 @@
 import Defuddle, { createMarkdownContent } from 'defuddle/full';
 import { SaxesParser } from 'saxes';
+import { facebook } from './facebook';
 
 const family = (language: string) => language.toLowerCase().replace(/_/g, '-').split('-')[0];
 const substantive = (text: string) => /\p{L}/u.test(text);
@@ -549,6 +550,7 @@ function social(document: Document, url: URL): string {
 
 async function extractContent(document: Document, address: string, fetcher: typeof fetch): Promise<string> {
     const url = new URL(address), host = url.hostname.replace(/^www\./, '');
+    if (host === 'facebook.com') return facebook(document, url);
     if (['youtube.com', 'm.youtube.com', 'youtu.be'].includes(host)) return youtube(document, url, fetcher);
     if (['bilibili.com', 'm.bilibili.com'].includes(host)) fail('Unverified original language: Bilibili exposes subtitle language but no verified original-audio association');
     if (['vimeo.com', 'dailymotion.com', 'twitch.tv', 'tiktok.com', 'nicovideo.jp', 'niconico.jp', 'youku.com', 'douyin.com'].some(h => host === h || host.endsWith('.' + h)) || document.querySelector('meta[property="og:type"][content^="video"]')) fail('Unsupported video transcript extraction');
