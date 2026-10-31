@@ -163,6 +163,21 @@ verification pages; load errors and empty content still retry. Explicitly headed
 attempts are not retried. Recognized walls fail without saving new content or
 summaries; existing notes are retained.
 
+Facebook extraction supports public target posts at root or `www.facebook.com`
+numeric `/AUTHOR/posts/ID/` and `/AUTHOR/posts/SLUG/ID/` URLs. It verifies native
+post identity against owned rendered text and attachments before saving authored
+paragraphs, links, hashtags, symbols and photos. Missing, conflicting or incomplete
+body/media evidence fails instead of saving a preview, comments or login interface.
+Other Facebook URL forms and arbitrary attachment types are not promised.
+
+Dated article containers retain their owned visible prose, headings, links and
+images through parser cleanup; lost or ambiguous owned units fail. This protects
+the verified Felix article without guaranteeing completeness on every website.
+Facebook and protected dated-article content-only caches are re-extracted before
+summarization. Completed summaries retain normal skipping, and extraction failures
+preserve existing notes. Scoped failures distinguish load failure, unverified
+target, body parsing failure and insufficient completeness.
+
 Video transcript support in this release is limited to YouTube. Extraction saves
 original-language subtitles only when first-party player
 data unambiguously associates the original audio with an automatic-caption
