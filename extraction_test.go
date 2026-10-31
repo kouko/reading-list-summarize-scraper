@@ -1,5 +1,7 @@
 package rlss_test
 
+// concern: The native suite entry executes the unchanged earned Facebook identity regression and fails when its JavaScript tests fail.
+
 import (
 	"os/exec"
 	"testing"
