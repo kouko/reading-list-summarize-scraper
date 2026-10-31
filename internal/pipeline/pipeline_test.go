@@ -75,6 +75,16 @@ func TestProcessItemSocialCache(t *testing.T) {
 		{"dry-run", "https://www.threads.net/@example/post/abc", false, true, true, false, false},
 		{"ordinary-cache-summary-partial", "https://example.com/article", false, true, false, false, false},
 		{"spoof-host-cache", "https://x.com.example.org/article", false, true, false, false, false},
+		{"scoped-cache-fresh-facebook", "https://facebook.com/writer/posts/456/", false, false, false, false, true},
+		{"scoped-cache-fresh-facebook-www", "https://www.facebook.com/writer/posts/456/", false, false, false, false, true},
+		{"scoped-cache-fresh-felix", "https://felixrieseberg.com/another-article/", false, false, false, false, true},
+		{"scoped-cache-fresh-felix-www", "https://www.felixrieseberg.com/another-article/", false, false, false, false, true},
+		{"scoped-cache-failure-preserves", "https://facebook.com/writer/posts/456/", false, false, false, true, true},
+		{"scoped-force-failure-preserves", "https://felixrieseberg.com/another-article/", true, true, false, true, true},
+		{"scoped-completed-skip", "https://facebook.com/writer/posts/456/", true, false, false, false, false},
+		{"scoped-dry-run", "https://felixrieseberg.com/another-article/", false, false, true, false, false},
+		{"scoped-spoof-host-cache", "https://facebook.com.example.org/article", false, false, false, false, false},
+		{"scoped-unrelated-subdomain-cache", "https://other.felixrieseberg.com/article", false, false, false, false, false},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()

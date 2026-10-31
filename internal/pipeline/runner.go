@@ -199,11 +199,12 @@ func (p *Pipeline) ProcessItem(item source.ReadingItem) error {
 	}
 
 	// ── 3. Resume detection ──
-	// Social caches cannot prove the current delivered scope; revalidate live.
+	// Social and scoped article caches cannot prove the current delivered scope;
+	// revalidate live before saving content or requesting a summary.
 	// Other content-only caches retain their existing summary-resume behavior.
 	var markdown string
 	info := p.index.Get(sha8)
-	if info.ContentExists && !info.SummaryExists && !authorThreadTarget(item.URL) {
+	if info.ContentExists && !info.SummaryExists && !authorThreadTarget(item.URL) && !scopedArticleTarget(item.URL) {
 		contentPath := p.index.ContentPath(sha8)
 		if contentPath != "" {
 			data, err := os.ReadFile(contentPath)

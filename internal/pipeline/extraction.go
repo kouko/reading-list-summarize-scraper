@@ -20,6 +20,17 @@ type articleExtractor interface {
 
 var htmlTags = regexp.MustCompile(`<[^>]*>`)
 
+// scopedArticleTarget mirrors the browser's target/completeness checks. Historical
+// Markdown cannot establish those checks, so pending caches must be refreshed.
+func scopedArticleTarget(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil || u.Scheme != "https" {
+		return false
+	}
+	host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+	return host == "facebook.com" || host == "felixrieseberg.com"
+}
+
 func authorThreadTarget(rawURL string) bool {
 	u, err := url.Parse(rawURL)
 	if err != nil {
