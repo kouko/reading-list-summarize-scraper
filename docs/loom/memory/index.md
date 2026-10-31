@@ -10,4 +10,4 @@ okf_version: "0.2"
 
 ## lesson
 
-- [verify-owned-body-before-save](verify-owned-body-before-save.md) — When accepting extracted article content, prove requested identity and owned body completeness before cleanup and saving; metadata or nonempty output is insufficient.
+- [verify-owned-body-before-save](verify-owned-body-before-save.md) — When accepting extracted article content, capture expected owned units before cleanup and verify the extracted body before saving; metadata or parser success is insufficient.
