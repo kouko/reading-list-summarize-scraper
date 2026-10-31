@@ -42,6 +42,30 @@ func (s *stubExtractor) ExtractURLHeaded(url string) (string, error) {
 	return s.retry, s.retryErr
 }
 
+func TestProcessBatchScopedFailureCategory(t *testing.T) {
+	for _, category := range []string{"Article load failed", "Article target unverified", "Article body unavailable", "Article incomplete"} {
+		t.Run(category, func(t *testing.T) {
+			cause := errors.New("source evidence missing")
+			s := &stubExtractor{
+				firstErr: fmt.Errorf("%s: initial source unavailable", category),
+				retryErr: fmt.Errorf("%s: %w", category, cause),
+			}
+			cfg := &config.Config{OutputDir: t.TempDir()}
+			stats := New(cfg, s, nil).ProcessBatch([]source.ReadingItem{{URL: "https://felixrieseberg.com/another-article/"}})
+			if stats.Failed != 1 || stats.Success != 0 || stats.Partial != 0 || len(stats.Errors) != 1 {
+				t.Fatalf("failed source misclassified: %+v", stats)
+			}
+			err := stats.Errors[0].Err
+			if !errors.Is(err, cause) || !strings.Contains(err.Error(), category+": initial source unavailable") || !strings.Contains(err.Error(), category+": source evidence missing") {
+				t.Fatalf("category or attempt cause lost: %v", err)
+			}
+			if !reflect.DeepEqual(s.calls, []string{"initial", "headed"}) {
+				t.Fatalf("non-blocked retry disabled: %v", s.calls)
+			}
+		})
+	}
+}
+
 func TestProcessItemWithFallback(t *testing.T) {
 	loadErr := errors.New("net::ERR_HTTP_RESPONSE_CODE_FAILURE")
 	transcript := verifiedTranscript
@@ -63,6 +87,7 @@ func TestProcessItemWithFallback(t *testing.T) {
 		{"social retry", stubExtractor{first: "preview", retry: verifiedXPost}, verifiedXPost, []string{"initial", "headed"}, false, true},
 		{"social wrong marker", stubExtractor{headed: true, first: strings.Replace(verifiedXPost, `"target":"123"`, `"target":"456"`, 1)}, "", []string{"initial"}, true, false},
 		{"specialized challenge disabled", stubExtractor{firstErr: errors.New("Inaccessible social target: Cloudflare CAPTCHA"), retry: "article"}, "", []string{"initial"}, true, true},
+		{"scoped challenge disabled", stubExtractor{firstErr: errors.New("Article body unavailable: Cloudflare CAPTCHA"), retry: "article"}, "", []string{"initial"}, true, true},
 		{"load error", stubExtractor{firstErr: loadErr, retry: "article"}, "article", []string{"initial", "headed"}, false, false},
 		{"pagination retry replaces partial body", stubExtractor{first: "partial first attempt", firstErr: fmt.Errorf("pagination page 2: %w", loadErr), retry: "page one\n\npage two\n\npage three"}, "page one\n\npage two\n\npage three", []string{"initial", "headed"}, false, false},
 		{"pagination wrapped challenge disabled", stubExtractor{first: "partial first page", firstErr: fmt.Errorf("pagination page 2: %w", errors.New("blocked by anti-bot protection (Cloudflare/CAPTCHA)")), retry: "article"}, "", []string{"initial"}, true, true},
@@ -84,6 +109,9 @@ func TestProcessItemWithFallback(t *testing.T) {
 			cfg := &config.Config{OutputDir: dir, Extract: config.ExtractConfig{HeadedOnBlock: !tt.blockDisabled}}
 			p := New(cfg, &tt.s, nil)
 			rawURL := "https://example.com/article"
+			if strings.HasPrefix(tt.name, "scoped ") {
+				rawURL = "https://facebook.com/writer/posts/456/"
+			}
 			if strings.HasPrefix(tt.name, "pagination") {
 				rawURL += "?page=3"
 			}

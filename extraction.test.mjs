@@ -17,6 +17,92 @@ globalThis.document = browser.document;
 globalThis.DOMParser = browser.window.DOMParser;
 const { extractArticle, socialSnapshot } = await import(pathToFileURL(modulePath).href);
 const doc = (body) => parseHTML(`<html><head></head><body>${body}</body></html>`).document;
+const fbText = `Original opening.\n\n${Array.from({length:18},(_,i)=>`🔹 Item ${i+1}`).join('\n')}\n\n#one #two #three #four #five #six\nReference…`;
+const fbPage = () => {
+ const media={__typename:'Photo',id:'456',photo_image:{uri:'https://scontent.example.fbcdn.net/v/photo.jpg',width:800,height:600},url:'https://www.facebook.com/photo/?fbid=456',creation_story:{id:'story'}};
+ const attachment={styles:{attachment:{media}},all_subattachments:{nodes:[]}};
+ const story={id:'story',post_id:'123',actors:[{id:'789',url:'https://www.facebook.com/writer'}],permalink_url:'https://www.facebook.com/writer/posts/pfbidAlias/',attachments:[attachment],comet_sections:{content:{story:{id:'story',message:{text:fbText},attachments:[attachment]}}}};
+ const d=doc(`<meta property="og:type" content="video.other"><script type="application/json">${JSON.stringify({data:{story}})}</script><div role="article"><a href="https://www.facebook.com/writer">Writer</a><a href="${story.permalink_url}">date</a><div data-ad-preview="message">${fbText.replaceAll('🔹','<img src="/images/emoji.php/a" alt="🔹">').replaceAll('\n','<br>').replace('Reference','<a href="https://example.com/reference">Reference</a>')}</div><a href="/photo/?fbid=456"><img src="https://scontent.other.fbcdn.net/v/photo.jpg?size=small" alt="Own image"></a><div role="article">COMMENT<img src="https://example.com/comment.jpg"></div></div>`);
+ return {d,story};
+};
+test('facebook-owned-complete preserves source lines, six hashtags, 18 glyphs and verified photo', async () => {
+ for (const address of ['https://www.facebook.com/writer/posts/123/','https://www.facebook.com/writer/posts/original-title/123/']) {
+  const {d,story}=fbPage();
+  story.duplicate={post_id:'123',id:'story',comet_sections:{content:{story:{attachments:[{media:{id:'456'}}]}}}};
+  d.querySelector('script').textContent=JSON.stringify({data:{story}});
+  const before=d.documentElement.outerHTML;
+  const out=await extractArticle(d,address);
+  assert.ok(out.replace('[Reference](https://example.com/reference)','Reference').startsWith(fbText)); assert.equal((out.match(/🔹/gu)||[]).length,18);
+  assert.match(out,/\[Reference\]\(https:\/\/example.com\/reference\)/);
+  assert.match(out,/!\[Own image\]\(https:\/\/scontent\.example\.fbcdn\.net\/v\/photo.jpg\)/);
+  assert.doesNotMatch(out,/COMMENT|comment.jpg/); assert.equal(d.documentElement.outerHTML,before);
+ }
+});
+test('facebook-source-conflict rejects unverified identity, source, body and media extent', async () => {
+ for (const change of [
+  ({story})=>{story.post_id='999';},
+  ({story})=>{story.actors[0].url='https://www.facebook.com/other';},
+  ...['https://www.facebook.com/writer/posts/999/','https://www.facebook.com/other/posts/123/','https://www.facebook.com/writer/posts/pfbidOther/','https://user@www.facebook.com/writer/posts/123/','https://www.facebook.com:8443/writer/posts/123/'].flatMap(permalink=>[
+   ({story})=>{story.duplicate={post_id:'123',id:'story',permalink_url:permalink};},
+   ({story})=>{story.comet_sections.content.story.url=permalink;},
+  ]),
+  ({story})=>{story.comet_sections.content.story.message.text='Wrong body';},
+  ({story})=>{story.message={text:'Contradictory source'};},
+  ({story})=>{story.duplicate={post_id:'123',id:'story',actors:[{id:'999',url:'https://www.facebook.com/writer'}]};},
+  ({story})=>{story.duplicate={post_id:'123',id:'story',actors:[{id:'789',url:'https://www.facebook.com/other'}]};},
+  ({story})=>{story.duplicate={post_id:'123',id:'story',message:{text:fbText,is_truncated:true}};},
+  ({story})=>{story.comet_sections.content.story.actors=[{id:'999'}];},
+  ({story})=>{story.comet_sections.content.story.message.is_truncated=true;},
+  ({story})=>{delete story.comet_sections.content.story.message;},
+  ({story})=>{story.attachments=[];},
+  ...[
+   attachments=>attachments.splice(0),
+   attachments=>{attachments[0].styles.attachment.media.id='999';},
+   attachments=>{attachments[0].media={id:'999'};},
+   attachments=>{attachments[0].styles.attachment.media.__typename='Video';},
+   attachments=>{attachments[0].styles.attachment.media.photo_image.uri='https://scontent.example.fbcdn.net/v/other.jpg';},
+   attachments=>{attachments[0].styles.attachment.media.photo_image.width=0;},
+   attachments=>{attachments[0].styles.attachment.media.photo_image.height=0;},
+   attachments=>{attachments[0].styles.attachment.media.creation_story.id='other';},
+   attachments=>{attachments[0].styles.attachment.media.url='https://www.facebook.com/photo/?fbid=999';},
+   attachments=>{attachments[0].all_subattachments.nodes.push({id:'missing'});},
+   attachments=>{attachments[0].all_subattachments.page_info={has_next_page:true};},
+  ].flatMap(mutate=>[false,true].map(nested=>({story})=>{
+   const source={attachments:structuredClone(story.attachments)};mutate(source.attachments);
+   story.duplicate={post_id:'123',id:'story',...(nested?{comet_sections:{content:{story:source}}}:source)};
+  })),
+  ({story})=>{story.attachments[0].all_subattachments.nodes.push({id:'missing'});},
+  ({story})=>{story.attachments=structuredClone(story.attachments);story.attachments[0].all_subattachments.page_info={has_next_page:true};},
+  ({story})=>{story.comet_sections.content.story.attachments=structuredClone(story.attachments);story.comet_sections.content.story.attachments[0].styles.attachment.media.photo_image.uri='https://scontent.example.fbcdn.net/v/other.jpg';},
+  ({story})=>{story.comet_sections.content.story.attachments=structuredClone(story.attachments);story.comet_sections.content.story.attachments[0].styles.attachment.media.creation_story.id='other';},
+  ({d})=>{d.querySelector('[data-ad-preview]').append(d.createElement('button'));d.querySelector('button').textContent='See more';},
+  ({d})=>{d.querySelector('[role="article"]').append(d.querySelector('[data-ad-preview]').cloneNode(true));},
+  ({d})=>{d.querySelector('a[href^="/photo/"]').remove();},
+  ({d})=>{d.querySelector('[data-ad-preview]').remove();},
+  ({d})=>{d.querySelector('[role="article"]').innerHTML='<p>Log in to Facebook</p>';},
+  ({d,story})=>{const copy=structuredClone(story);copy.comet_sections.content.story.message.text='Conflict';d.querySelector('script').textContent=JSON.stringify({stories:[story,copy]});},
+ ]) {
+  const fixture=fbPage();change(fixture);
+  if (!fixture.d.querySelector('script').textContent.includes('Conflict')) fixture.d.querySelector('script').textContent=JSON.stringify({data:{story:fixture.story}});
+  await assert.rejects(extractArticle(fixture.d,'https://www.facebook.com/writer/posts/123/'),/Article (target unverified|body unavailable|incomplete)/);
+ }
+});
+const datedProse = `<p>${'A concrete authored observation deserves careful reading. '.repeat(12)}<a href="https://example.com/reference">Reference</a></p><h2><span aria-hidden="true">PART 2/5</span>Next section</h2><p>${'A second observation preserves its original wording. '.repeat(12)}</p><figure><img src="https://example.com/owned.jpg" alt="Owned illustration"></figure>`;
+test('dated-body-complete retains owned prose, headings, references and images on a copy', async () => {
+ const d=doc(`<article><h1>Authored article</h1><time data-date="2026-10-13">DATE ONLY METADATA</time><div class="gh-content" data-date="2026-10-13">${datedProse}</div><form>SUBSCRIBE NOW</form></article>`);
+ const original=d.documentElement.outerHTML;
+ const out=await extractArticle(d,'https://example.com/article');
+ for (const text of ['A concrete authored observation','A second observation','## Next section','[Reference](https://example.com/reference)','![Owned illustration](https://example.com/owned.jpg)']) assert.ok(out.includes(text),text);
+ assert.doesNotMatch(out,/PART 2\/5|DATE ONLY METADATA|SUBSCRIBE NOW/);
+ assert.equal(d.documentElement.outerHTML,original);
+});
+test('dated-body-unit-loss rejects ambiguous or lost owned units and ignores dated side content', async () => {
+ for (const extra of [`<p class="advertisement">Unique authored sentence that must survive.</p>`,`<div class="advertisement">Unique authored tail outside a paragraph.</div>`,`<p>Case-sensitive authored SENTENCE.</p><div data-date="2026-10-13" class="gh-content">${datedProse}</div>`]) {
+  await assert.rejects(extractArticle(doc(`<article><h1>Authored article</h1><div class="gh-content" data-date="2026-10-13">${datedProse}${extra}</div></article>`),'https://example.com/article'),/Article incomplete|Article target unverified/);
+ }
+ const out=await extractArticle(doc(`<article><h1>Real article</h1><p>${'The genuine ordinary article remains readable. '.repeat(30)}</p><aside><div class="gh-content" data-date="2026-10-13">${datedProse}</div></aside><section class="comments"><div data-date="2026-10-13">${datedProse}</div></section></article>`),'https://example.com/article');
+ assert.doesNotMatch(out,/A concrete authored observation/);
+});
 // Public Threads response shape, with synthetic captions and identities only.
 const threadPost = (code, id, reply = false) => ({pk:id, code, user:{id:'author',username:'writer'}, caption:{text:`Section ${code}.`},text_post_app_info:{id:`XDTTextPostAppMediaInfo:${id}`,is_reply:reply}});
 const threadPage = (posts, extra = {}) => doc(`<script type="application/json">${JSON.stringify({data:{post:posts[0],connection:{id:posts[0].text_post_app_info.id,self_thread:{posts:{edges:posts.slice(1).map(node=>({node})),page_info:{has_next_page:false,end_cursor:null}},post_ids:{edges:posts.slice(1).map(p=>({node:{pk:p.pk}}))}},direct_replies:{edges:[],page_info:{has_next_page:false,end_cursor:null}},...extra}}})}</script>`);

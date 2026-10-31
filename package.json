@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "node --test extraction.test.mjs extraction-boundaries.test.mjs",
+    "test": "node --test extraction.test.mjs extraction-boundaries.test.mjs test_facebook_conflictingPermalink_rejected.mjs",
     "build:defuddle": "esbuild inject.ts --bundle --format=iife --global-name=DefuddleExtractor --platform=browser --target=es2020 --minify --outfile=embed/defuddle.min.js",
     "update:defuddle": "npm update defuddle && npm run build:defuddle"
   },

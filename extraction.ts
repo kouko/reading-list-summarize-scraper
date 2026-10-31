@@ -1,5 +1,6 @@
 import Defuddle, { createMarkdownContent } from 'defuddle/full';
 import { SaxesParser } from 'saxes';
+import { facebook } from './facebook';
 
 const family = (language: string) => language.toLowerCase().replace(/_/g, '-').split('-')[0];
 const substantive = (text: string) => /\p{L}/u.test(text);
@@ -549,11 +550,67 @@ function social(document: Document, url: URL): string {
 
 async function extractContent(document: Document, address: string, fetcher: typeof fetch): Promise<string> {
     const url = new URL(address), host = url.hostname.replace(/^www\./, '');
+    if (host === 'facebook.com') return facebook(document, url);
     if (['youtube.com', 'm.youtube.com', 'youtu.be'].includes(host)) return youtube(document, url, fetcher);
     if (['bilibili.com', 'm.bilibili.com'].includes(host)) fail('Unverified original language: Bilibili exposes subtitle language but no verified original-audio association');
     if (['vimeo.com', 'dailymotion.com', 'twitch.tv', 'tiktok.com', 'nicovideo.jp', 'niconico.jp', 'youku.com', 'douyin.com'].some(h => host === h || host.endsWith('.' + h)) || document.querySelector('meta[property="og:type"][content^="video"]')) fail('Unsupported video transcript extraction');
     if (['x.com', 'twitter.com', 'threads.net', 'threads.com', 'medium.com'].includes(host) || host.endsWith('.medium.com')) return social(document, url);
-    const result = new Defuddle(document, { markdown: true }).parse();
+    // Protect only substantial prose owned by the page's single article.
+    // Keep date-only metadata and unrelated comments/sidebar cleanup intact.
+    const excluded = 'aside, nav, footer, [role="complementary"], [role="comment"], .comments, #comments, [hidden], [aria-hidden="true"]';
+    const bodies = Array.from(document.querySelectorAll('[data-date]')).filter(el => {
+        const article = el.closest('article');
+        return article && !article.parentElement?.closest('article') && !el.closest(excluded)
+            && article.querySelector('h1') && el.querySelectorAll('p').length >= 2
+            && (el.textContent || '').trim().length >= 200;
+    });
+    if (bodies.length > 1) fail('Article target unverified: ambiguous dated article bodies');
+    let input = document;
+    const expected: string[] = [];
+    if (bodies.length) {
+        const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute('href');
+        if (document.querySelectorAll('article').length !== 1 || (canonical && !sameTarget(canonical,url))) fail('Article target unverified: dated article ownership');
+        input = document.cloneNode(true) as Document;
+        const source = bodies[0];
+        const index = Array.from(document.querySelectorAll('[data-date]')).indexOf(source);
+        const body = input.querySelectorAll('[data-date]')[index];
+        body.removeAttribute('data-date');
+        const originals = Array.from(source.querySelectorAll('*'));
+        const copies = Array.from(body.querySelectorAll('*'));
+        originals.forEach((el,i) => {
+            const style = document.defaultView?.getComputedStyle?.(el);
+            if (style?.display === 'none' || style?.visibility === 'hidden') copies[i].remove();
+        });
+        body.querySelectorAll('[hidden], [aria-hidden="true"], [style*="display: none"], [style*="display:none"], script, style, form, nav, aside').forEach(el => el.remove());
+        const units = 'p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, figcaption, img, a';
+        const collect = (node: Node) => {
+            const element = node.nodeType === 1 ? node as Element : null;
+            if (element?.matches(units)) {
+                const html = /^(?:H[1-6]|IMG|PRE|A)$/.test(element.tagName) ? element.outerHTML : element.innerHTML;
+                const markdown = createMarkdownContent(html,url.href).trim();
+                if (markdown) expected.push(markdown);
+            } else if (node.nodeType === 3 && node.textContent?.trim()) {
+                // Custom wrappers and bare text are authored content too.
+                const holder = input.createElement('span');
+                holder.appendChild(node.cloneNode(true));
+                expected.push(createMarkdownContent(holder.innerHTML,url.href).trim());
+            } else node.childNodes.forEach(collect);
+        };
+        body.childNodes.forEach(collect);
+    }
+    const result = new Defuddle(input, { markdown: true }).parse();
+    // Ignore whitespace (including spacing lost around empty inline markup):
+    // case, punctuation, Markdown structure,
+    // link destinations and image references must survive in original order.
+    // This checks available DOM prose, not text withheld by the server.
+    const normalized = (text: string) => text.replace(/\s+/gu,'');
+    let position = 0;
+    const delivered = normalized(result?.content || '');
+    for (const unit of expected) {
+        const text = normalized(unit), found = delivered.indexOf(text,position);
+        if (found < 0) fail('Article incomplete: dated article authored units changed or missing');
+        position = found + text.length;
+    }
     if (!result?.content?.trim()) fail('Ordinary article extraction failed: empty content');
     return result.content;
 }

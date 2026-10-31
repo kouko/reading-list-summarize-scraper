@@ -1,0 +1,83 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-10-31-complete-facebook-and-dated-articles",
+  "content_digest": "ad15c8deb8c05369777238ef3b51c19c88603444",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json -count=1 extraction_test.go",
+      "artifact": "extraction_test.go",
+      "result": "pass",
+      "command_digest": "b60da93f8230568201eef06743bb437b9ee6ae58bb520383f5cddde0e3bb0ec3",
+      "evidence": "parsed",
+      "passed": 1
+    }
+  ],
+  "verdicts": [
+    {
+      "reviewer": "/root/complete_articles_code_review",
+      "vendor": "codex",
+      "model": "inherited (host profile unreported)",
+      "lens": "code",
+      "verdict": "PASS",
+      "reviewed_sha": "5b6dddfeb01674d55fbc2753a7d0e748d4f7caaa",
+      "review_target_sha": "f372357dce3afae168cdeb0cd2be6b1978c6f4c0",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — No ratified ARCHITECTURE.md exists.",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Terminal Round 3 inspected only plan/evidence/report text and a concern comment; executable behavior is unchanged and prior PASS scores remain applicable.",
+        "Existing native runner and handed final-target Go output inspected: TestExtraction passed and its 26 JavaScript tests passed without failures or skips; earned identity regression remains unchanged.",
+        "Acceptance carry-over reasons match the delta; no new external surface, harness, test logic or product change. Earlier Node confirmations are not reused."
+      ]
+    },
+    {
+      "reviewer": "/root/complete_articles_spec_review",
+      "vendor": "codex",
+      "model": "inherited (host profile unreported)",
+      "lens": "spec+adversarial",
+      "verdict": "PASS",
+      "reviewed_sha": "5b6dddfeb01674d55fbc2753a7d0e748d4f7caaa",
+      "review_target_sha": "f372357dce3afae168cdeb0cd2be6b1978c6f4c0",
+      "dimension_scores": {
+        "omission": "PASS",
+        "ambiguity": "PASS",
+        "inconsistency": "PASS",
+        "incorrect-fact": "PASS",
+        "missing-population": "PASS",
+        "deletion-first": "PASS",
+        "spec-conformance": "PASS",
+        "design-conformance": "N/A — no DESIGN.md exists",
+        "principles-conformance": "PASS",
+        "user-judgment-leak": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Terminal Round 3 inspected only the plan/evidence and concern-comment delta; the Round 1 fatal attachment finding remains fixed and executable behavior is unchanged.",
+        "Existing TestExtraction still executes the unchanged earned JavaScript regression; handed final-target Go output records the test and package passing without reusing Node confirmation.",
+        "Final report carries all 18 prior results with behavior-unchanged reasons and separately records fresh clean setup/native-entry execution, without claiming new live-source or full-suite runs."
+      ]
+    }
+  ],
+  "findings": [],
+  "selection": null
+}
