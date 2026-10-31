@@ -4,7 +4,7 @@ export function facebook(document: Document, requested: URL): string {
     const url = (value: string) => { try { return new URL(value, requested.href); } catch { return null; } };
     const ownURL = (value: string) => {
         const parsed = url(value);
-        return parsed?.protocol === 'https:' && !parsed.username && !parsed.password && !parsed.port
+        return parsed?.protocol === 'https:' && !parsed.username && !parsed.password && parsed.port === requested.port
             && /^(?:www\.)?facebook\.com$/.test(parsed.hostname) ? parsed : null;
     };
     const identity = requested.pathname.match(/^\/([^/]+)\/posts\/(?:[^/]+\/)?(\d+)\/?$/);
