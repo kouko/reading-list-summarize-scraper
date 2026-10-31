@@ -3,6 +3,7 @@ package extract
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -75,16 +76,47 @@ func (b *Browser) Extract(url string, jsCode string, timeout time.Duration, wait
 	}
 
 	var content string
+	bodyStage := false
+	address, _ := json.Marshal(url)
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(url),
 		chromedp.WaitVisible(`body`, chromedp.ByQuery),
 		chromedp.Sleep(waitAfterLoad),
+		chromedp.ActionFunc(func(context.Context) error { bodyStage = true; return nil }),
 		chromedp.Evaluate(jsCode, nil),
-		chromedp.Evaluate(`window.extractArticle()`, &content, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
+		chromedp.Evaluate(`window.extractArticle(`+string(address)+`)`, &content, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
 			return p.WithAwaitPromise(true)
 		}),
 	)
-	return content, err
+	if err != nil {
+		return "", articleError(url, err, bodyStage)
+	}
+	return content, nil
+}
+
+// Classify only the two scoped sources; retain the cause for retry policy and
+// diagnostics, including the existing Cloudflare/CAPTCHA challenge markers.
+func articleError(address string, err error, bodyStage bool) error {
+	if err == nil {
+		return nil
+	}
+	u, parseErr := url.Parse(address)
+	if parseErr != nil || u.Scheme != "https" {
+		return err
+	}
+	host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+	if host != "facebook.com" && host != "felixrieseberg.com" {
+		return err
+	}
+	for _, category := range []string{"Article load failed:", "Article target unverified:", "Article body unavailable:", "Article incomplete:"} {
+		if strings.Contains(err.Error(), category) {
+			return err
+		}
+	}
+	if !bodyStage || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return fmt.Errorf("Article load failed: %w", err)
+	}
+	return fmt.Errorf("Article body unavailable: %w", err)
 }
 
 func isSocialPostURL(address string) bool {
@@ -381,6 +413,8 @@ return '';
 	// this closure is the only browser-bound part.
 	fetch := func(pageURL string) (string, string, error) {
 		var content, nextHref string
+		bodyStage := false
+		address, _ := json.Marshal(pageURL)
 		ctx, cancel := chromedp.NewContext(b.ctx)
 		defer cancel()
 		ctx, cancelT := context.WithTimeout(ctx, timeout)
@@ -443,9 +477,10 @@ return '';
 			}),
 			chromedp.WaitVisible(`body`, chromedp.ByQuery),
 			chromedp.Sleep(waitAfterLoad),
+			chromedp.ActionFunc(func(context.Context) error { bodyStage = true; return nil }),
 			chromedp.Evaluate(metadataJS, &metadata),
 			chromedp.Evaluate(jsCode, nil),
-			chromedp.Evaluate(`window.extractArticle()`, &content, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
+			chromedp.Evaluate(`window.extractArticle(`+string(address)+`)`, &content, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
 				return p.WithAwaitPromise(true)
 			}),
 			chromedp.Evaluate(nextJS, &nextHref),
@@ -467,7 +502,7 @@ return '';
 				err = fmt.Errorf("blocked by anti-bot protection (Cloudflare/CAPTCHA)")
 			}
 		}
-		return content, nextHref, err
+		return content, nextHref, articleError(pageURL, err, bodyStage)
 	}
 
 	identity, requestedPage, _, err := articlePage(startURL)

@@ -8,6 +8,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -43,6 +47,110 @@ func newTestBrowser(t *testing.T, flags ...chromedp.ExecAllocatorOption) *Browse
 		t.Fatalf("start test browser: %v", err)
 	}
 	return b
+}
+
+func TestBrowserExtractRequestedArticle(t *testing.T) {
+	// Exercise the current wrapper without changing the committed embedded asset.
+	bundle := filepath.Join(t.TempDir(), "inject.js")
+	build := exec.Command("../../node_modules/.bin/esbuild", "../../inject.ts", "--bundle", "--format=iife", "--platform=browser", "--outfile="+bundle)
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("bundle: %v %s", err, out)
+	}
+	code, err := os.ReadFile(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if destination := r.URL.Query().Get("redirect"); destination != "" {
+			http.Redirect(w, r, destination, http.StatusFound)
+			return
+		}
+		if r.URL.Path == "/pending" {
+			<-r.Context().Done()
+			return
+		}
+		if r.URL.Path == "/challenge" {
+			fmt.Fprint(w, `<title>Just a moment... | Cloudflare</title><body><div id="cf-challenge-running">Verify you are human</div></body>`)
+			return
+		}
+		if strings.Contains(r.URL.Path, "/posts/") {
+			// Even the foreign-origin fixture claims the requested ID. Such a
+			// claim must never establish that Facebook delivered the document.
+			origin := "https://" + strings.Replace(r.Host, "other.test", "facebook.com", 1)
+			fmt.Fprintf(w, `<body><script type="application/json">{"data":{"post_id":"123","id":"story","actors":[{"id":"789","url":%q}],"permalink_url":%q,"attachments":[],"comet_sections":{"content":{"story":{"id":"story","message":{"text":"Verified original Facebook body."},"attachments":[]}}}}}</script><div role="article"><a href="%s/writer/posts/pfbidAlias/">date</a><div data-ad-preview="message">Verified original Facebook body.</div></div></body>`, origin+"/writer", origin+"/writer/posts/pfbidAlias/", origin)
+			return
+		}
+		fmt.Fprint(w, `<body><article><h1>Requested story</h1><p>The original article describes a careful investigation into the history of the city, explaining the evidence and the decisions made by its residents.</p><p>The second section contains the full account of the events and the research that supports the conclusions of this independent report.</p></article></body>`)
+	}))
+	defer server.Close()
+	b := newTestBrowser(t, chromedp.Flag("host-resolver-rules", "MAP felixrieseberg.com 127.0.0.1, MAP facebook.com 127.0.0.1, MAP other.test 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"), chromedp.Flag("no-proxy-server", true), chromedp.Flag("ignore-certificate-errors", true))
+	base := strings.Replace(server.URL, "127.0.0.1", "felixrieseberg.com", 1)
+	facebook := strings.Replace(base, "felixrieseberg.com", "facebook.com", 1)
+	t.Run("requested-target-delivered and browser-entries-retained", func(t *testing.T) {
+		for _, address := range []string{base + "/story", server.URL + "/ordinary?q=%22%5C%27"} {
+			body, err := b.Extract(address, string(code), 10*time.Second, 0)
+			if err != nil || !strings.Contains(body, "careful investigation") {
+				t.Fatalf("%s: %q %v", address, body, err)
+			}
+		}
+		for _, suffix := range []string{"/writer/posts/123/", "/writer/posts/title/123/", "/writer/posts/123/?redirect=" + url.QueryEscape(facebook+"/writer/posts/pfbidAlias/")} {
+			body, err := b.Extract(facebook+suffix, string(code), 10*time.Second, 0)
+			if err != nil || body != "Verified original Facebook body." {
+				t.Fatalf("Facebook %s: %q %v", suffix, body, err)
+			}
+		}
+	})
+	t.Run("redirected-target-rejected", func(t *testing.T) {
+		for _, destination := range []string{base + "/different", strings.Replace(base, "felixrieseberg.com", "other.test", 1) + "/story"} {
+			body, err := b.Extract(base+"/story?redirect="+url.QueryEscape(destination), string(code), 10*time.Second, 0)
+			if err == nil || body != "" || !strings.Contains(err.Error(), "Article target unverified") {
+				t.Errorf("redirect %s: %q %v", destination, body, err)
+			}
+		}
+		for _, destination := range []string{facebook + "/writer/posts/456/", strings.Replace(facebook, "facebook.com", "other.test", 1) + "/writer/posts/pfbidAlias/", facebook + "/writer/posts/pfbidOther/"} {
+			body, err := b.Extract(facebook+"/writer/posts/123/?redirect="+url.QueryEscape(destination), string(code), 10*time.Second, 0)
+			if err == nil || body != "" || !strings.Contains(err.Error(), "Article target unverified") {
+				t.Errorf("Facebook redirect %s: %q %v", destination, body, err)
+			}
+		}
+		body, err := b.Extract(strings.Replace(facebook, "https://", "https://user@", 1)+"/writer/posts/123/", string(code), 10*time.Second, 0)
+		if err == nil || body != "" || !strings.Contains(err.Error(), "Article target unverified") {
+			t.Fatalf("requested userinfo: %q %v", body, err)
+		}
+	})
+	t.Run("scoped-error-category and cause-lost", func(t *testing.T) {
+		for _, tc := range []struct {
+			address, js, want string
+			timeout           time.Duration
+		}{
+			{base + "/pending", string(code), "Article load failed", 300 * time.Millisecond},
+			{base + "/story", `window.extractArticle=()=>{throw Error('parser exploded')}`, "Article body unavailable: exception", 10 * time.Second},
+			{base + "/story", `window.extractArticle=()=>{throw Error('Article incomplete: missing image')}`, "Article incomplete: missing image", 10 * time.Second},
+			{base + "/story", `window.extractArticle=()=>{throw Error('Cloudflare security challenge')}`, "Cloudflare security challenge", 10 * time.Second},
+			{base + "/story?redirect=" + url.QueryEscape(base+"/challenge"), string(code), "Cloudflare security challenge", 10 * time.Second},
+			{server.URL + "/story", `window.extractArticle=()=>{throw Error('Unsupported video transcript extraction')}`, "Unsupported video transcript extraction", 10 * time.Second},
+		} {
+			body, err := b.Extract(tc.address, tc.js, tc.timeout, 0)
+			if err == nil || body != "" || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("%s: %q %v, want %s", tc.address, body, err, tc.want)
+			}
+			if strings.Contains(tc.js, "parser exploded") && !strings.Contains(err.Error(), "parser exploded") {
+				t.Error("lost parser cause")
+			}
+		}
+	})
+	t.Run("pagination-entry-retained", func(t *testing.T) {
+		address := base + "/story?q=%22%5C%27"
+		js := `window.extractArticle=(requested)=>{if(requested!==location.href)throw Error('requested address missing');return document.querySelector('article').textContent}`
+		body, err := b.ExtractPaginated(address, js, ".next", 2, 10*time.Second, 0)
+		if err != nil || !strings.Contains(body, "careful investigation") {
+			t.Fatalf("%q %v", body, err)
+		}
+		body, err = b.Extract(address, js, 10*time.Second, 0)
+		if err != nil || !strings.Contains(body, "careful investigation") {
+			t.Fatalf("ordinary requested argument: %q %v", body, err)
+		}
+	})
 }
 
 func TestBrowserExtractSocialCompleteOnly(t *testing.T) {
