@@ -66,3 +66,26 @@ The five timing failures contained whitespace-only srv3 paragraphs without durat
 The Chinese target supplied `Chinese (Traditional) original` on audio ID `zh-Hant.4`, bound uniquely to a caption-audio association including human `zh-TW`. A default auto-dubbed English track was also present; the default flag did not establish originality. The exact affirmative label now supplies the `zh` family only when the existing ID-family and association checks agree. Negated/qualified Chinese labels and English-ID contradictions remain unconfirmed in focused tests. Other unrecognized labels still supply no proof.
 
 The three remaining failures had no offered caption tracks in all bounded player responses; they were not counted as successful and no permanent absence of captions is inferred. Three successful samples still delivered unconfirmed `en-US` automatic captions despite their Japanese sampling group; grouping is not proof of spoken language. No naturally supplied translated endpoint was observed. Production configuration, running processes, browser login state and existing notes were unchanged.
+
+## Explicit original identity with shared multilingual caption availability
+
+A second nonoverlapping 18-target cohort exposed two original-preference defects after the preceding report. The user approved retaining consistent original-audio identity independently of other-language captions in its shared association, and explicitly authorized one additional review round on 2026-11-01. The scoped permission is recorded in plan Risks; no new intent or review episode was manufactured.
+
+At product commit `2a14a42928f05ff23f493ffc9b3d1d51289f59e4`, a fresh isolated logged-out headless browser repeated **both cohorts: 36 distinct targets**. The normal `current` research method imported the committed source; no preferred-language interceptor or other-language request blocking was used. Local artifacts: `/private/tmp/rlss-youtube-original-marker-study/study.js`, `headless/*-current.json`, `headless/summary.json` and `check.py`. The public-browser driver exited 0, with no browser errors. The separate XML checker verified requested/player/returned identities, every nonempty cue's timing, and exact downloaded-body correspondence.
+
+| Cohort | Targets | Delivered transcripts | Verified original | Original unconfirmed | No offered tracks |
+|---|---:|---:|---:|---:|---:|
+| First configured-channel sample | 18 | 15 | 13 | 2 | 3 |
+| Second nonoverlapping sample | 18 | 15 | 13 | 2 | 3 |
+| Combined | 36 | 30 | 26 | 4 | 6 |
+
+All 30 delivered transcripts matched actual downloaded substantive cue text in order: **19,907 cues and 536,601 body characters**. The six failures exposed zero tracks in inline, IOS and ANDROID responses and returned failure; source absence is an observation, not a permanent availability claim. The four unconfirmed results delivered valid Chinese human captions without enough original-language evidence. No natural `tlang` endpoint or known-translation delivery occurred in this run. Metadata and caption segmentation may change between fresh runs; aggregate differences from earlier reports are not all attributed solely to code.
+
+| Public regression target | Explicit original identity | Prior ordinary result | Fixed ordinary result | Matched substantive cues / body characters |
+|---|---|---|---|---:|
+| [PanSci](https://www.youtube.com/watch?v=5r6_iMWRFNs) | `Chinese (Traditional) original`, `zh-Hant.4`, uniquely bound association containing human `zh-Hant` and automatic `en` | en automatic, unconfirmed | zh-Hant human, verified-original / original-audio-metadata | 602 / 7,213 |
+| [OpenAI](https://www.youtube.com/watch?v=Oi9DHk57KeQ) | `English (US) original`, `en-US.4`, uniquely bound association sharing 21 automatic-caption languages | ar automatic, unconfirmed | en automatic, verified-original / original-audio-metadata | 23 / 871 |
+
+The old post-proof veto treated other-language automatic-caption availability as contradictory audio identity. The minimum repair applies that veto only to single-audio ASR inference. Explicit identity still requires complete affirmative labels, one consistent original ID, label/ID language-family agreement and a valid unique caption-audio association. Every selected subtitle still passes its own identity, endpoint, translation, XML, body and timing checks; unknown/negated declarations and genuine original-identity conflicts remain disqualifying. Focused public-entry tests exercise shared English/Chinese associations, native refresh before fallback, invalid/translated candidates and ambiguous ASR-only inference. Independent clean-checkout acceptance additionally exercised actual CLI saves and failure handling; its separate results are in the acceptance evidence file.
+
+No private configuration, full channel preference list, raw subtitle payload or signed endpoint was published. No production setting, logged-in profile, existing note or running process was changed.
