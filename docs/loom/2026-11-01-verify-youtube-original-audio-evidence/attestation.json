@@ -1,0 +1,94 @@
+{
+  "schema": "loom-attestation/v2",
+  "change_id": "2026-11-01-verify-youtube-original-audio-evidence",
+  "content_digest": "f8b87c83515f98f438ee645e49fdf3023e73aa60",
+  "executions": [
+    {
+      "kind": "package-tests",
+      "command": "go test ./...",
+      "artifact": "",
+      "result": "pass",
+      "command_digest": "1bb497e3e13a1105cf24e3359fa3ef75de08b66ff8a2839cd7f9ea97824d9eb3"
+    },
+    {
+      "kind": "adversarial",
+      "command": "go test -json -count=1 extraction_test.go",
+      "artifact": "extraction_test.go",
+      "result": "pass",
+      "command_digest": "b60da93f8230568201eef06743bb437b9ee6ae58bb520383f5cddde0e3bb0ec3",
+      "evidence": "parsed",
+      "passed": 1
+    }
+  ],
+  "verdicts": [
+    {
+      "verdict": "PASS",
+      "lens": "code",
+      "reviewed_sha": "5b6dddfeb01674d55fbc2753a7d0e748d4f7caaa",
+      "review_target_sha": "c5cbd26af83c979c1cf9cba7888013d554166f65",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — No ratified ARCHITECTURE.md exists.",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [],
+      "notes": [
+        "Previous fatal finding at extraction.ts:110: fixed. Every recognized original declaration must now agree with the audio ID language family; both mismatch directions and conflicting same-ID declarations yield original-unconfirmed, while consistent Japanese evidence remains verified-original.",
+        "Independently reran the changed extraction.test.mjs: 23 passed, zero skipped. Regenerated the browser bundle outside the repository and confirmed byte-for-byte equality. Review was bounded to the prior finding and fix delta deb039c..c5cbd26.",
+        "Read the refreshed clean-checkout seven-video acceptance evidence and supplied round-two package/adversarial PASS outputs; no full package suite or evidence probe was run by this reviewer."
+      ],
+      "reviewer": "/root/youtube_closing_code_review",
+      "vendor": "codex",
+      "model": "inherited (host profile unreported)"
+    },
+    {
+      "verdict": "PASS",
+      "lens": "code",
+      "reviewed_sha": "5b6dddfeb01674d55fbc2753a7d0e748d4f7caaa",
+      "review_target_sha": "c5cbd26af83c979c1cf9cba7888013d554166f65",
+      "dimension_scores": {
+        "security": "PASS",
+        "architecture": "PASS",
+        "correctness": "PASS",
+        "naming": "PASS",
+        "tests": "PASS",
+        "refactoring": "PASS",
+        "cross-task-coherence": "PASS",
+        "external-surface-grounding": "PASS",
+        "principles-conformance": "PASS",
+        "architecture-conformance": "N/A — no ratified ARCHITECTURE.md exists",
+        "deliberate-simplification": "PASS",
+        "deletion-first": "PASS"
+      },
+      "findings": [
+        {
+          "severity": "fatal",
+          "dimension": "correctness",
+          "anchor": "extraction.ts:114",
+          "text": "issue (fixed): The original label/audio-ID language mismatch is closed. Every recognized original declaration must now match the claimed audio ID's language family, including repeated declarations for one ID; incompatible declarations remain unconfirmed fallback.",
+          "fix": "Completed: language-family agreement is enforced in the source and regenerated bundle; the existing entry test covers both mismatch directions, mixed same-ID declarations, and consistent Japanese and regional English positives.",
+          "status": "fixed"
+        }
+      ],
+      "notes": [
+        "Round 2 reviewed only the previous finding and deb039c..c5cbd26 fix delta; no new findings or repository edits.",
+        "Independently ran node --test extraction.test.mjs: 23 passed, zero failed/skipped. Inspected the regenerated bundle's matching language-family guard.",
+        "Read refreshed clean-checkout acceptance evidence at 3225870 and its report; all five acceptance lines were re-tested, and watch/empty/dry-run carryovers identify unaffected control flow. Complete suite and adversarial programs were not rerun by this reviewer."
+      ],
+      "reviewer": "/root/youtube_closing_contract_review",
+      "vendor": "codex",
+      "model": "inherited (host profile unreported)"
+    }
+  ],
+  "findings": [],
+  "selection": null
+}
