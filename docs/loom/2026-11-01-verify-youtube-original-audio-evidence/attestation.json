@@ -1,7 +1,7 @@
 {
   "schema": "loom-attestation/v2",
   "change_id": "2026-11-01-verify-youtube-original-audio-evidence",
-  "content_digest": "de9fa8a98e0a405b84e6f3a9a5e23b756a5ad07f",
+  "content_digest": "7ef99118be9650b2d9f3121eee0e24835bbd1005",
   "executions": [
     {
       "kind": "package-tests",
@@ -25,7 +25,7 @@
       "verdict": "PASS",
       "lens": "code",
       "reviewed_sha": "5b6dddfeb01674d55fbc2753a7d0e748d4f7caaa",
-      "review_target_sha": "0867fbbb847d2882c7d6f3709d524579ab89511a",
+      "review_target_sha": "ff70473ae8320ce64420f325cd014a172cd31833",
       "dimension_scores": {
         "security": "PASS",
         "architecture": "PASS",
@@ -42,9 +42,9 @@
       },
       "findings": [],
       "notes": [
-        "Terminal round three reviewed the prior finding and c5cbd26..0867fbb fix delta only. The original label/audio-ID mismatch remains fixed, including the added Traditional Chinese label; empty formatting cues are skipped only after normalization, while every nonempty cue retains timing validation and XML completeness checks remain unchanged.",
+        "Reviewed the prior finding and authorized extra-round delta 0867fbb..ff70473 only. Label/audio-ID agreement remains fixed. Restricting the ASR veto to ASR-inferred proof preserves strict inference while permitting explicit original identity with shared multilingual availability; selected candidates retain endpoint, translation and content checks.",
         "Independently ran node --test extraction.test.mjs: 24 passed, zero skipped. Regenerated the browser bundle outside the repository and confirmed byte-for-byte equality with embed/defuddle.min.js.",
-        "Read the expanded source-verification and refreshed independent clean-checkout acceptance evidence, including 12 successful exact cue matches across 13 targets, and the supplied current-target adversarial PASS output. No complete package suite or evidence probe was run by this reviewer."
+        "Read the expanded 36-target source report and fresh independent 15-target acceptance evidence, plus supplied package and current-target adversarial PASS outputs. No complete package suite or evidence probe was run by this reviewer."
       ],
       "reviewer": "/root/youtube_closing_code_review",
       "vendor": "codex",
@@ -54,7 +54,7 @@
       "verdict": "PASS",
       "lens": "code",
       "reviewed_sha": "5b6dddfeb01674d55fbc2753a7d0e748d4f7caaa",
-      "review_target_sha": "0867fbbb847d2882c7d6f3709d524579ab89511a",
+      "review_target_sha": "ff70473ae8320ce64420f325cd014a172cd31833",
       "dimension_scores": {
         "security": "PASS",
         "architecture": "PASS",
@@ -80,9 +80,9 @@
         }
       ],
       "notes": [
-        "Terminal Round 3 reviewed the previous finding and c5cbd26..0867fbb fix delta only; no new findings or repository edits.",
-        "Independently ran node --test extraction.test.mjs: 24 passed, zero failed/skipped. Verified generated bundle changes; only normalized-empty cues bypass timing, while nonempty timing and XML validation remain strict.",
-        "Read refreshed intent/spec/plan, 18-target source report and independent 13-target clean-checkout acceptance evidence, including 12 exact cue/body matches and justified watch/empty/dry-run carryovers. Did not rerun the complete suite or adversarial programs."
+        "Reviewed only the previous finding and 0867fbb..ff70473 delta in the single additional round explicitly authorized in plan Risks 0. Previous label/ID mismatch remains fixed; no new findings or repository edits.",
+        "Independently ran node --test extraction.test.mjs: 24 passed, zero failed/skipped. Source and generated bundle restrict the ASR veto to ASR-inferred evidence; explicit identity checks and individual endpoint/translation/XML/body/timing validation remain intact.",
+        "Read refreshed source evidence and independent clean-checkout acceptance: normal unmodified public responses, 15 targets with 14 exact matches, including actual Chinese/English original saves and genuine no-caption failure. Did not rerun the complete suite or adversarial programs."
       ],
       "reviewer": "/root/youtube_closing_contract_review",
       "vendor": "codex",
