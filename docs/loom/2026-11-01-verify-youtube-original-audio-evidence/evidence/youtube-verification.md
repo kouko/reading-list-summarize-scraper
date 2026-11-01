@@ -45,3 +45,24 @@ These are first-party platform metadata assertions, not independent audio recogn
 This fresh run found no naturally supplied known-translation endpoint, permanently blank human track with successful automatic recovery, or malformed live subtitle payload. Those boundaries rely on focused synthetic tests, not claimed live coverage. Empty initial timedtext responses followed by successful refreshed human captions demonstrate bounded retry recovery only. No successful `known-translation` result was observed. Source availability and undocumented metadata may change; older captures are replay evidence, not this run's fresh results.
 
 Full captions, signed endpoints, account/cookie data and browser profile artifacts remain outside Git. Only public watch URLs, bounded source metadata and aggregate outcomes are recorded here. No user login state or existing notes were changed. This documentation task added no production code or test harness and required no artificial failing test.
+
+## Configured-channel regression expansion
+
+After the user approved fixing the expanded sample failures, a fresh isolated logged-out headless run exercised the same 18 public targets at `8a8ccf2`. The cohort is a bounded sample, not coverage of every configured channel. The private configuration and full preference list are not published. Local evidence: `/private/tmp/rlss-configured-channel-study/repaired`; source bundle `study-repaired.js` imported this worktree's exact `extraction.ts` and the existing research driver ran only its `current` method.
+
+Before repair, 10 targets succeeded, five failed cue timing, and three exposed no accessible caption tracks. After repair, **15 succeeded and three still exposed no tracks** across inline, IOS and ANDROID player data. Nine successful results were verified-original; six remained original-unconfirmed. Every successful body exactly matched decoded downloaded substantive cues in order: **10,214 cues and 311,840 body characters**, including paragraph separators and excluding provenance labels. The independent local checker parsed XML and validated timing of every nonempty cue, skipping only normalized whitespace; all player IDs and delivered target markers matched the requested target. This verifies source correspondence, not audio transcription accuracy or guaranteed full spoken coverage.
+
+| Public regression target | Delivered language / source | Language status | Delivered cues | Body characters |
+|---|---|---|---:|---:|
+| [Previously rejected Japanese captions](https://www.youtube.com/watch?v=Wz4Qy4BU7ks) | ja / automatic | verified-original | 366 | 13,662 |
+| [Previously rejected Japanese captions](https://www.youtube.com/watch?v=gLcnqPTGT_w) | ja / automatic | verified-original | 96 | 1,971 |
+| [Previously rejected English captions](https://www.youtube.com/watch?v=jOlPOxqFD5s) | en / automatic | verified-original | 902 | 32,890 |
+| [Previously rejected short English captions](https://www.youtube.com/watch?v=o4D1J1YWjhg) | en / automatic | verified-original | 10 | 93 |
+| [Previously rejected English captions](https://www.youtube.com/watch?v=bjE6HYuEA1k) | en / automatic | verified-original | 855 | 32,314 |
+| [Traditional Chinese original metadata](https://www.youtube.com/watch?v=cQLKVzbwN7I) | zh-TW / human | verified-original | 2,115 | 28,823 |
+
+The five timing failures contained whitespace-only srv3 paragraphs without duration; nonempty cue timing was valid. Normalized-empty paragraphs are now excluded before timing checks; malformed/truncated XML, blank-only responses, missing duration on nonempty text and decreasing nonempty cue timestamps remain rejected by regression tests. No duration is invented.
+
+The Chinese target supplied `Chinese (Traditional) original` on audio ID `zh-Hant.4`, bound uniquely to a caption-audio association including human `zh-TW`. A default auto-dubbed English track was also present; the default flag did not establish originality. The exact affirmative label now supplies the `zh` family only when the existing ID-family and association checks agree. Negated/qualified Chinese labels and English-ID contradictions remain unconfirmed in focused tests. Other unrecognized labels still supply no proof.
+
+The three remaining failures had no offered caption tracks in all bounded player responses; they were not counted as successful and no permanent absence of captions is inferred. Three successful samples still delivered unconfirmed `en-US` automatic captions despite their Japanese sampling group; grouping is not proof of spoken language. No naturally supplied translated endpoint was observed. Production configuration, running processes, browser login state and existing notes were unchanged.
