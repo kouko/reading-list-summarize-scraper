@@ -285,6 +285,9 @@ test('A1 verified original audio association', async () => {
  tracks.push({baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en&kind=asr',languageCode:'en',kind:'asr'});
  const out = await extractArticle(yt(true, tracks), 'https://www.youtube.com/watch?v=abc', async () => new Response(cues));
  assert.match(out, /rlss-video-v1/); assert.match(out, /Actual spoken subtitle text/); assert.match(out, /Subtitle language: en/);
+ tracks.push({baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ar',languageCode:'ar',kind:'asr'});
+ const ambiguous=await extractArticle(yt(true,tracks),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+ assert.match(ambiguous,/"languageStatus":"original-unconfirmed"/);
 });
 test('A3 labeled_unknown_and_translation; invalid_translation_endpoint', async () => {
  for (const translated of [false,true]) {
@@ -307,13 +310,37 @@ test('A1 multi_audio_original and conflicting_original_metadata', async () => {
  data.streamingData.adaptiveFormats[0].audioTrack.displayName='English (US) original';
  assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
  const english=structuredClone(data);
+ // Public player shape: every audio association can list every caption language.
+ data.streamingData.adaptiveFormats[0].audioTrack.id='en-US.4';
+ data.captions.playerCaptionsTracklistRenderer.captionTracks[1].kind='asr';
+ data.captions.playerCaptionsTracklistRenderer.captionTracks.push({baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ar',languageCode:'ar',kind:'asr'});
+ data.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'ja.1',captionTrackIndices:[0,1,2]},{audioTrackId:'en-US.4',captionTrackIndices:[0,1,2]}];
+ assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
+ const fresh=structuredClone(data);fresh.playabilityStatus={status:'OK'};
+ fresh.captions.playerCaptionsTracklistRenderer.captionTracks[1].baseUrl+='&fresh=1';
+ const requests=[];
+ const recovered=await extractArticle(page(),'https://www.youtube.com/watch?v=abc',async u=>{
+  requests.push(String(u));
+  return String(u).includes('/youtubei/')?Response.json(fresh):new Response(String(u).includes('fresh=1')?cues:'');
+ });
+ assert.match(recovered,/"language":"en".*"languageStatus":"verified-original"/);
+ assert.ok(!requests.some(u=>u.includes('lang=ja')||u.includes('lang=ar')));
+ // Invalid and translated alternatives must not be delivered as original.
+ const tracks=data.captions.playerCaptionsTracklistRenderer.captionTracks;
+ tracks.unshift({...tracks[1],baseUrl:'https://example.com/api/timedtext?v=abc'},
+  {...tracks[1],baseUrl:'https://www.youtube.com/api/timedtext?v=abc&tlang=en'});
+ for(const audio of data.captions.playerCaptionsTracklistRenderer.audioTracks) audio.captionTrackIndices=tracks.map((_,i)=>i);
+ const validRequests=[];
+ assert.match(await extractArticle(page(),'https://www.youtube.com/watch?v=abc',async u=>{validRequests.push(String(u));return new Response(cues);}),/"language":"en".*"languageStatus":"verified-original"/);
+ assert.ok(validRequests.every(u=>u.startsWith('https://www.youtube.com/api/timedtext?')&&!u.includes('tlang=')));
+ Object.assign(data,structuredClone(english));
  data.streamingData.adaptiveFormats=[{audioTrack:{id:'ja.4',displayName:'Japanese (original)'}}];
  data.captions.playerCaptionsTracklistRenderer.audioTracks[0].audioTrackId='ja.4';
  assert.match(await run(),/"language":"ja".*"languageStatus":"verified-original"/);
  Object.assign(data,english);
  const chinese=structuredClone(data);
- chinese.captions.playerCaptionsTracklistRenderer.captionTracks=[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=zh-TW',languageCode:'zh-TW'}];
- chinese.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'en-US.10',captionTrackIndices:[0],hasDefaultTrack:true,defaultCaptionTrackIndex:0},{audioTrackId:'zh-Hant.4',captionTrackIndices:[0]}];
+ chinese.captions.playerCaptionsTracklistRenderer.captionTracks=[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=zh-TW',languageCode:'zh-TW'},{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en',languageCode:'en',kind:'asr'}];
+ chinese.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'en-US.10',captionTrackIndices:[0,1],hasDefaultTrack:true,defaultCaptionTrackIndex:1},{audioTrackId:'zh-Hant.4',captionTrackIndices:[0,1]}];
  chinese.streamingData.adaptiveFormats=[{audioTrack:{id:'en-US.10',displayName:'English (US)',isAutoDubbed:true}},{audioTrack:{id:'zh-Hant.4',displayName:'Chinese (Traditional) original'}}];
  Object.assign(data,chinese);
  assert.match(await run(),/"language":"zh-TW".*"languageStatus":"verified-original".*"evidence":"original-audio-metadata"/);

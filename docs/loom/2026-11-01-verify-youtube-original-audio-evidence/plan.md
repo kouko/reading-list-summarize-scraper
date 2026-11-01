@@ -38,6 +38,12 @@ charter: 1.1
 - Test: A1 positive: traditional_chinese_original; A3 boundary: chinese_mismatch_negated_and_qualified; A5 positive: observed_label_association_shape.
 - Risk: agent-decided — add only the complete observed Chinese (Traditional) original declaration; preserve language-family agreement, strict affirmative grammar and suppression of weaker proof for unknown original claims.
 
+### Wave 4 — Shared caption associations
+**W4-01 Preserve explicit original proof across multilingual caption availability** after: W3-02 acceptance: 1, 3, 4, 5
+- Files: extraction.ts (entry: youtubeCandidates), extraction.test.mjs, embed/defuddle.min.js
+- Test: A1 positive: multi_audio_original shared multilingual associations; boundary: conflicting_original_metadata. A3 positive: native refresh original priority; A4 boundary: invalid alternative candidate. A5 positive: sanitized observed shared association shapes.
+- Risk: user-decided — retain unique consistent explicit original-audio identity despite other-language ASR availability; validate every selected candidate and keep single-audio inference strict. Rebuild the bundle with locked dependencies.
+
 ## Simplicity check
 - none found
 
@@ -47,6 +53,7 @@ charter: 1.1
 ② — behaviour — 確認以上行為後，我就接續實作與驗證。
 
 ## Risks
+0. user-decided — 2026-11-01: authorized one additional review round beyond three for this scoped shared-association repair; no general waiver or new review ledger.
 1. agent-decided — original evidence is undocumented platform data; missing/contradictory signals permit only labeled fallback, never a verified-original claim.
 2. agent-decided — original preference spans bounded native retries, so an available inline fallback must wait until verified-original attempts finish; no new unbounded network loop.
 3. agent-decided — language relaxation changes an extraction-to-cache contract; update validation and source labels together and retain old valid provenance compatibility.

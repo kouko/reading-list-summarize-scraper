@@ -126,7 +126,10 @@ function youtubeCandidates(data: any, id: string): {originalLanguage?: string; e
             originalLanguage = asr[0].languageCode; evidence = 'original-audio-asr-association';
         }
     }
-    if (originalLanguage && associated.some((t: any) => t.kind === 'asr' && (!validLanguage(t.languageCode)
+    // ASR availability establishes identity only in the single-audio inference
+    // branch. Explicit original metadata can share an association with captions
+    // for other languages; deliver still validates each candidate independently.
+    if (evidence === 'original-audio-asr-association' && originalLanguage && associated.some((t: any) => t.kind === 'asr' && (!validLanguage(t.languageCode)
         || family(t.languageCode) !== family(originalLanguage!) || (() => { try { return captionEndpoint(t, id).translated; } catch { return true; } })()))) originalLanguage = undefined;
     const defaults = (Array.isArray(audioTracks) ? audioTracks : []).flatMap((a: any) => a.hasDefaultTrack && Number.isInteger(a.defaultCaptionTrackIndex) ? [tracks[a.defaultCaptionTrackIndex]] : []).filter(Boolean);
     return {originalLanguage, evidence, candidates: originalLanguage ? associated.filter((t: any) => validLanguage(t.languageCode) && family(t.languageCode) === family(originalLanguage!)) : [], fallback: [...new Set([...defaults, ...tracks])]};
