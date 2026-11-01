@@ -93,17 +93,21 @@ function youtubeCandidates(data: any, id: string): {originalLanguage?: string; e
     const audioTracks = renderer.audioTracks;
     const formats = [...(data.streamingData?.adaptiveFormats || []), ...(data.streamingData?.formats || [])];
     const audios = formats.map((f: any) => f.audioTrack).filter(Boolean);
-    const originals = audios.filter((a: any) => /(?:\boriginal|\(original\))\s*$/i.test(a.displayName || ''));
+    // Recognize complete affirmative labels, not an "original" substring in
+    // negated or qualified prose. Unknown declarations cannot supply weaker proof.
+    const affirmativeOriginal = (name: string) => /^(?:English(?: \([A-Z]{2,3}\))?|Japanese) (?:original|\(original\))$/i.test(name);
+    const originalClaims = audios.filter((a: any) => /\boriginal\b/i.test(a.displayName || ''));
+    const originals = originalClaims.filter((a: any) => affirmativeOriginal(a.displayName));
     const originalIDs = new Set(originals.map((a: any) => a.id));
     const indices = (audio: any): number[] | undefined => Array.isArray(audio?.captionTrackIndices) && audio.captionTrackIndices.length
         && audio.captionTrackIndices.every((i: any) => Number.isInteger(i) && i >= 0 && i < tracks.length)
         && new Set(audio.captionTrackIndices).size === audio.captionTrackIndices.length ? audio.captionTrackIndices : undefined;
     let associated: any[] = [], originalLanguage: string | undefined, evidence: string | undefined;
-    if (originals.length) {
-        const originalID = originals[0].id;
+    if (originalClaims.length) {
+        const originalID = originals[0]?.id;
         const language = typeof originalID === 'string' ? originalID.match(/^([a-z]{2,3}(?:[-_][a-z0-9]{2,8})*)\.\d+$/i)?.[1] : undefined;
         const matches = Array.isArray(audioTracks) ? audioTracks.filter((a: any) => a.audioTrackId === originalID) : [];
-        if (originalIDs.size === 1 && validLanguage(language) && matches.length === 1 && indices(matches[0])
+        if (originals.length === originalClaims.length && originalIDs.size === 1 && validLanguage(language) && matches.length === 1 && indices(matches[0])
             && !audios.some((a: any) => a.id === originalID && /\bdubbed\b|\bdubbing\b/i.test(a.displayName || ''))) {
             associated = indices(matches[0])!.map(i => tracks[i]);
             originalLanguage = language; evidence = 'original-audio-metadata';

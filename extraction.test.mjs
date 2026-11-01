@@ -321,6 +321,16 @@ test('A3 refreshed original takes precedence over inline fallback without initia
  assert.match(out,/"language":"en".*"languageStatus":"verified-original"/);assert.ok(!requests.some(u=>u.includes('lang=ja')));
  assert.match(await extractArticle(yt(false,[]),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?Response.json(fresh):new Response(cues)),/"languageStatus":"verified-original"/);
 });
+test('A1 negated single-audio metadata cannot fall through to automatic proof', async () => {
+ const data=JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));
+ data.captions.playerCaptionsTracklistRenderer.audioTracks[0].audioTrackId='en.4';
+ for (const displayName of ['English not original','English non-original','English possibly original']) {
+  data.streamingData={formats:[{audioTrack:{id:'en.4',displayName}}]};
+  const page=doc(`<script>var ytInitialPlayerResponse = ${JSON.stringify(data)};</script>`);
+  const out=await extractArticle(page,'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+  assert.match(out,/"languageStatus":"original-unconfirmed"/);
+ }
+});
 test('test_originalEvidence_negatedMarker_unconfirmed', async () => {
  // Negated labels must not establish an affirmative original-language assertion.
  const statuses = [];
