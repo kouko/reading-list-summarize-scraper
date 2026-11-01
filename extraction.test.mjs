@@ -286,8 +286,40 @@ test('A1 verified original audio association', async () => {
  const out = await extractArticle(yt(true, tracks), 'https://www.youtube.com/watch?v=abc', async () => new Response(cues));
  assert.match(out, /rlss-video-v1/); assert.match(out, /Actual spoken subtitle text/); assert.match(out, /Subtitle language: en/);
 });
-test('A1 unverified default language rejected', async () => {
- for (const d of [yt(false), yt(true, undefined, {audioTracks:[{captionTrackIndices:[0]},{captionTrackIndices:[0]}]}), yt(true,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&tlang=ja',languageCode:'ja',kind:'asr'},{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ja',languageCode:'ja'}])]) await assert.rejects(extractArticle(d, 'https://www.youtube.com/watch?v=abc', async () => new Response(cues)), /original language|unusable/i);
+test('A3 labeled_unknown_and_translation; invalid_translation_endpoint', async () => {
+ for (const translated of [false,true]) {
+  const track={baseUrl:`https://www.youtube.com/api/timedtext?v=abc${translated?'&tlang=ja':''}`,languageCode:'en'};
+  const out=await extractArticle(yt(false,[track]),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+  assert.match(out,translated?/"language":"ja"/:/"language":"en"/);
+  assert.match(out,translated?/"languageStatus":"known-translation"/:/"languageStatus":"original-unconfirmed"/);
+ }
+ for(const suffix of ['&tlang=','&tlang=ja&tlang=en','&tlang=%21','&v=other']) {
+  await assert.rejects(extractArticle(yt(false,[{baseUrl:`https://www.youtube.com/api/timedtext?v=abc${suffix}`,languageCode:'en'}]),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues)),/unusable/i);
+ }
+});
+test('A1 multi_audio_original and conflicting_original_metadata', async () => {
+ const data=JSON.parse(yt(false,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ja',languageCode:'ja'},{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en',languageCode:'en'}]).querySelector('script').textContent.split(' = ')[1].slice(0,-1));
+ data.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'ja.1',captionTrackIndices:[0]},{audioTrackId:'en.4',captionTrackIndices:[1]}];
+ data.streamingData={adaptiveFormats:[{audioTrack:{id:'en.4',displayName:'English original'}},{audioTrack:{id:'ja.1',displayName:'Japanese (dubbed)'}}]};
+ const page=()=>doc(`<script>var ytInitialPlayerResponse = ${JSON.stringify(data)};</script>`);
+ const run=()=>extractArticle(page(),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+ assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
+ data.streamingData.adaptiveFormats[0].audioTrack.displayName='English (US) original';
+ assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
+ for(const change of [d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'en.4',displayName:'English (dubbed)'}}),d=>d.captions.playerCaptionsTracklistRenderer.audioTracks.push({audioTrackId:'en.4',captionTrackIndices:[1]}),d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'ja.1',displayName:'Japanese (original)'}}),d=>d.captions.playerCaptionsTracklistRenderer.audioTracks[1].captionTrackIndices=[99]]) {
+  const saved=structuredClone(data);change(data);assert.match(await run(),/"languageStatus":"original-unconfirmed"/);Object.assign(data,saved);
+ }
+ const refreshed=structuredClone(data);refreshed.playabilityStatus={status:'OK'};
+ refreshed.streamingData.adaptiveFormats=[{audioTrack:{id:'ja.1',displayName:'Japanese (original)'}}];
+ const conflict=await extractArticle(page(),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?Response.json(refreshed):new Response(String(u).includes('lang=ja')?cues:''));
+ assert.match(conflict,/"languageStatus":"original-unconfirmed"/);
+});
+test('A3 refreshed original takes precedence over inline fallback without initial proof', async () => {
+ const fresh=JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));fresh.playabilityStatus={status:'OK'};
+ const requests=[];
+ const out=await extractArticle(yt(false,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ja',languageCode:'ja'}]),'https://www.youtube.com/watch?v=abc',async u=>{requests.push(String(u));return String(u).includes('/youtubei/')?Response.json(fresh):new Response(cues);});
+ assert.match(out,/"language":"en".*"languageStatus":"verified-original"/);assert.ok(!requests.some(u=>u.includes('lang=ja')));
+ assert.match(await extractArticle(yt(false,[]),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?Response.json(fresh):new Response(cues)),/"languageStatus":"verified-original"/);
 });
 test('A1/A3 refreshed invalid identity, language and API failures stay unsuccessful', async () => {
  const valid = JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));

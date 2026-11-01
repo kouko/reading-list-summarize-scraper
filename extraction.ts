@@ -73,33 +73,54 @@ function transcript(xml: string): string {
     return lines.join('\n\n');
 }
 
-function youtubeCandidates(data: any, id: string): {originalLanguage: string; candidates: any[]} {
+const validLanguage = (value: any): value is string => typeof value === 'string' && /^[a-z]{2,3}(?:[-_][a-z0-9]{2,8})*$/i.test(value);
+function captionEndpoint(track: any, id: string): {endpoint: URL; language: string; translated: boolean} {
+    const endpoint = new URL(track.baseUrl);
+    const targets = endpoint.searchParams.getAll('tlang');
+    if (endpoint.protocol !== 'https:' || !['www.youtube.com', 'youtube.com'].includes(endpoint.hostname)
+        || endpoint.username || endpoint.password || endpoint.port || endpoint.pathname !== '/api/timedtext'
+        || endpoint.searchParams.getAll('v').length !== 1 || endpoint.searchParams.get('v') !== id
+        || !validLanguage(track.languageCode) || targets.length > 1
+        || (targets.length === 1 && (!validLanguage(targets[0]) || targets[0].toLowerCase().replace(/_/g, '-') === track.languageCode.toLowerCase().replace(/_/g, '-')))
+        || (track.translationLanguage?.languageCode && track.translationLanguage.languageCode !== targets[0])) fail('Unusable subtitles: disallowed caption endpoint or translation target');
+    return {endpoint, language: targets[0] || track.languageCode, translated: targets.length === 1};
+}
+function youtubeCandidates(data: any, id: string): {originalLanguage?: string; evidence?: string; candidates: any[]; fallback: any[]} {
     if (data?.videoDetails?.videoId !== id) fail('Unavailable subtitles: wrong target player');
     const renderer = data?.captions?.playerCaptionsTracklistRenderer;
     const tracks = renderer?.captionTracks;
-    if (!Array.isArray(tracks) || !tracks.length) fail('Unavailable subtitles');
-    // YouTube documents ASR captions in the original audio language:
-    // https://support.google.com/youtube/answer/13338784?hl=en
-    // Multiple-language audio may instead use the default language, so require
-    // a single caption-audio association and reject contrary streaming evidence.
-    // Neither defaultCaptionTrackIndex nor a localized display label proves it.
+    if (!Array.isArray(tracks) || !tracks.length) return {candidates: [], fallback: []};
     const audioTracks = renderer.audioTracks;
     const formats = [...(data.streamingData?.adaptiveFormats || []), ...(data.streamingData?.formats || [])];
-    const audioIds = new Set(formats.map((f: any) => f.audioTrack?.id).filter(Boolean));
-    const dubbed = formats.some((f: any) => /\bdubbed\b|\bdubbing\b/i.test(f.audioTrack?.displayName || ''));
-    if (!Array.isArray(audioTracks) || audioTracks.length !== 1 || audioIds.size > 1 || dubbed) fail('Unverified original language: ambiguous or dubbed audio association');
-    const audio = audioTracks[0];
-    const associated = (audio.captionTrackIndices || []).map((i: number) => tracks[i]).filter(Boolean);
-    const asr = associated.filter((t: any) => t.kind === 'asr' && typeof t.languageCode === 'string');
-    const languages = new Set(asr.map((t: any) => family(t.languageCode)));
-    if (asr.length !== 1 || languages.size !== 1) fail('Unverified original language: missing or conflicting original-audio automatic captions');
-    try {
-        if (new URL(asr[0].baseUrl).searchParams.has('tlang')) fail('Unverified original language: translated automatic caption association');
-    } catch { fail('Unverified original language: invalid automatic caption association'); }
-    const originalLanguage = asr[0].languageCode;
-    // A caption explicitly translated by URL is never eligible.
-    const candidates = associated.filter((t: any) => typeof t.languageCode === 'string' && family(t.languageCode) === family(originalLanguage));
-    return {originalLanguage, candidates};
+    const audios = formats.map((f: any) => f.audioTrack).filter(Boolean);
+    const originals = audios.filter((a: any) => /(?:\boriginal|\(original\))\s*$/i.test(a.displayName || ''));
+    const originalIDs = new Set(originals.map((a: any) => a.id));
+    const indices = (audio: any): number[] | undefined => Array.isArray(audio?.captionTrackIndices) && audio.captionTrackIndices.length
+        && audio.captionTrackIndices.every((i: any) => Number.isInteger(i) && i >= 0 && i < tracks.length)
+        && new Set(audio.captionTrackIndices).size === audio.captionTrackIndices.length ? audio.captionTrackIndices : undefined;
+    let associated: any[] = [], originalLanguage: string | undefined, evidence: string | undefined;
+    if (originals.length) {
+        const originalID = originals[0].id;
+        const language = typeof originalID === 'string' ? originalID.match(/^([a-z]{2,3}(?:[-_][a-z0-9]{2,8})*)\.\d+$/i)?.[1] : undefined;
+        const matches = Array.isArray(audioTracks) ? audioTracks.filter((a: any) => a.audioTrackId === originalID) : [];
+        if (originalIDs.size === 1 && validLanguage(language) && matches.length === 1 && indices(matches[0])
+            && !audios.some((a: any) => a.id === originalID && /\bdubbed\b|\bdubbing\b/i.test(a.displayName || ''))) {
+            associated = indices(matches[0])!.map(i => tracks[i]);
+            originalLanguage = language; evidence = 'original-audio-metadata';
+        }
+    } else if (Array.isArray(audioTracks) && audioTracks.length === 1 && indices(audioTracks[0])
+        && new Set(audios.map((a: any) => a.id)).size <= 1
+        && !audios.some((a: any) => /\bdubbed\b|\bdubbing\b/i.test(a.displayName || ''))) {
+        associated = indices(audioTracks[0])!.map(i => tracks[i]);
+        const asr = associated.filter((t: any) => t.kind === 'asr');
+        if (asr.length === 1 && validLanguage(asr[0].languageCode)) {
+            originalLanguage = asr[0].languageCode; evidence = 'original-audio-asr-association';
+        }
+    }
+    if (originalLanguage && associated.some((t: any) => t.kind === 'asr' && (!validLanguage(t.languageCode)
+        || family(t.languageCode) !== family(originalLanguage!) || (() => { try { return captionEndpoint(t, id).translated; } catch { return true; } })()))) originalLanguage = undefined;
+    const defaults = (Array.isArray(audioTracks) ? audioTracks : []).flatMap((a: any) => a.hasDefaultTrack && Number.isInteger(a.defaultCaptionTrackIndex) ? [tracks[a.defaultCaptionTrackIndex]] : []).filter(Boolean);
+    return {originalLanguage, evidence, candidates: originalLanguage ? associated.filter((t: any) => validLanguage(t.languageCode) && family(t.languageCode) === family(originalLanguage!)) : [], fallback: [...new Set([...defaults, ...tracks])]};
 }
 
 async function youtube(document: Document, url: URL, fetcher: typeof fetch): Promise<string> {
@@ -107,10 +128,29 @@ async function youtube(document: Document, url: URL, fetcher: typeof fetch): Pro
     if (!id) fail('Unavailable subtitles: missing video identity');
     const initial = youtubeCandidates(playerData(document), id);
     const errors: string[] = [];
+    const selections = [initial];
+    const verified = new Set<string>();
+    if (initial.originalLanguage) verified.add(family(initial.originalLanguage));
+    const deliver = async (track: any, selection: typeof initial, fallback: boolean): Promise<string> => {
+        const {endpoint, language, translated} = captionEndpoint(track, id);
+        if (!fallback && translated) fail('Unusable subtitles: translated original candidate');
+        endpoint.searchParams.set('fmt', 'srv3');
+        const response = await fetcher(endpoint.href, {credentials: 'include', redirect: 'error', signal: AbortSignal.timeout(10000)});
+        if (!response.ok) fail(`Unusable subtitles: HTTP ${response.status}`);
+        const body = transcript(await response.text());
+        const source = track.kind === 'asr' ? 'automatic' : 'human';
+        const languageStatus = translated || (verified.size === 1 && !verified.has(family(language))) ? 'known-translation'
+            : !fallback ? 'verified-original' : 'original-unconfirmed';
+        const provenance = {platform: 'youtube', target: id, language, source, languageStatus,
+            evidence: !fallback ? selection.evidence : 'validated-platform-caption', sourceLanguage: track.languageCode,
+            ...(verified.size === 1 ? {originalLanguage: [...verified][0]} : {}), platformTranslation: translated};
+        const label = {'verified-original': 'verified original', 'original-unconfirmed': 'original language unconfirmed', 'known-translation': 'known translation'}[languageStatus];
+        return `<!-- rlss-video-v1 ${JSON.stringify(provenance)} -->\n\nSubtitle language: ${language}\nSubtitle source: ${source}\nSubtitle language status: ${label}\n${translated ? `Subtitle source language: ${track.languageCode}\n` : ''}\n${body}`;
+    };
     // One inline attempt followed by at most two official native-player requests.
     for (const client of [null, {clientName: 'IOS', clientVersion: '20.10.3'}, {clientName: 'ANDROID', clientVersion: '20.10.38'}]) {
         try {
-            let candidates = initial.candidates;
+            let selection = initial;
             if (client) {
                 const response = await fetcher('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
                     method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'include', redirect: 'error',
@@ -120,24 +160,20 @@ async function youtube(document: Document, url: URL, fetcher: typeof fetch): Pro
                 const data = await response.json();
                 if (data?.playabilityStatus?.status !== 'OK') fail('Unavailable subtitles: native player not playable');
                 const refreshed = youtubeCandidates(data, id);
-                if (family(refreshed.originalLanguage) !== family(initial.originalLanguage)) fail('Unverified original language: refreshed player conflicts with inline evidence');
-                candidates = refreshed.candidates;
+                selections.push(refreshed);
+                if (refreshed.originalLanguage) verified.add(family(refreshed.originalLanguage));
+                selection = refreshed;
             }
-            for (const track of candidates) {
+            for (const track of verified.size <= 1 ? selection.candidates : []) {
                 try {
-                    const endpoint = new URL(track.baseUrl);
-                    if (endpoint.protocol !== 'https:' || !['www.youtube.com', 'youtube.com'].includes(endpoint.hostname)
-                        || endpoint.pathname !== '/api/timedtext' || endpoint.searchParams.has('tlang') || endpoint.searchParams.get('v') !== id) fail('Unusable subtitles: disallowed or translated caption endpoint');
-                    endpoint.searchParams.set('fmt', 'srv3');
-                    const response = await fetcher(endpoint.href, {credentials: 'include', redirect: 'error', signal: AbortSignal.timeout(10000)});
-                    if (!response.ok) fail(`Unusable subtitles: HTTP ${response.status}`);
-                    const body = transcript(await response.text());
-                    const source = track.kind === 'asr' ? 'automatic' : 'human';
-                    const provenance = {platform: 'youtube', target: id, language: track.languageCode, source, evidence: 'original-audio-asr-association'};
-                    return `<!-- rlss-video-v1 ${JSON.stringify(provenance)} -->\n\nSubtitle language: ${track.languageCode}\nSubtitle source: ${source}\n\n${body}`;
+                    return await deliver(track, selection, false);
                 } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
             }
         } catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
+    }
+    for (const selection of selections) for (const track of selection.fallback) {
+        try { return await deliver(track, selection, true); }
+        catch (error) { errors.push(error instanceof Error ? error.message : String(error)); }
     }
     fail(`Unusable original-language subtitles: ${errors.join('; ') || 'no eligible tracks'}`);
 }
