@@ -21,6 +21,12 @@ charter: 1.1
 - Test: A5 positive: live_target_language_source_cue_match; boundary: unavailable_source_reported_honestly.
 - Risk: agent-decided — isolated public-source runs per REQ-5; keep raw captions and signed URLs outside Git, record bounded source metadata and outcomes; stale captures are replay evidence, never fresh live success.
 
+### Wave 2 — Embedded browser artifact
+**W2-01 Rebuild committed browser bundle** after: W1-01 acceptance: 4
+- Files: embed/defuddle.min.js (entry: DefuddleExtractor.extractArticle)
+- Test: A4 positive: embedded_bundle_build; negative: existing_browser_content_rejections.
+- Risk: agent-decided — generated bundle is tracked and consumed by Go embedding; rebuild from the tested TypeScript with locked dependencies, preserving generated third-party string whitespace rather than hand-editing minified code.
+
 ## Simplicity check
 - none found
 
