@@ -306,7 +306,20 @@ test('A1 multi_audio_original and conflicting_original_metadata', async () => {
  assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
  data.streamingData.adaptiveFormats[0].audioTrack.displayName='English (US) original';
  assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
- for(const change of [d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'en.4',displayName:'English (dubbed)'}}),d=>d.captions.playerCaptionsTracklistRenderer.audioTracks.push({audioTrackId:'en.4',captionTrackIndices:[1]}),d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'ja.1',displayName:'Japanese (original)'}}),d=>d.captions.playerCaptionsTracklistRenderer.audioTracks[1].captionTrackIndices=[99]]) {
+ const english=structuredClone(data);
+ data.streamingData.adaptiveFormats=[{audioTrack:{id:'ja.4',displayName:'Japanese (original)'}}];
+ data.captions.playerCaptionsTracklistRenderer.audioTracks[0].audioTrackId='ja.4';
+ assert.match(await run(),/"language":"ja".*"languageStatus":"verified-original"/);
+ Object.assign(data,english);
+ for(const change of [
+  d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'en.4',displayName:'English (dubbed)'}}),
+  d=>d.captions.playerCaptionsTracklistRenderer.audioTracks.push({audioTrackId:'en.4',captionTrackIndices:[1]}),
+  d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'ja.1',displayName:'Japanese (original)'}}),
+  d=>d.captions.playerCaptionsTracklistRenderer.audioTracks[1].captionTrackIndices=[99],
+  d=>{ d.streamingData.adaptiveFormats=[{audioTrack:{id:'ja.4',displayName:'English original'}}];d.captions.playerCaptionsTracklistRenderer.audioTracks[0].audioTrackId='ja.4'; },
+  d=>d.streamingData.adaptiveFormats[0].audioTrack.displayName='Japanese (original)',
+  d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'en.4',displayName:'Japanese (original)'}}),
+ ]) {
   const saved=structuredClone(data);change(data);assert.match(await run(),/"languageStatus":"original-unconfirmed"/);Object.assign(data,saved);
  }
  const refreshed=structuredClone(data);refreshed.playabilityStatus={status:'OK'};
