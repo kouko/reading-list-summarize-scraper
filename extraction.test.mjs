@@ -311,6 +311,23 @@ test('A1 multi_audio_original and conflicting_original_metadata', async () => {
  data.captions.playerCaptionsTracklistRenderer.audioTracks[0].audioTrackId='ja.4';
  assert.match(await run(),/"language":"ja".*"languageStatus":"verified-original"/);
  Object.assign(data,english);
+ const chinese=structuredClone(data);
+ chinese.captions.playerCaptionsTracklistRenderer.captionTracks=[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=zh-TW',languageCode:'zh-TW'}];
+ chinese.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'en-US.10',captionTrackIndices:[0],hasDefaultTrack:true,defaultCaptionTrackIndex:0},{audioTrackId:'zh-Hant.4',captionTrackIndices:[0]}];
+ chinese.streamingData.adaptiveFormats=[{audioTrack:{id:'en-US.10',displayName:'English (US)',isAutoDubbed:true}},{audioTrack:{id:'zh-Hant.4',displayName:'Chinese (Traditional) original'}}];
+ Object.assign(data,chinese);
+ assert.match(await run(),/"language":"zh-TW".*"languageStatus":"verified-original".*"evidence":"original-audio-metadata"/);
+ for (const change of [
+  d=>{d.streamingData.adaptiveFormats[1].audioTrack.id='en.4';d.captions.playerCaptionsTracklistRenderer.audioTracks[1].audioTrackId='en.4';},
+  ...['Chinese (Traditional) not original','Chinese (Traditional) non-original','Chinese (Traditional) possibly original'].map(displayName=>d=>{
+   d.captions.playerCaptionsTracklistRenderer.captionTracks[0].kind='asr';
+   d.captions.playerCaptionsTracklistRenderer.audioTracks=[d.captions.playerCaptionsTracklistRenderer.audioTracks[1]];
+   d.streamingData.adaptiveFormats=[{audioTrack:{id:'zh-Hant.4',displayName}}];
+  }),
+ ]) {
+  change(data);assert.match(await run(),/"languageStatus":"original-unconfirmed"/);Object.assign(data,structuredClone(chinese));
+ }
+ Object.assign(data,english);
  for(const change of [
   d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'en.4',displayName:'English (dubbed)'}}),
   d=>d.captions.playerCaptionsTracklistRenderer.audioTracks.push({audioTrackId:'en.4',captionTrackIndices:[1]}),
@@ -475,6 +492,9 @@ test('A4 whitespace formatting cues do not require timing, but blank-only payloa
  const out = await extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async () => new Response(xml));
  assert.match(out, /Actual spoken subtitle text\.\n\nMore spoken words\./);
  await assert.rejects(extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async () => new Response(`<timedtext><body>${blank}</body></timedtext>`)), /unusable/i);
+ for (const invalid of ['<p t="0">Nonempty words.</p>', '<p t="2000" d="1000">First words.</p><p t="1000" d="1000">Earlier words.</p>']) {
+  await assert.rejects(extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async () => new Response(`<timedtext><body>${invalid}</body></timedtext>`)), /invalid cue timing/i);
+ }
 });
 test('A4 malformed, truncated and timestamp-only cues fail', async () => {
  for (const xml of ['','<transcript><text start="-1" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech</text>','<transcript><text start="0" dur="2">00:01</text></transcript>','<!DOCTYPE transcript SYSTEM "https://example.com/external.dtd"><transcript><text start="0" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech &unknown;</text></transcript>']) {

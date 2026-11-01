@@ -97,8 +97,8 @@ function youtubeCandidates(data: any, id: string): {originalLanguage?: string; e
     // Recognize complete affirmative labels, not an "original" substring in
     // negated or qualified prose. Unknown declarations cannot supply weaker proof.
     const affirmativeOriginal = (name: string): string | undefined => {
-        const label = /^(English(?: \([A-Z]{2,3}\))?|Japanese) (?:original|\(original\))$/i.exec(name);
-        return label ? (/^English/i.test(label[1]) ? 'en' : 'ja') : undefined;
+        const label = /^(English(?: \([A-Z]{2,3}\))?|Japanese|Chinese \(Traditional\)) (?:original|\(original\))$/i.exec(name);
+        return label ? (/^English/i.test(label[1]) ? 'en' : /^Japanese/i.test(label[1]) ? 'ja' : 'zh') : undefined;
     };
     const originalClaims = audios.filter((a: any) => /\boriginal\b/i.test(a.displayName || ''));
     const originals = originalClaims.filter((a: any) => affirmativeOriginal(a.displayName));

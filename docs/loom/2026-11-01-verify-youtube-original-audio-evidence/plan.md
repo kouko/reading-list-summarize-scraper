@@ -33,6 +33,11 @@ charter: 1.1
 - Test: A4 positive: whitespace_formatting_cues; boundary: blank_only_payload.
 - Risk: agent-decided — normalize cue text and skip only empty text before timing validation; retain strict timing for every nonempty cue and all XML/completeness checks; rebuild the tracked bundle with locked dependencies.
 
+**W3-02 Recognize the observed affirmative Traditional Chinese label** after: W3-01 acceptance: 1, 3, 5
+- Files: extraction.ts (entry: extractArticle), extraction.test.mjs, embed/defuddle.min.js
+- Test: A1 positive: traditional_chinese_original; A3 boundary: chinese_mismatch_negated_and_qualified; A5 positive: observed_label_association_shape.
+- Risk: agent-decided — add only the complete observed Chinese (Traditional) original declaration; preserve language-family agreement, strict affirmative grammar and suppression of weaker proof for unknown original claims.
+
 ## Simplicity check
 - none found
 
