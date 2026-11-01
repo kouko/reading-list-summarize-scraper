@@ -95,4 +95,19 @@ Tried on 2026-11-01, clean detached worktree `/private/tmp/rlss-youtube-acceptan
 
 - New isolated profiles and outputs only; no user notes, login state or production config modified. No account credentials, paid services, mirrors, proxies, audio uploads or real summary provider were used.
 - No instructed skips in intent Constraints or plan Risks. No dismissed important-or-higher findings supplied by the station.
-- The report discloses the metadata-confidence ceiling, honest English fallback behavior, fixture-only summary evidence and unverified mixed watch flow.
+- The report discloses the metadata-confidence ceiling, honest English fallback behavior and fixture-only summary evidence. The initial mixed-watch gap was resolved by the re-run below.
+
+## Re-run on 2026-11-01, at add8784 (functional code f5c46a4)
+
+- Diff audit: `git diff f5c46a4..HEAD --name-only` lists only this acceptance report and evidence file. Product code and committed browser bundle are unchanged. Reused the independently clean-built CLI; no new product code or probes and no full suite run.
+- Report rows 1–12 and 14–15: **carried over** — the only intervening changes were the two acceptance documents; none can affect their measured product behavior. Existing no-user-data result remains true.
+- Report row 13: **re-tested in full** — real mixed-result watch cycles exercised failure counting, continuation, subsequent list refetch and fresh retry of the failed video.
+- New synthetic Safari source list `/private/tmp/rlss-acceptance-watch-Bookmarks.plist` used the existing Safari test's plist shape and custom `safari.plist_path`. It contained real public [no-caption aqz](https://www.youtube.com/watch?v=aqz-KE-bpKQ) first by DateAdded, then [automatic-caption DHj](https://www.youtube.com/watch?v=DHjqpvDnNGE). Only the reading-list source was synthetic; all player and subtitle responses came from actual YouTube public requests.
+- Config `/private/tmp/rlss-acceptance-watch.yaml`: Safari points only at that temporary plist; Chrome reading-list disabled; new extraction profile `/private/tmp/rlss-acceptance-watch-profile`; new output `/private/tmp/rlss-acceptance-watch-output`; watch enabled, interval 1 minute; delay min/max 0; skip_existing false; no-summary passed. No real Safari/Chrome reading list, notes, login state or production config was modified.
+- Command: `/private/tmp/rlss-acceptance-cli process --config /private/tmp/rlss-acceptance-watch.yaml --no-summary`; raw local log `/private/tmp/rlss-acceptance-watch.log`.
+- Cycle 1, local UTC+08 timestamps: 09:55:44 fetched 2 and processed aqz first; 09:55:55 `item failed` after one headless and one headed attempt; then `processing item index=2` DHj; 09:56:00 `wrote content`; `watch: cycle complete` reported Total 2, Success 1, Skipped 0, Partial 0, Failed 1; then sleep 1 minute.
+- During that sleep, changed **only the temporary source list's failed-item title** to `Acceptance no captions cycle two refreshed`. No video URL or product response was changed.
+- Cycle 2: 09:57:00 refetched 2 items, and first processing log contains the changed title, proving source refresh; aqz again made fresh headless/headed attempts and failed at 09:57:09; DHj then resumed the previously validated content cache successfully. Cycle report again Total 2, Success 1, Skipped 0, Partial 0, Failed 1. This retained-cache path is expected; the failed item was not turned into a cached success.
+- Exactly one transcript file exists in the isolated output: DHj. The failed aqz produced none across either cycle. No actual summary provider was used.
+- Identified the exact acceptance child PID 80243, sent `SIGTERM` only to it after the second `watch: sleeping` log. At 09:57:25 it logged `watch: signal during sleep, exiting`, and the command exited **0**. No production process was signaled.
+- Finding closure: the initial important mixed-watch verification gap is **closed** by both observed cycles. No new failed behavior or remaining acceptance finding.
