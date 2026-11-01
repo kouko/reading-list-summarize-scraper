@@ -469,6 +469,13 @@ test('A4 blank human track does not block usable automatic track', async () => {
  });
  assert.match(recovered, /Subtitle source: automatic/); assert.deepEqual(requests, ['IOS','ANDROID']);
 });
+test('A4 whitespace formatting cues do not require timing, but blank-only payloads fail', async () => {
+ const blank = '<p t="9310" w="1" a="1">\n</p>';
+ const xml = `<timedtext><body><p t="0" d="2000">Actual spoken subtitle text.</p>${blank}<p t="2000" d="2000">More spoken words.</p></body></timedtext>`;
+ const out = await extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async () => new Response(xml));
+ assert.match(out, /Actual spoken subtitle text\.\n\nMore spoken words\./);
+ await assert.rejects(extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async () => new Response(`<timedtext><body>${blank}</body></timedtext>`)), /unusable/i);
+});
 test('A4 malformed, truncated and timestamp-only cues fail', async () => {
  for (const xml of ['','<transcript><text start="-1" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech</text>','<transcript><text start="0" dur="2">00:01</text></transcript>','<!DOCTYPE transcript SYSTEM "https://example.com/external.dtd"><transcript><text start="0" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech &unknown;</text></transcript>']) {
   const fresh = JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1)); fresh.playabilityStatus = {status:'OK'};

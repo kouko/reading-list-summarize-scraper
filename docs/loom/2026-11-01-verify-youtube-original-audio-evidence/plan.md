@@ -27,6 +27,12 @@ charter: 1.1
 - Test: A4 positive: embedded_bundle_build; negative: existing_browser_content_rejections.
 - Risk: agent-decided — generated bundle is tracked and consumed by Go embedding; rebuild from the tested TypeScript with locked dependencies, preserving generated third-party string whitespace rather than hand-editing minified code.
 
+### Wave 3 — Whitespace cue repair
+**W3-01 Ignore empty formatting cues before validating timing** after: W2-01 acceptance: 4
+- Files: extraction.ts (entry: extractArticle), extraction.test.mjs, embed/defuddle.min.js
+- Test: A4 positive: whitespace_formatting_cues; boundary: blank_only_payload.
+- Risk: agent-decided — normalize cue text and skip only empty text before timing validation; retain strict timing for every nonempty cue and all XML/completeness checks; rebuild the tracked bundle with locked dependencies.
+
 ## Simplicity check
 - none found
 

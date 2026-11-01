@@ -59,6 +59,8 @@ function transcript(xml: string): string {
     let previous = -1;
     const lines: string[] = [];
     for (const cue of cues) {
+        const text = cue.text.replace(/\s+/g, ' ').trim();
+        if (!text) continue;
         const startKey = cue.name === 'p' ? 't' : 'start';
         const durationKey = startKey === 't' ? 'd' : 'dur';
         const rawStart = cue.attributes[startKey], rawDuration = cue.attributes[durationKey];
@@ -66,7 +68,6 @@ function transcript(xml: string): string {
         const duration = !rawDuration?.trim() ? NaN : Number(rawDuration);
         if (!Number.isFinite(start) || !Number.isFinite(duration) || start < 0 || duration <= 0 || start < previous) fail('Unusable subtitles: invalid cue timing');
         previous = start;
-        const text = cue.text.replace(/\s+/g, ' ').trim();
         if (substantive(text)) lines.push(text);
     }
     if (!lines.length) fail('Unusable subtitles: empty or timestamp-only cues');
