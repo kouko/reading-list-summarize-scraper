@@ -1,6 +1,6 @@
 # Verify YouTube original audio evidence — spec
 intent: 2026-11-01-verify-youtube-original-audio-evidence@88e1abe
-confirmed-behavior: 2026-11-01 @c4f5c4c
+confirmed-behavior: 2026-11-01 @680f88f
 pre-build-review: required — original-language evidence is ambiguous external data and the extraction-to-cache provenance contract changes
 
 ## Requirements
