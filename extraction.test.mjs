@@ -321,6 +321,18 @@ test('A3 refreshed original takes precedence over inline fallback without initia
  assert.match(out,/"language":"en".*"languageStatus":"verified-original"/);assert.ok(!requests.some(u=>u.includes('lang=ja')));
  assert.match(await extractArticle(yt(false,[]),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?Response.json(fresh):new Response(cues)),/"languageStatus":"verified-original"/);
 });
+test('test_originalEvidence_negatedMarker_unconfirmed', async () => {
+ // Negated labels must not establish an affirmative original-language assertion.
+ const statuses = [];
+ for (const displayName of ['English not original', 'English non-original']) {
+  const data=JSON.parse(yt(false,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en',languageCode:'en'}]).querySelector('script').textContent.split(' = ')[1].slice(0,-1));
+  data.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'en.4',captionTrackIndices:[0]}];
+  data.streamingData={adaptiveFormats:[{audioTrack:{id:'en.4',displayName}}]};
+  const output=await extractArticle(doc(`<script>var ytInitialPlayerResponse = ${JSON.stringify(data)};</script>`),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+  statuses.push(JSON.parse(output.split('\n')[0].slice('<!-- rlss-video-v1 '.length,-' -->'.length)).languageStatus);
+ }
+ assert.deepEqual(statuses,['original-unconfirmed','original-unconfirmed']);
+});
 test('A1/A3 refreshed invalid identity, language and API failures stay unsuccessful', async () => {
  const valid = JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));
  valid.playabilityStatus = {status:'OK'};
