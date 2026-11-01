@@ -14,6 +14,7 @@ import (
 	"github.com/kouko/reading-list-summarize-scraper/internal/extract"
 	"github.com/kouko/reading-list-summarize-scraper/internal/output"
 	"github.com/kouko/reading-list-summarize-scraper/internal/source"
+	"github.com/kouko/reading-list-summarize-scraper/internal/summarize"
 )
 
 type stubExtractor struct {
@@ -29,6 +30,58 @@ type stubExtractor struct {
 const verifiedXPost = "<!-- rlss-social-v1 {\"platform\":\"x\",\"target\":\"123\",\"scope\":\"single_post\",\"source\":\"https://x.com/example/status/123\",\"body_sha256\":\"c812fbdf9231507e1a89c6af5f8ea00dec5d8ed83663e72ce93bf53911d805f6\"} -->\nOnly the specified X post was extracted; author follow-up replies are not included.\n\nThe target post explains how workers exchange files.\n\n[Source](https://x.com/example/status/123)"
 
 const verifiedTranscript = `<!-- rlss-video-v1 {"platform":"youtube","target":"abc","language":"ja","source":"automatic","evidence":"original-audio-asr-association"} -->` + "\n\nSubtitle language: ja\nSubtitle source: automatic\n\n今日は字幕について話します。"
+
+const fallbackTranscript = `<!-- rlss-video-v1 {"platform":"youtube","target":"abc","language":"ja","source":"automatic","evidence":"validated-platform-caption","languageStatus":"original-unconfirmed","sourceLanguage":"ja","platformTranslation":false} -->` + "\n\nSubtitle language: ja\nSubtitle source: automatic\nSubtitle language status: original language unconfirmed\n\n今日は字幕について話します。"
+
+func TestProcessItemVideoFallbackSummary(t *testing.T) {
+	known := strings.NewReplacer(`"original-unconfirmed"`, `"known-translation"`, "original language unconfirmed", "known translation").Replace(fallbackTranscript)
+	original := strings.NewReplacer(`"original-unconfirmed"`, `"verified-original"`, "original language unconfirmed", "verified original", "validated-platform-caption", "original-audio-metadata", `"platformTranslation":false`, `"platformTranslation":false,"originalLanguage":"ja"`).Replace(fallbackTranscript)
+	for _, body := range []string{
+		fallbackTranscript, verifiedTranscript, original,
+		strings.Replace(original, "original-audio-metadata", "original-audio-asr-association", 1),
+		strings.Replace(known, `"platformTranslation":false`, `"platformTranslation":false,"originalLanguage":"en"`, 1),
+		strings.NewReplacer(`"platformTranslation":false`, `"platformTranslation":true`, `"sourceLanguage":"ja"`, `"sourceLanguage":"en"`, "known translation\n\n", "known translation\nSubtitle source language: en\n\n").Replace(known),
+	} {
+		dir := t.TempDir()
+		s := &stubExtractor{headed: true, first: body}
+		sum := &recordingSummary{result: &summarize.SummarizeResult{Text: "A local fixture summary.", Provider: "fixture", Model: "fixture"}}
+		cfg := &config.Config{OutputDir: dir}
+		if err := New(cfg, s, sum).ProcessItem(source.ReadingItem{URL: "https://youtu.be/abc"}); err != nil {
+			t.Fatal(err)
+		}
+		files, err := filepath.Glob(filepath.Join(dir, "*", "*"))
+		if err != nil || len(files) != 2 || len(sum.bodies) != 1 || sum.bodies[0] != body {
+			t.Fatalf("transcript not saved and summarized: files=%v bodies=%v err=%v", files, sum.bodies, err)
+		}
+		for _, file := range files {
+			if strings.HasSuffix(file, "__content.md") {
+				data, err := os.ReadFile(file)
+				if err != nil || stripFrontmatter(string(data)) != body {
+					t.Fatalf("saved labels changed: %q %v", data, err)
+				}
+			}
+		}
+	}
+}
+
+func TestProcessItemVideoMisleadingProvenance(t *testing.T) {
+	for _, body := range []string{
+		strings.ReplaceAll(fallbackTranscript, "original-unconfirmed", "verified-original"),
+		strings.Replace(fallbackTranscript, `"original-unconfirmed"`, `"known-translation"`, 1),
+		strings.Replace(fallbackTranscript, `"sourceLanguage":"ja"`, `"sourceLanguage":"en"`, 1),
+		strings.Replace(verifiedTranscript, `"evidence":`, `"platformTranslation":false,"evidence":`, 1),
+	} {
+		dir := t.TempDir()
+		s := &stubExtractor{headed: true, first: body}
+		if err := New(&config.Config{OutputDir: dir}, s, nil).ProcessItem(source.ReadingItem{URL: "https://youtu.be/abc"}); err == nil {
+			t.Fatal("accepted misleading provenance")
+		}
+		files, _ := filepath.Glob(filepath.Join(dir, "*", "*"))
+		if len(files) != 0 {
+			t.Fatalf("invalid provenance wrote files: %v", files)
+		}
+	}
+}
 
 func (s *stubExtractor) UsesHeaded(string) bool { return s.headed }
 func (s *stubExtractor) ExtractURL(url string) (string, error) {

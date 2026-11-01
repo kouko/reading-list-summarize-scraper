@@ -285,9 +285,120 @@ test('A1 verified original audio association', async () => {
  tracks.push({baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en&kind=asr',languageCode:'en',kind:'asr'});
  const out = await extractArticle(yt(true, tracks), 'https://www.youtube.com/watch?v=abc', async () => new Response(cues));
  assert.match(out, /rlss-video-v1/); assert.match(out, /Actual spoken subtitle text/); assert.match(out, /Subtitle language: en/);
+ tracks.push({baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ar',languageCode:'ar',kind:'asr'});
+ const ambiguous=await extractArticle(yt(true,tracks),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+ assert.match(ambiguous,/"languageStatus":"original-unconfirmed"/);
 });
-test('A1 unverified default language rejected', async () => {
- for (const d of [yt(false), yt(true, undefined, {audioTracks:[{captionTrackIndices:[0]},{captionTrackIndices:[0]}]}), yt(true,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&tlang=ja',languageCode:'ja',kind:'asr'},{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ja',languageCode:'ja'}])]) await assert.rejects(extractArticle(d, 'https://www.youtube.com/watch?v=abc', async () => new Response(cues)), /original language|unusable/i);
+test('A3 labeled_unknown_and_translation; invalid_translation_endpoint', async () => {
+ for (const translated of [false,true]) {
+  const track={baseUrl:`https://www.youtube.com/api/timedtext?v=abc${translated?'&tlang=ja':''}`,languageCode:'en'};
+  const out=await extractArticle(yt(false,[track]),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+  assert.match(out,translated?/"language":"ja"/:/"language":"en"/);
+  assert.match(out,translated?/"languageStatus":"known-translation"/:/"languageStatus":"original-unconfirmed"/);
+ }
+ for(const suffix of ['&tlang=','&tlang=ja&tlang=en','&tlang=%21','&v=other']) {
+  await assert.rejects(extractArticle(yt(false,[{baseUrl:`https://www.youtube.com/api/timedtext?v=abc${suffix}`,languageCode:'en'}]),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues)),/unusable/i);
+ }
+});
+test('A1 multi_audio_original and conflicting_original_metadata', async () => {
+ const data=JSON.parse(yt(false,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ja',languageCode:'ja'},{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en',languageCode:'en'}]).querySelector('script').textContent.split(' = ')[1].slice(0,-1));
+ data.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'ja.1',captionTrackIndices:[0]},{audioTrackId:'en.4',captionTrackIndices:[1]}];
+ data.streamingData={adaptiveFormats:[{audioTrack:{id:'en.4',displayName:'English original'}},{audioTrack:{id:'ja.1',displayName:'Japanese (dubbed)'}}]};
+ const page=()=>doc(`<script>var ytInitialPlayerResponse = ${JSON.stringify(data)};</script>`);
+ const run=()=>extractArticle(page(),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+ assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
+ data.streamingData.adaptiveFormats[0].audioTrack.displayName='English (US) original';
+ assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
+ const english=structuredClone(data);
+ // Public player shape: every audio association can list every caption language.
+ data.streamingData.adaptiveFormats[0].audioTrack.id='en-US.4';
+ data.captions.playerCaptionsTracklistRenderer.captionTracks[1].kind='asr';
+ data.captions.playerCaptionsTracklistRenderer.captionTracks.push({baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ar',languageCode:'ar',kind:'asr'});
+ data.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'ja.1',captionTrackIndices:[0,1,2]},{audioTrackId:'en-US.4',captionTrackIndices:[0,1,2]}];
+ assert.match(await run(),/"language":"en".*"languageStatus":"verified-original"/);
+ const fresh=structuredClone(data);fresh.playabilityStatus={status:'OK'};
+ fresh.captions.playerCaptionsTracklistRenderer.captionTracks[1].baseUrl+='&fresh=1';
+ const requests=[];
+ const recovered=await extractArticle(page(),'https://www.youtube.com/watch?v=abc',async u=>{
+  requests.push(String(u));
+  return String(u).includes('/youtubei/')?Response.json(fresh):new Response(String(u).includes('fresh=1')?cues:'');
+ });
+ assert.match(recovered,/"language":"en".*"languageStatus":"verified-original"/);
+ assert.ok(!requests.some(u=>u.includes('lang=ja')||u.includes('lang=ar')));
+ // Invalid and translated alternatives must not be delivered as original.
+ const tracks=data.captions.playerCaptionsTracklistRenderer.captionTracks;
+ tracks.unshift({...tracks[1],baseUrl:'https://example.com/api/timedtext?v=abc'},
+  {...tracks[1],baseUrl:'https://www.youtube.com/api/timedtext?v=abc&tlang=en'});
+ for(const audio of data.captions.playerCaptionsTracklistRenderer.audioTracks) audio.captionTrackIndices=tracks.map((_,i)=>i);
+ const validRequests=[];
+ assert.match(await extractArticle(page(),'https://www.youtube.com/watch?v=abc',async u=>{validRequests.push(String(u));return new Response(cues);}),/"language":"en".*"languageStatus":"verified-original"/);
+ assert.ok(validRequests.every(u=>u.startsWith('https://www.youtube.com/api/timedtext?')&&!u.includes('tlang=')));
+ Object.assign(data,structuredClone(english));
+ data.streamingData.adaptiveFormats=[{audioTrack:{id:'ja.4',displayName:'Japanese (original)'}}];
+ data.captions.playerCaptionsTracklistRenderer.audioTracks[0].audioTrackId='ja.4';
+ assert.match(await run(),/"language":"ja".*"languageStatus":"verified-original"/);
+ Object.assign(data,english);
+ const chinese=structuredClone(data);
+ chinese.captions.playerCaptionsTracklistRenderer.captionTracks=[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=zh-TW',languageCode:'zh-TW'},{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en',languageCode:'en',kind:'asr'}];
+ chinese.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'en-US.10',captionTrackIndices:[0,1],hasDefaultTrack:true,defaultCaptionTrackIndex:1},{audioTrackId:'zh-Hant.4',captionTrackIndices:[0,1]}];
+ chinese.streamingData.adaptiveFormats=[{audioTrack:{id:'en-US.10',displayName:'English (US)',isAutoDubbed:true}},{audioTrack:{id:'zh-Hant.4',displayName:'Chinese (Traditional) original'}}];
+ Object.assign(data,chinese);
+ assert.match(await run(),/"language":"zh-TW".*"languageStatus":"verified-original".*"evidence":"original-audio-metadata"/);
+ for (const change of [
+  d=>{d.streamingData.adaptiveFormats[1].audioTrack.id='en.4';d.captions.playerCaptionsTracklistRenderer.audioTracks[1].audioTrackId='en.4';},
+  ...['Chinese (Traditional) not original','Chinese (Traditional) non-original','Chinese (Traditional) possibly original'].map(displayName=>d=>{
+   d.captions.playerCaptionsTracklistRenderer.captionTracks[0].kind='asr';
+   d.captions.playerCaptionsTracklistRenderer.audioTracks=[d.captions.playerCaptionsTracklistRenderer.audioTracks[1]];
+   d.streamingData.adaptiveFormats=[{audioTrack:{id:'zh-Hant.4',displayName}}];
+  }),
+ ]) {
+  change(data);assert.match(await run(),/"languageStatus":"original-unconfirmed"/);Object.assign(data,structuredClone(chinese));
+ }
+ Object.assign(data,english);
+ for(const change of [
+  d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'en.4',displayName:'English (dubbed)'}}),
+  d=>d.captions.playerCaptionsTracklistRenderer.audioTracks.push({audioTrackId:'en.4',captionTrackIndices:[1]}),
+  d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'ja.1',displayName:'Japanese (original)'}}),
+  d=>d.captions.playerCaptionsTracklistRenderer.audioTracks[1].captionTrackIndices=[99],
+  d=>{ d.streamingData.adaptiveFormats=[{audioTrack:{id:'ja.4',displayName:'English original'}}];d.captions.playerCaptionsTracklistRenderer.audioTracks[0].audioTrackId='ja.4'; },
+  d=>d.streamingData.adaptiveFormats[0].audioTrack.displayName='Japanese (original)',
+  d=>d.streamingData.adaptiveFormats.push({audioTrack:{id:'en.4',displayName:'Japanese (original)'}}),
+ ]) {
+  const saved=structuredClone(data);change(data);assert.match(await run(),/"languageStatus":"original-unconfirmed"/);Object.assign(data,saved);
+ }
+ const refreshed=structuredClone(data);refreshed.playabilityStatus={status:'OK'};
+ refreshed.streamingData.adaptiveFormats=[{audioTrack:{id:'ja.1',displayName:'Japanese (original)'}}];
+ const conflict=await extractArticle(page(),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?Response.json(refreshed):new Response(String(u).includes('lang=ja')?cues:''));
+ assert.match(conflict,/"languageStatus":"original-unconfirmed"/);
+});
+test('A3 refreshed original takes precedence over inline fallback without initial proof', async () => {
+ const fresh=JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));fresh.playabilityStatus={status:'OK'};
+ const requests=[];
+ const out=await extractArticle(yt(false,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=ja',languageCode:'ja'}]),'https://www.youtube.com/watch?v=abc',async u=>{requests.push(String(u));return String(u).includes('/youtubei/')?Response.json(fresh):new Response(cues);});
+ assert.match(out,/"language":"en".*"languageStatus":"verified-original"/);assert.ok(!requests.some(u=>u.includes('lang=ja')));
+ assert.match(await extractArticle(yt(false,[]),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?Response.json(fresh):new Response(cues)),/"languageStatus":"verified-original"/);
+});
+test('A1 negated single-audio metadata cannot fall through to automatic proof', async () => {
+ const data=JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));
+ data.captions.playerCaptionsTracklistRenderer.audioTracks[0].audioTrackId='en.4';
+ for (const displayName of ['English not original','English non-original','English possibly original']) {
+  data.streamingData={formats:[{audioTrack:{id:'en.4',displayName}}]};
+  const page=doc(`<script>var ytInitialPlayerResponse = ${JSON.stringify(data)};</script>`);
+  const out=await extractArticle(page,'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+  assert.match(out,/"languageStatus":"original-unconfirmed"/);
+ }
+});
+test('test_originalEvidence_negatedMarker_unconfirmed', async () => {
+ // Negated labels must not establish an affirmative original-language assertion.
+ const statuses = [];
+ for (const displayName of ['English not original', 'English non-original']) {
+  const data=JSON.parse(yt(false,[{baseUrl:'https://www.youtube.com/api/timedtext?v=abc&lang=en',languageCode:'en'}]).querySelector('script').textContent.split(' = ')[1].slice(0,-1));
+  data.captions.playerCaptionsTracklistRenderer.audioTracks=[{audioTrackId:'en.4',captionTrackIndices:[0]}];
+  data.streamingData={adaptiveFormats:[{audioTrack:{id:'en.4',displayName}}]};
+  const output=await extractArticle(doc(`<script>var ytInitialPlayerResponse = ${JSON.stringify(data)};</script>`),'https://www.youtube.com/watch?v=abc',async u=>String(u).includes('/youtubei/')?new Response('',{status:503}):new Response(cues));
+  statuses.push(JSON.parse(output.split('\n')[0].slice('<!-- rlss-video-v1 '.length,-' -->'.length)).languageStatus);
+ }
+ assert.deepEqual(statuses,['original-unconfirmed','original-unconfirmed']);
 });
 test('A1/A3 refreshed invalid identity, language and API failures stay unsuccessful', async () => {
  const valid = JSON.parse(yt().querySelector('script').textContent.split(' = ')[1].slice(0,-1));
@@ -401,6 +512,16 @@ test('A4 blank human track does not block usable automatic track', async () => {
   return new Response(String(u).includes('fresh=1') && !String(u).includes('manual') ? cues : '');
  });
  assert.match(recovered, /Subtitle source: automatic/); assert.deepEqual(requests, ['IOS','ANDROID']);
+});
+test('A4 whitespace formatting cues do not require timing, but blank-only payloads fail', async () => {
+ const blank = '<p t="9310" w="1" a="1">\n</p>';
+ const xml = `<timedtext><body><p t="0" d="2000">Actual spoken subtitle text.</p>${blank}<p t="2000" d="2000">More spoken words.</p></body></timedtext>`;
+ const out = await extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async () => new Response(xml));
+ assert.match(out, /Actual spoken subtitle text\.\n\nMore spoken words\./);
+ await assert.rejects(extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async () => new Response(`<timedtext><body>${blank}</body></timedtext>`)), /unusable/i);
+ for (const invalid of ['<p t="0">Nonempty words.</p>', '<p t="2000" d="1000">First words.</p><p t="1000" d="1000">Earlier words.</p>']) {
+  await assert.rejects(extractArticle(yt(), 'https://www.youtube.com/watch?v=abc', async () => new Response(`<timedtext><body>${invalid}</body></timedtext>`)), /invalid cue timing/i);
+ }
 });
 test('A4 malformed, truncated and timestamp-only cues fail', async () => {
  for (const xml of ['','<transcript><text start="-1" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech</text>','<transcript><text start="0" dur="2">00:01</text></transcript>','<!DOCTYPE transcript SYSTEM "https://example.com/external.dtd"><transcript><text start="0" dur="2">speech</text></transcript>','<transcript><text start="0" dur="2">speech &unknown;</text></transcript>']) {
