@@ -1,7 +1,7 @@
 {
   "schema": "loom-attestation/v2",
   "change_id": "2026-11-01-verify-youtube-original-audio-evidence",
-  "content_digest": "f8b87c83515f98f438ee645e49fdf3023e73aa60",
+  "content_digest": "de9fa8a98e0a405b84e6f3a9a5e23b756a5ad07f",
   "executions": [
     {
       "kind": "package-tests",
@@ -25,7 +25,7 @@
       "verdict": "PASS",
       "lens": "code",
       "reviewed_sha": "5b6dddfeb01674d55fbc2753a7d0e748d4f7caaa",
-      "review_target_sha": "c5cbd26af83c979c1cf9cba7888013d554166f65",
+      "review_target_sha": "0867fbbb847d2882c7d6f3709d524579ab89511a",
       "dimension_scores": {
         "security": "PASS",
         "architecture": "PASS",
@@ -42,9 +42,9 @@
       },
       "findings": [],
       "notes": [
-        "Previous fatal finding at extraction.ts:110: fixed. Every recognized original declaration must now agree with the audio ID language family; both mismatch directions and conflicting same-ID declarations yield original-unconfirmed, while consistent Japanese evidence remains verified-original.",
-        "Independently reran the changed extraction.test.mjs: 23 passed, zero skipped. Regenerated the browser bundle outside the repository and confirmed byte-for-byte equality. Review was bounded to the prior finding and fix delta deb039c..c5cbd26.",
-        "Read the refreshed clean-checkout seven-video acceptance evidence and supplied round-two package/adversarial PASS outputs; no full package suite or evidence probe was run by this reviewer."
+        "Terminal round three reviewed the prior finding and c5cbd26..0867fbb fix delta only. The original label/audio-ID mismatch remains fixed, including the added Traditional Chinese label; empty formatting cues are skipped only after normalization, while every nonempty cue retains timing validation and XML completeness checks remain unchanged.",
+        "Independently ran node --test extraction.test.mjs: 24 passed, zero skipped. Regenerated the browser bundle outside the repository and confirmed byte-for-byte equality with embed/defuddle.min.js.",
+        "Read the expanded source-verification and refreshed independent clean-checkout acceptance evidence, including 12 successful exact cue matches across 13 targets, and the supplied current-target adversarial PASS output. No complete package suite or evidence probe was run by this reviewer."
       ],
       "reviewer": "/root/youtube_closing_code_review",
       "vendor": "codex",
@@ -54,7 +54,7 @@
       "verdict": "PASS",
       "lens": "code",
       "reviewed_sha": "5b6dddfeb01674d55fbc2753a7d0e748d4f7caaa",
-      "review_target_sha": "c5cbd26af83c979c1cf9cba7888013d554166f65",
+      "review_target_sha": "0867fbbb847d2882c7d6f3709d524579ab89511a",
       "dimension_scores": {
         "security": "PASS",
         "architecture": "PASS",
@@ -73,16 +73,16 @@
         {
           "severity": "fatal",
           "dimension": "correctness",
-          "anchor": "extraction.ts:114",
-          "text": "issue (fixed): The original label/audio-ID language mismatch is closed. Every recognized original declaration must now match the claimed audio ID's language family, including repeated declarations for one ID; incompatible declarations remain unconfirmed fallback.",
-          "fix": "Completed: language-family agreement is enforced in the source and regenerated bundle; the existing entry test covers both mismatch directions, mixed same-ID declarations, and consistent Japanese and regional English positives.",
+          "anchor": "extraction.ts:115",
+          "text": "issue (fixed): The original label/audio-ID language mismatch remains closed. Every recognized original declaration, now including the observed Traditional Chinese label, must match the claimed audio ID's language family; incompatible or negated declarations remain unconfirmed fallback.",
+          "fix": "Completed: source and regenerated bundle retain language-family agreement; entry tests cover mismatched and repeated declarations, consistent English/Japanese/Traditional Chinese metadata, and Chinese negated/qualified labels.",
           "status": "fixed"
         }
       ],
       "notes": [
-        "Round 2 reviewed only the previous finding and deb039c..c5cbd26 fix delta; no new findings or repository edits.",
-        "Independently ran node --test extraction.test.mjs: 23 passed, zero failed/skipped. Inspected the regenerated bundle's matching language-family guard.",
-        "Read refreshed clean-checkout acceptance evidence at 3225870 and its report; all five acceptance lines were re-tested, and watch/empty/dry-run carryovers identify unaffected control flow. Complete suite and adversarial programs were not rerun by this reviewer."
+        "Terminal Round 3 reviewed the previous finding and c5cbd26..0867fbb fix delta only; no new findings or repository edits.",
+        "Independently ran node --test extraction.test.mjs: 24 passed, zero failed/skipped. Verified generated bundle changes; only normalized-empty cues bypass timing, while nonempty timing and XML validation remain strict.",
+        "Read refreshed intent/spec/plan, 18-target source report and independent 13-target clean-checkout acceptance evidence, including 12 exact cue/body matches and justified watch/empty/dry-run carryovers. Did not rerun the complete suite or adversarial programs."
       ],
       "reviewer": "/root/youtube_closing_contract_review",
       "vendor": "codex",
