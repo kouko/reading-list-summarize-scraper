@@ -19,6 +19,11 @@ type articleExtractor interface {
 }
 
 var htmlTags = regexp.MustCompile(`<[^>]*>`)
+var subtitleLanguage = regexp.MustCompile(`^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*$`)
+
+func languageFamily(language string) string {
+	return strings.Split(strings.ReplaceAll(strings.ToLower(language), "_", "-"), "-")[0]
+}
 
 func authorThreadTarget(rawURL string) bool {
 	u, err := url.Parse(rawURL)
@@ -107,15 +112,76 @@ func validateTargetContent(rawURL, content string) error {
 	}
 	line, body, _ := strings.Cut(content, "\n")
 	const prefix = "<!-- rlss-video-v1 "
-	var provenance struct{ Platform, Target, Language, Source, Evidence string }
+	var provenance struct {
+		Platform, Target, Language, Source, Evidence     string
+		LanguageStatus, SourceLanguage, OriginalLanguage *string
+		PlatformTranslation                              *bool
+	}
+	var fields map[string]json.RawMessage
+	encoded := []byte(strings.TrimSuffix(strings.TrimPrefix(line, prefix), " -->"))
 	if !strings.HasPrefix(line, prefix) || !strings.HasSuffix(line, " -->") ||
-		json.Unmarshal([]byte(strings.TrimSuffix(strings.TrimPrefix(line, prefix), " -->")), &provenance) != nil ||
+		json.Unmarshal(encoded, &provenance) != nil || json.Unmarshal(encoded, &fields) != nil ||
 		provenance.Platform != platform || target == "" || provenance.Target != target ||
-		strings.TrimSpace(provenance.Language) == "" || (provenance.Source != "human" && provenance.Source != "automatic") ||
-		provenance.Evidence != "original-audio-asr-association" {
+		!subtitleLanguage.MatchString(provenance.Language) || (provenance.Source != "human" && provenance.Source != "automatic") {
 		return fmt.Errorf("unverified original language: missing or invalid target-bound transcript provenance")
 	}
-	metadata := "Subtitle language: " + provenance.Language + "\nSubtitle source: " + provenance.Source + "\n\n"
+	metadata := "Subtitle language: " + provenance.Language + "\nSubtitle source: " + provenance.Source + "\n"
+	modern := false
+	for _, key := range []string{"languageStatus", "sourceLanguage", "originalLanguage", "platformTranslation"} {
+		if _, present := fields[key]; present {
+			modern = true
+		}
+	}
+	if modern {
+		invalid := fmt.Errorf("unverified original language: inconsistent transcript language provenance")
+		if provenance.LanguageStatus == nil || provenance.SourceLanguage == nil || provenance.PlatformTranslation == nil ||
+			!subtitleLanguage.MatchString(*provenance.SourceLanguage) {
+			return invalid
+		}
+		original := ""
+		if _, present := fields["originalLanguage"]; present {
+			if provenance.OriginalLanguage == nil || !subtitleLanguage.MatchString(*provenance.OriginalLanguage) ||
+				*provenance.OriginalLanguage != languageFamily(*provenance.OriginalLanguage) {
+				return invalid
+			}
+			original = *provenance.OriginalLanguage
+		}
+		translated := *provenance.PlatformTranslation
+		if !translated && provenance.Language != *provenance.SourceLanguage {
+			return invalid
+		}
+		if translated && strings.EqualFold(strings.ReplaceAll(provenance.Language, "_", "-"), strings.ReplaceAll(*provenance.SourceLanguage, "_", "-")) {
+			return invalid
+		}
+		knownTranslation := translated || (original != "" && original != languageFamily(provenance.Language))
+		label := ""
+		switch *provenance.LanguageStatus {
+		case "verified-original":
+			if knownTranslation || original == "" || (provenance.Evidence != "original-audio-asr-association" && provenance.Evidence != "original-audio-metadata") {
+				return invalid
+			}
+			label = "verified original"
+		case "original-unconfirmed":
+			if knownTranslation || provenance.Evidence != "validated-platform-caption" {
+				return invalid
+			}
+			label = "original language unconfirmed"
+		case "known-translation":
+			if !knownTranslation || provenance.Evidence != "validated-platform-caption" {
+				return invalid
+			}
+			label = "known translation"
+		default:
+			return invalid
+		}
+		metadata += "Subtitle language status: " + label + "\n"
+		if translated {
+			metadata += "Subtitle source language: " + *provenance.SourceLanguage + "\n"
+		}
+	} else if provenance.Evidence != "original-audio-asr-association" {
+		return fmt.Errorf("unverified original language: unsupported transcript evidence")
+	}
+	metadata += "\n"
 	body = strings.TrimLeft(body, "\n")
 	if !strings.HasPrefix(body, metadata) {
 		return fmt.Errorf("unusable subtitles: missing language/source labels")

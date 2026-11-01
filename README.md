@@ -164,14 +164,19 @@ attempts are not retried. Recognized walls fail without saving new content or
 summaries; existing notes are retained.
 
 Video transcript support in this release is limited to YouTube. Extraction saves
-original-language subtitles only when first-party player
-data unambiguously associates the original audio with an automatic-caption
-language and a usable track matches that language. Both human and automatic
+original-language subtitles first when consistent first-party player data
+identifies the original audio language through explicit audio metadata or an
+unambiguous automatic-caption association. Both human and automatic
 tracks are accepted after checking actual cue text, timing and explicit incomplete
 responses; human tracks are not always preferred. Saved content identifies the
-subtitle language and source. If verified inline tracks are unusable, extraction
-refreshes caption URLs through YouTube's native iOS player API, then Android once
-if needed, and repeats the same identity, original-language and cue checks.
+subtitle language, source and language status: verified original, original language
+unconfirmed, or known translation. Valid fallback subtitles are saved and may be
+summarized under the existing settings after original-language attempts fail;
+platform translations also identify the source language. If verified inline tracks
+are unusable, extraction refreshes caption URLs through YouTube's native iOS player
+API, then Android once
+if needed, and repeats the same identity, original-language and cue checks before
+considering valid fallback tracks.
 Caption XML is parsed without HTML string assignment, including on pages enforcing
 Trusted Types. This does not guarantee transcription accuracy or
 complete speech coverage. Bilibili is outside this release's supported video
